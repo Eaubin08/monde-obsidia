@@ -40,18 +40,8 @@ test('Cross-view context remains shared',()=>{
  for(const invariant of ['obsidia-selected-session','obsidia-context'])assert.ok(pokemon.includes(invariant),invariant)
 })
 
-test('Pokémon cockpit keeps every block visible and navigable',()=>{
+test('Pokémon keeps every existing block after navigation redesign',()=>{
  for(const invariant of [
-  'pokemon-cockpit',
-  'pokemon-cockpit-nav',
-  'pokemon-cockpit-main',
-  "scrollPokemon('pokemon-active')",
-  "scrollPokemon('pokemon-launch')",
-  "scrollPokemon('pokemon-circuit')",
-  "scrollPokemon('pokemon-missions')",
-  "scrollPokemon('pokemon-population')",
-  "scrollPokemon('pokemon-village')",
-  "scrollPokemon('pokemon-registry')",
   'État global des agents',
   'Agents actifs',
   'pokemon-v3-inspector',
@@ -61,7 +51,26 @@ test('Pokémon cockpit keeps every block visible and navigable',()=>{
   'Population connue',
   'Village visuel',
   'Registre détaillé du catalogue',
+  'Lancer Jarjar',
+  'Kernel 3001',
+  'Brody/API 8000',
  ]) assert.ok(pokemon.includes(invariant),invariant)
+ assert.ok(!pokemon.includes('pokemon-cockpit-nav'))
+})
+
+test('Shared navigation exposes Search and contextual quick links',()=>{
+ for(const invariant of [
+  "['world','Monde']",
+  "['workspace','Workspace']",
+  "['agents','Pokémon']",
+  "['search','Recherche']",
+  "view==='search'",
+  'obs-quick-links',
+  "openSearch('agent')",
+  "openSearch('file')",
+  "openSearch('domain')",
+  "openSearch('proof')",
+ ]) assert.ok(ecosystem.includes(invariant),invariant)
 })
 
 
