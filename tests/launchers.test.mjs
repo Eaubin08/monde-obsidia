@@ -160,8 +160,8 @@ test('Launchers and live process contracts',async t=>{
 })
 
 test('Windows launcher enforces one local Vite instance on fixed port',()=>{
- const start=readFileSync(resolve(root,'scripts/start-windows.ps1'),'utf8')
- const vite=readFileSync(resolve(root,'vite.config.ts'),'utf8')
+ const start=readFileSync(resolve(process.cwd(),'scripts/start-windows.ps1'),'utf8')
+ const vite=readFileSync(resolve(process.cwd(),'vite.config.ts'),'utf8')
  const stop=start.indexOf('Stop-ProjectVite -Root $projectRoot')
  const dev=start.indexOf("Invoke-CheckedCommand -Command $npm -Arguments @('run', 'dev', '--', '--open')")
  assert.ok(stop>=0&&dev>stop)
