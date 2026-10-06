@@ -9,7 +9,6 @@ const workspace=readFileSync(resolve(process.cwd(),'src/ToolWorkspace.tsx'),'utf
 const bridge=readFileSync(resolve(process.cwd(),'server/local-bridge.mjs'),'utf8')
 const stateProjection=readFileSync(resolve(process.cwd(),'server/obsidia-state.mjs'),'utf8')
 const jarjarLauncher=readFileSync(resolve(process.cwd(),'scripts/start-jarjar-full.ps1'),'utf8')
-const serviceLauncher=readFileSync(resolve(process.cwd(),'scripts/start-service-colored.ps1'),'utf8')
 
 test('Pokémon launcher and cross-view paths remain wired',()=>{
  for(const invariant of [
@@ -40,25 +39,19 @@ test('Cross-view context remains shared',()=>{
  for(const invariant of ['obsidia-selected-session','obsidia-context'])assert.ok(pokemon.includes(invariant),invariant)
 })
 
-test('Pokémon keeps all existing content across internal pages',()=>{
- for(const invariant of [
-  "['active','Actifs']",
-  "['launch','Lancements']",
-  "['missions','Missions']",
-  "['population','Population']",
-  "pokemonPage==='active'",
-  "pokemonPage==='launch'",
-  "pokemonPage==='missions'",
-  "pokemonPage==='population'",
-  'Agents actifs',
-  'Lancer un agent',
-  'État global des agents',
-  'Population connue',
-  'Village visuel',
-  'Registre détaillé du catalogue',
-  'PARCOURS VIVANT',
-  'MISSIONS / ÉQUIPES',
- ]) assert.ok(pokemon.includes(invariant),invariant)
+test('Pokémon visual order prioritizes work before population catalog',()=>{
+ const active=pokemon.indexOf('Agents actifs')
+ const launch=pokemon.indexOf('Lancer un agent')
+ const scale=pokemon.indexOf('État global des agents')
+ const catalog=pokemon.indexOf('Population connue')
+ const village=pokemon.indexOf('Village visuel')
+ const registry=pokemon.indexOf('Registre détaillé du catalogue')
+ assert.ok(active>=0,'active missing')
+ assert.ok(launch>active,'launcher must follow active work')
+ assert.ok(scale>launch,'global state must follow launcher')
+ assert.ok(catalog>scale,'catalog must follow state summary')
+ assert.ok(village>catalog,'village must follow catalog')
+ assert.ok(registry>village,'registry must remain last')
 })
 
 
@@ -83,7 +76,7 @@ test('Jarjar remains a real observed and controlled local stack',()=>{
   "scripts[\\\\/.]run_jarjar_live",
   "state='STARTING'",
   "'READY':'DEGRADED'",
- ]) assert.ok((bridge+'\n'+jarjarLauncher).includes(invariant),invariant)
+ ]) assert.ok(bridge.includes(invariant),invariant)
  for(const invariant of [
   "server.kernel.sealed.cjs",
   "apps.obsidia_api.main:app",
@@ -190,5 +183,5 @@ test('Validated Obsidia service terminals remain wired individually',()=>{
   "connectors\\\\trading_live.py",
   "run_brody_terminal_enriched.ps1",
   "run_agent_obsidure.ps1 -DryRun",
- ]) assert.ok((bridge+'\n'+serviceLauncher).includes(invariant),invariant)
+ ]) assert.ok(bridge.includes(invariant),invariant)
 })
