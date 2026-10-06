@@ -81,7 +81,7 @@ export default function Ecosystem(){
 
 {worldZone==='layers'&&layer&&<section className="world-layer-reader"><div><span className="eyebrow">COUCHE OUVERTE</span><h2>{layer.title}</h2><p>{layer.path} · {layer.commit.slice(0,12)}</p></div><pre className="source-content">{layer.content}</pre></section>}
 <p className="declared">Le Monde projette des objets observés ; il ne crée ni activité ni vérité canonique.</p>
-</section>}:view==='workspace'?<><section className="workspace-v3">
+</section>:view==='workspace'?<><section className="workspace-v3">
 <header className="workspace-v3-header"><div><span className="eyebrow">WORKSPACE</span><h1>Travail Obsidia</h1><p>Le travail courant au centre. Les outils servent ce travail, ils ne sont plus la navigation principale.</p></div><div className="workspace-v3-status"><strong>{shared?.sessions.filter(s=>s.presence==='live').length||0}</strong><span>session(s) active(s)</span></div></header>
 <nav className="workspace-v3-tabs" aria-label="Navigation Workspace">
 <button aria-current={workspaceArea==='home'} onClick={()=>{sessionStorage.setItem('obsidia-workspace-area','home');setWorkspaceArea('home')}}>Aujourd'hui</button>
