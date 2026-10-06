@@ -19,7 +19,7 @@ export function buildObsidiaState(snapshot,live){
   for(const rawAgentId of d.agents||[]){
    const agentId=stable('agent',rawAgentId)
    sigmaAgentDomains[rawAgentId]=domainId
-   if(!entities.find(e=>e.id===agentId))entities.push({id:agentId,kind:'agent',label:rawAgentId,agentId:rawAgentId,source:d.sourcePath,domainId:d.id,runtimeDeclared:true})
+   if(!entities.find(e=>e.id===agentId))entities.push({id:agentId,kind:'agent',label:rawAgentId,agentId:rawAgentId,source:'sigma',sourcePath:d.sourcePath,domainId:d.id,runtimeDeclared:true})
    relations.push({from:domainId,type:'HAS_AGENT',to:agentId},{from:agentId,type:'BELONGS_TO_DOMAIN',to:domainId})
   }
  }
