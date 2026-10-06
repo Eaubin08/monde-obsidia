@@ -11,10 +11,17 @@ export function buildObsidiaState(snapshot,live){
  const relations=[{from:'obsidia',type:'CONTAINS',to:repositoryId}]
  const agents=new Map()
  const sessions=[]
+ const sigmaAgentDomains={}
  for(const d of snapshot?.sigmaDomains||[]){
   const domainId=stable('domain',d.id)
-  entities.push({id:domainId,kind:'domain',label:d.displayName,domainId:d.id,source:d.source,sourcePath:d.sourcePath,runtimeFilePresent:d.runtimeFilePresent,canonicalRegistry:'F60'})
+  entities.push({id:domainId,kind:'domain',label:d.displayName,domainId:d.id,source:d.source,sourcePath:d.sourcePath,runtimeFilePresent:d.runtimeFilePresent,canonicalRegistry:'F60',agentCount:(d.agents||[]).length})
   relations.push({from:'obsidia',type:'HAS_DOMAIN',to:domainId},{from:repositoryId,type:'DECLARES_DOMAIN',to:domainId})
+  for(const rawAgentId of d.agents||[]){
+   const agentId=stable('agent',rawAgentId)
+   sigmaAgentDomains[rawAgentId]=domainId
+   if(!entities.find(e=>e.id===agentId))entities.push({id:agentId,kind:'agent',label:rawAgentId,agentId:rawAgentId,source:d.sourcePath,domainId:d.id,runtimeDeclared:true})
+   relations.push({from:domainId,type:'HAS_AGENT',to:agentId},{from:agentId,type:'BELONGS_TO_DOMAIN',to:domainId})
+  }
  }
  for(const s of live?.sessions||[]){
   const agentId=stable('agent',s.agentId)
