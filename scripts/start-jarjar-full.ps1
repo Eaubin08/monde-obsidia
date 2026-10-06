@@ -2,6 +2,10 @@
 param()
 
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$env:PYTHONUTF8 = '1'
+$env:PYTHONIOENCODING = 'utf-8'
 
 function Wait-Port([int]$Port, [string]$Name, [int]$TimeoutSeconds = 120) {
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
@@ -31,10 +35,11 @@ function Port-Open([int]$Port) {
     } catch { return $false }
 }
 
-function Start-Terminal([string]$Title, [string]$Command) {
-    $payload = "[Console]::Title='$($Title.Replace("'","''"))'; `$ErrorActionPreference='Stop'; $Command"
-    $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($payload))
-    Start-Process powershell.exe -ArgumentList @('-NoProfile','-NoExit','-EncodedCommand',$encoded) -WindowStyle Normal | Out-Null
+function Start-Server([string]$Name, [string]$FilePath, [string[]]$Arguments, [string]$WorkingDirectory) {
+    Write-Host "[$Name] lancement..." -ForegroundColor DarkCyan
+    $process = Start-Process -FilePath $FilePath -ArgumentList $Arguments -WorkingDirectory $WorkingDirectory -NoNewWindow -PassThru
+    Write-Host "[$Name] PID=$($process.Id)" -ForegroundColor DarkGray
+    return $process
 }
 
 $WorldRoot = Split-Path -Parent $PSScriptRoot
@@ -120,7 +125,10 @@ if (-not (Port-Open 8081)) {
 } else { Write-Host '[5/6] Qwen-VL déjà actif.' -ForegroundColor DarkGray }
 Wait-Port 8081 'QWEN-VL' 600
 
-Write-Host '[6/6] Serveurs prêts. Lancement interface Jarjar...' -ForegroundColor Green
+Write-Host ''
+Write-Host '====================================================' -ForegroundColor Green
+Write-Host '[6/6] SERVEURS READY -> INTERFACE JARJAR' -ForegroundColor Green
+Write-Host '====================================================' -ForegroundColor Green
 $env:JARJAR_BOUNDED_STRUCTURED_ROUTING_V0='1'
 $env:JARJAR_LOCAL_BRODY='1'
 $env:JARJAR_OBSIDIA_CHAT_URL='http://127.0.0.1:8000/api/brody/chat'
