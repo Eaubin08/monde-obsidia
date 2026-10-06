@@ -52,6 +52,33 @@ function Quote-Arg([string]$Value) {
     return '"' + $escaped + '"'
 }
 
+function Resolve-LlamaExecutable {
+    foreach ($name in @('llama-server','llama')) {
+        $cmd = Get-Command $name -ErrorAction SilentlyContinue
+        if ($cmd -and $cmd.Source) { return $cmd.Source }
+    }
+
+    $roots = @(
+        (Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links'),
+        (Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages'),
+        (Join-Path $env:USERPROFILE 'AppData\Local\Microsoft\WinGet\Links'),
+        (Join-Path $env:USERPROFILE 'AppData\Local\Microsoft\WinGet\Packages'),
+        'C:\Users\User\AppData\Local\Microsoft\WinGet\Links',
+        'C:\Users\User\AppData\Local\Microsoft\WinGet\Packages'
+    ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
+
+    foreach ($root in $roots) {
+        foreach ($name in @('llama-server.exe','llama.exe')) {
+            try {
+                $hit = Get-ChildItem -LiteralPath $root -Filter $name -File -Recurse -ErrorAction SilentlyContinue |
+                    Select-Object -First 1 -ExpandProperty FullName
+                if ($hit) { return $hit }
+            } catch {}
+        }
+    }
+    return $null
+}
+
 function Start-Server([string]$Name, [string]$FilePath, [string[]]$Arguments, [string]$WorkingDirectory) {
     Write-Host "[$Name] lancement..." -ForegroundColor DarkCyan
     $resolvedFile = Resolve-Executable $FilePath
@@ -122,11 +149,25 @@ if (-not $JarjarPython) { throw "Python Jarjar introuvable. Candidats: $($Jarjar
 
 $KernelDir = Join-Path $Obsidia 'runtime_terrain_bank_trading_gps'
 
+$LlamaExecutable = Resolve-LlamaExecutable
+if ($LlamaExecutable) {
+    $LlamaDir = Split-Path -Parent $LlamaExecutable
+    if (($env:PATH -split ';') -notcontains $LlamaDir) {
+        $env:PATH = "$LlamaDir;$env:PATH"
+    }
+}
+
+
 Write-Host ''
 Write-Host '=== JARJAR SERVER ===' -ForegroundColor Cyan
 Write-Host "Obsidia: $Obsidia"
 Write-Host "Jarjar : $Jarjar"
 Write-Host "Python : $JarjarPython"
+if ($LlamaExecutable) {
+    Write-Host "llama  : $LlamaExecutable" -ForegroundColor Green
+} else {
+    Write-Host "llama  : INTROUVABLE (Qwen restera optionnel)" -ForegroundColor Yellow
+}
 Write-Host ''
 
 if (-not (Test-Path -LiteralPath (Join-Path $KernelDir 'node_modules\express'))) {
