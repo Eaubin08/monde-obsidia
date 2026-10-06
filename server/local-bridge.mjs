@@ -165,29 +165,10 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  if(url.pathname.startsWith('/focus/')){if(!p.native)throw Error('Session intégrée : son terminal est dans la page');await focusTerminal(p.title,p.pid)}else if(url.pathname.startsWith('/stop/')){if(p.native){await stopTerminal(p.pid);p.active=false;markEnd(id,'Terminal fermé depuis la page')}else p.child.kill()}else{if(p.native)throw Error('Saisis ta demande dans le terminal Windows');if(liveSnapshot().sessions.find(s=>s.sessionId===id)?.phase!=='WAITING_INPUT')throw Error('Ce processus n’attend pas de saisie');if(typeof data.text!=='string'||data.text.length>4096||/[\r\n]/.test(data.text))throw Error('Saisie invalide');await new Promise((ok,no)=>p.child.stdin.write(data.text+'\n',e=>e?no(e):ok()))}
  res.end(JSON.stringify({ok:true}));return
  }
- const tool=data.tool||'obsidure';if(!['obsidure','brody','cli','jarjar'].includes(tool))throw Error('Outil inconnu');const mode=data.mode;if(!['audit','audit-long','interactive'].includes(mode)|| (tool!=='obsidure'&&mode!=='interactive'))throw Error('Mission inconnue');
+ const tool=data.tool||'obsidure';if(!['obsidure','brody','cli'].includes(tool))throw Error('Outil inconnu');const mode=data.mode;if(!['audit','audit-long','interactive'].includes(mode)|| (tool!=='obsidure'&&mode!=='interactive'))throw Error('Mission inconnue');
  if([...processes.entries()].some(([sid,p])=>p.active&&p.tool===tool&&liveSnapshot().sessions.find(s=>s.sessionId===sid)?.presence!=='ended'))throw Error('Une session est déjà en cours : arrête-la ou attends sa fin');
  if(launching.has(tool))throw Error('Cet outil est déjà en cours de lancement');launchKey=tool;launching.add(tool);
  const root=realpathSync(repository());const session=randomUUID();
- if(tool==='jarjar'){
-  const jr=jarjarRoot()
-  if(process.platform!=='win32')throw Error('Jarjar local requiert Windows')
-  if(!existsSync(jr))throw Error('Repo Jarjar absent. Candidats : '+jarjarRootCandidates().join(' | '))
-  if(!existsSync(resolve(jr,jarjarModuleFile)))throw Error('Launcher Jarjar absent : '+resolve(jr,jarjarModuleFile))
-  if(!existsSync(jarjarPython()))throw Error('Python Jarjar validé absent. Candidats : '+jarjarPythonCandidates().join(' | '))
-  emitJarjar(session,'session_start',{pid:0,status:'starting',phase:'STARTING',message:'Démarrage Jarjar live'})
-  const child=spawn(jarjarPython(),['-m',jarjarModule],{cwd:jr,stdio:['ignore','pipe','pipe'],windowsHide:false,env:{...process.env,JARJAR_BOUNDED_STRUCTURED_ROUTING_V0:'1',JARJAR_LOCAL_BRODY:'1',PYTHONUNBUFFERED:'1',PYTHONIOENCODING:'utf-8'}})
-  const p={child,active:true,output:'',exitCode:null,tool};processes.set(session,p)
-  const append=x=>{p.output=(p.output+x.toString('utf8')).slice(-32000)}
-  child.stdout.on('data',append);child.stderr.on('data',append)
-  child.on('spawn',()=>emitJarjar(session,'activity',{pid:child.pid,status:'thinking',phase:'RUNNING',message:'Jarjar live lancé'}))
-  child.on('error',e=>{p.active=false;append('Erreur de lancement : '+e.message);emitJarjar(session,'runtime_error',{pid:child.pid||0,status:'error',phase:'DEGRADED',message:e.message})})
-  child.on('close',code=>{p.active=false;p.exitCode=code;emitJarjar(session,'session_end',{pid:child.pid||0,status:code===0?'success':'error',phase:'PROCESS_EXIT',message:'Jarjar arrêté — code '+code,exitCode:code})})
-  await new Promise((ok,no)=>{child.once('spawn',ok);child.once('error',no)})
-  await new Promise(r=>setTimeout(r,900))
-  if(!p.active)throw Error('Jarjar a quitté au démarrage. '+p.output.slice(-6000))
-  res.end(JSON.stringify({sessionId:session,started:true,pid:child.pid,repository:jr,python:jarjarPython(),module:jarjarModule}));return
- }
  contained(root,launchers[tool]);
  if(tool==='brody')await ensureBrodyApi(root);
  const args=[observer,'--repo',root,'--output',liveDirectory,'--agent',tool,'--session',session];
@@ -221,8 +202,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   const command=`$env:JARJAR_BOUNDED_STRUCTURED_ROUTING_V0='1'; $env:JARJAR_LOCAL_BRODY='1'; ${baseCommand}`
   const pid=await launchTerminal(command)
   const p={pid,active:true,output:'',exitCode:null,native:true,tool:id,title};processes.set(session,p)
-  emitJarjar(session,'session_start',{pid,status:'thinking',phase:'RUNNING',message:'Jarjar live ouvert en terminal'})
-  res.end(JSON.stringify({opened:true,tool:id,sessionId:session,pid}));return
+  res.end(JSON.stringify({opened:true,tool:id,sessionId:session,pid,repository:jr,module:jarjarModule}));return
  }
  const file=launchers[id];if(!file)throw Error('Outil non raccordé');if(launching.has(id))throw Error('Cet outil est déjà en cours de lancement');launchKey=id;launching.add(id);const root=realpathSync(repository());contained(root,file);
  for(const [session,p] of processes){if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}if(p.active&&p.tool===id){if(!p.native)throw Error('Une session de cet outil est active dans la page. La sélectionner ou l’arrêter avant d’ouvrir un terminal.');const live=liveSnapshot().sessions.find(s=>s.sessionId===session);if(live?.presence==='ended')continue;await focusTerminal(p.title,p.pid);res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return}}
