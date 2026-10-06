@@ -105,7 +105,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  res.end(JSON.stringify({ok:true}));return
  }
  const tool=data.tool||'obsidure';if(!['obsidure','brody','cli'].includes(tool))throw Error('Outil inconnu');const mode=data.mode;if(!['audit','audit-long','interactive'].includes(mode)|| (tool!=='obsidure'&&mode!=='interactive'))throw Error('Mission inconnue');
- if([...processes.entries()].some(([sid,p])=>p.active&&p.tool===tool&&(!p.native||liveSnapshot().sessions.find(s=>s.sessionId===sid)?.presence!=='ended')))throw Error('Une session est déjà en cours : arrête-la ou attends sa fin');
+ if([...processes.entries()].some(([sid,p])=>p.active&&p.tool===tool&&liveSnapshot().sessions.find(s=>s.sessionId===sid)?.presence!=='ended'))throw Error('Une session est déjà en cours : arrête-la ou attends sa fin');
  if(launching.has(tool))throw Error('Cet outil est déjà en cours de lancement');launchKey=tool;launching.add(tool);
  const root=realpathSync(repository());contained(root,launchers[tool]);const session=randomUUID();
  if(tool==='brody')await ensureBrodyApi(root);

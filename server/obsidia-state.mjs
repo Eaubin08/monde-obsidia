@@ -115,6 +115,27 @@ export function buildObsidiaState(snapshot,live){
     }
    }
   }
+  const gaps=[]
+  if(!mission.agentId)gaps.push('AGENT_UNLINKED')
+  if(!mission.sessionRefs.length)gaps.push('SESSION_UNLINKED')
+  if(!mission.decisionRecordRefs.length)gaps.push('DECISION_MISSING')
+  if(mission.decisionRecordRefs.length&&!mission.receiptRefs.length)gaps.push('RECEIPT_MISSING')
+  if(mission.receiptRefs.length&&!mission.impactRefs.length)gaps.push('IMPACT_UNPROVED')
+  mission.traceabilityGaps=gaps
+  mission.traceabilityStatus=gaps.length?'INCOMPLETE':'COMPLETE'
+  const priorityOrder=['DECISION_MISSING','RECEIPT_MISSING','IMPACT_UNPROVED','SESSION_UNLINKED','AGENT_UNLINKED']
+  mission.primaryBlocker=priorityOrder.find(x=>gaps.includes(x))||null
+  const advice={
+   DECISION_MISSING:'Obtenir ou relier une décision KX108 canonique avant toute suite.',
+   RECEIPT_MISSING:'Compléter la preuve d’exécution : aucun receipt scellé n’est relié.',
+   IMPACT_UNPROVED:'Vérifier et relier l’impact mesuré avant de considérer la mission clôturée.',
+   SESSION_UNLINKED:'Relier la session réelle via le même action_id pour restaurer la traçabilité.',
+   AGENT_UNLINKED:'Relier l’agent canonique responsable de la mission.'
+  }
+  mission.recommendedNextStep=mission.primaryBlocker?advice[mission.primaryBlocker]:'Aucune action de traçabilité requise.'
+  mission.priorityLevel=mission.primaryBlocker?(mission.primaryBlocker==='DECISION_MISSING'||mission.primaryBlocker==='RECEIPT_MISSING'?'HIGH':'MEDIUM'):'NONE'
+  mission.advisoryOnly=true
+  mission.decisionAuthority='KX108_ONLY'
   mission.status=mission.impactRefs.length?'IMPACT_PROVED':mission.receiptRefs.length?'RECEIPT_OBSERVED':mission.decisionRecordRefs.length?'DECISION_OBSERVED':'OBSERVED'
  }
  for(const p of snapshot?.proposals||[]){

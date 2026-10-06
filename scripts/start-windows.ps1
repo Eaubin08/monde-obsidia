@@ -5,8 +5,8 @@ try {
     . (Join-Path $PSScriptRoot 'windows-common.ps1')
     $node = Get-RequiredCommand 'node.exe'
     $npm = Get-RequiredCommand 'npm.cmd'
+    Stop-ProjectVite -Root $projectRoot
     if (-not (Test-ProjectInstallation -Root $projectRoot -Node $node)) {
-        Stop-ProjectVite -Root $projectRoot
         Install-ProjectDependencies -Root $projectRoot -Node $node -Npm $npm
     }
     Invoke-CheckedCommand -Command $npm -Arguments @('run', 'dev', '--', '--open')
