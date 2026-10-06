@@ -63,7 +63,7 @@ export function canonicalRuntimeEvidence(baseOverride=null){
   target_post_sha256:data.target_post_sha256,source_content_sha256:data.source_content_sha256,bytes_written:data.bytes_written,
   kx108_pre_decision_record_id:data.kx108_pre_decision_record_id,kx108_pre_decision_record_hash:data.kx108_pre_decision_record_hash,
   sealed_rollback_evidence_id:data.sealed_rollback_evidence_id,sealed_rollback_evidence_hash:data.sealed_rollback_evidence_hash,
-  decision_authority:data.decision_authority
+  decision_authority:data.decision_authority,realized_state_verified:data.realized_state_verified,pre_state:data.pre_state,post_state:data.post_state,kx108_pre_gate:data.kx108_pre_gate
  }))
  const rollbacks=safeJsonFiles(resolve(base,'sealed_rollback_evidence')).map(({name,data,observedAt})=>({
   file:name,observedAt,sealed_rollback_evidence_id:data.sealed_rollback_evidence_id,sealed_rollback_evidence_hash:data.sealed_rollback_evidence_hash,
