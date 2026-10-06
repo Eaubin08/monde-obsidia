@@ -13,6 +13,26 @@ try {
         Invoke-CheckedCommand -Command $git -Arguments @('fetch', 'origin', 'main')
         Invoke-CheckedCommand -Command $git -Arguments @('switch', 'main')
         Invoke-CheckedCommand -Command $git -Arguments @('pull', '--ff-only', 'origin', 'main')
+
+        $jarjarCandidates = @(
+            $env:OBSIDIA_JARJAR_ROOT,
+            (Join-Path $env:USERPROFILE 'Desktop\Jarvis-iron-obsidia-'),
+            'C:\Users\User\Desktop\Jarvis-iron-obsidia-'
+        ) | Where-Object { $_ } | Select-Object -Unique
+        $jarjarRoot = $jarjarCandidates | Where-Object { Test-Path -LiteralPath (Join-Path $_ '.git') } | Select-Object -First 1
+        if ($jarjarRoot) {
+            Write-Host "Mise a jour Jarjar : $jarjarRoot"
+            Push-Location -LiteralPath $jarjarRoot
+            try {
+                Invoke-CheckedCommand -Command $git -Arguments @('fetch', 'origin', 'main')
+                Invoke-CheckedCommand -Command $git -Arguments @('switch', 'main')
+                Invoke-CheckedCommand -Command $git -Arguments @('pull', '--ff-only', 'origin', 'main')
+            } finally {
+                Pop-Location
+            }
+        } else {
+            Write-Host 'Repo Jarjar local non trouve ; mise a jour Monde continue sans Jarjar.' -ForegroundColor Yellow
+        }
     }
     # Load the newly pulled helper before checking/installing dependencies.
     . (Join-Path $PSScriptRoot 'windows-common.ps1')
