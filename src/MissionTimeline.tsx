@@ -9,15 +9,17 @@ export default function MissionTimeline({mission,entities=[],onFocus,compact=fal
  const gate=(id:string)=>entities.find(e=>e.id===id)?.gate||label(id)
  const impact=(id:string)=>entities.find(e=>e.id===id)?.targetPath||label(id)
  const ref=(id:string,text:string)=>onFocus?<button key={id} onClick={()=>onFocus(id)}>{text}</button>:<code key={id}>{text}</code>
- return <div className="mission-timeline">
-  <h3>{compact?'Mission liée':'Timeline mission'} · {mission.actionId}</h3>
-  <p>Statut : {mission.status} · Traçabilité : <strong>{mission.traceabilityStatus}</strong></p>
-  {mission.traceabilityGaps.length>0&&<><p>Blockers : {mission.traceabilityGaps.join(' · ')}</p><p><strong>Priorité {mission.priorityLevel}</strong> · {mission.recommendedNextStep}</p><p className="muted">Conseil UI uniquement · {mission.decisionAuthority}</p></>}
-  {!compact&&<p>Agent : {mission.agentId?ref('agent:'+mission.agentId,mission.agentId):'non relié'}</p>}
-  <p>Session : {mission.sessionRefs.length?mission.sessionRefs.map(id=>ref(id,label(id))):'non reliée'}</p>
-  <p>Résultat : {mission.resultRefs.length?mission.resultRefs.map(id=>ref(id,label(id))):'non relié'}</p>
-  <p>Décision : {mission.decisionRecordRefs.length?mission.decisionRecordRefs.map(id=>ref(id,gate(id))):'absente'}</p>
-  <p>Preuve : {mission.receiptRefs.length?mission.receiptRefs.map(id=>ref(id,label(id))):'aucun receipt relié'}</p>
-  <p>Impact : {mission.impactRefs.length?mission.impactRefs.map(id=>ref(id,impact(id))):'aucun impact mesuré'}</p>
+ return <div className={"mission-timeline "+(compact?'compact':'')}>
+  <div className="mission-timeline-head"><div><span className="eyebrow">{compact?'CHAÎNE DE PREUVE':'MISSION / PREUVE'}</span><h3>{mission.actionId}</h3></div><span className={"trace-badge "+mission.traceabilityStatus.toLowerCase()}>{mission.traceabilityStatus}</span></div>
+  {!compact&&<p>Statut : <strong>{mission.status}</strong> · Autorité : {mission.decisionAuthority}</p>}
+  <div className="proof-chain">
+   <div className={mission.sessionRefs.length?'proof-step ok':'proof-step missing'}><small>1</small><strong>Session</strong><span>{mission.sessionRefs.length?mission.sessionRefs.map(id=>ref(id,label(id))):'non reliée'}</span></div>
+   <div className={mission.resultRefs.length?'proof-step ok':'proof-step missing'}><small>2</small><strong>Résultat</strong><span>{mission.resultRefs.length?mission.resultRefs.map(id=>ref(id,label(id))):'non relié'}</span></div>
+   <div className={mission.decisionRecordRefs.length?'proof-step ok':'proof-step missing'}><small>3</small><strong>Décision</strong><span>{mission.decisionRecordRefs.length?mission.decisionRecordRefs.map(id=>ref(id,gate(id))):'absente'}</span></div>
+   <div className={mission.receiptRefs.length?'proof-step ok':'proof-step missing'}><small>4</small><strong>Receipt</strong><span>{mission.receiptRefs.length?mission.receiptRefs.map(id=>ref(id,label(id))):'absent'}</span></div>
+   <div className={mission.impactRefs.length?'proof-step ok':'proof-step missing'}><small>5</small><strong>Impact</strong><span>{mission.impactRefs.length?mission.impactRefs.map(id=>ref(id,impact(id))):'non prouvé'}</span></div>
+  </div>
+  {mission.traceabilityGaps.length>0&&<div className="proof-warning"><strong>{mission.primaryBlocker||'Traçabilité incomplète'}</strong><p>{mission.recommendedNextStep}</p></div>}
+  {!compact&&<p className="muted">Agent : {mission.agentId?ref('agent:'+mission.agentId,mission.agentId):'non relié'} · conseil UI uniquement</p>}
  </div>
 }
