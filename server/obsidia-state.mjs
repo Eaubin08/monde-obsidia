@@ -160,7 +160,7 @@ export function buildObsidiaState(snapshot,live){
   decisionAuthority:'KX108_ONLY',
   sourceSchemas:['Event Schema Obsidia V4 (reference)','OBSIDIA_VISUAL_EVENT_V1 (runtime observation)','Git repository snapshot'],
   observedAt:live?.observedAt||snapshot?.observedAt||new Date().toISOString(),
-  entities,relations,sessions,missions,
+  entities,relations,sessions,missions,agentFamilies:snapshot?.agentFamilies||[],
   views:{
    world:{question:'OÙ ?',entityRefs:entities.filter(e=>['ecosystem','repository','domain','agent','session','proposal','receipt','objective','result','artifact','decision','decision_record','sealed_receipt','rollback_evidence','impact','mission'].includes(e.kind)).map(e=>e.id)},
    workspace:{question:'QUOI ?',entityRefs:entities.filter(e=>['repository','domain','proposal','receipt','session','objective','result','artifact','decision','decision_record','sealed_receipt','rollback_evidence','impact','mission'].includes(e.kind)).map(e=>e.id)},
