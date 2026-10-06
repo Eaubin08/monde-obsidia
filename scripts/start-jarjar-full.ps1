@@ -35,11 +35,33 @@ function Port-Open([int]$Port) {
     } catch { return $false }
 }
 
+function Resolve-Executable([string]$FilePath) {
+    if (Test-Path -LiteralPath $FilePath) {
+        return (Resolve-Path -LiteralPath $FilePath).Path
+    }
+
+    $command = Get-Command $FilePath -ErrorAction SilentlyContinue
+    if ($command -and $command.Source) {
+        return $command.Source
+    }
+
+    if ($FilePath -ieq 'powershell.exe') {
+        $candidate = Join-Path $PSHOME 'powershell.exe'
+        if (Test-Path -LiteralPath $candidate) {
+            return $candidate
+        }
+    }
+
+    throw "Executable introuvable: $FilePath"
+}
+
 function Start-Server([string]$Name, [string]$FilePath, [string[]]$Arguments, [string]$WorkingDirectory) {
     Write-Host "[$Name] lancement..." -ForegroundColor DarkCyan
 
+    $resolvedFile = Resolve-Executable $FilePath
+
     $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = $FilePath
+    $psi.FileName = $resolvedFile
     $psi.WorkingDirectory = $WorkingDirectory
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow = $true
@@ -96,7 +118,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $KernelDir 'node_modules\express')))
     Push-Location $KernelDir
     try { & npm.cmd ci; if ($LASTEXITCODE -ne 0) { throw "npm ci a echoue avec code $LASTEXITCODE" } }
     finally { Pop-Location }
-} else { Write-Host '[1/6] Dependances Kernel deja présentes.' -ForegroundColor DarkGray }
+} else { Write-Host '[1/6] Dependances Kernel deja presentes.' -ForegroundColor DarkGray }
 
 if (-not (Port-Open 3001)) {
     Write-Host '[2/6] Demarrage Kernel X108 :3001...' -ForegroundColor Cyan
