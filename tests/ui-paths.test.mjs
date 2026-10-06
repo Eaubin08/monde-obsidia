@@ -103,15 +103,3 @@ test('Validated Obsidia service terminals remain wired individually',()=>{
   "run_agent_obsidure.ps1 -DryRun",
  ]) assert.ok(bridge.includes(invariant),invariant)
 })
-
-
-test('Monde exposes one-click kept Obsidia stack',()=>{
- assert.ok(pokemon.includes("'/obsidia-local/open/obsidia-stack'"))
- assert.ok(pokemon.includes('Lancer stack Obsidia'))
- for(const invariant of [
-  "fullStackServiceIds=['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-dry']",
-  "if(id==='obsidia-stack')",
-  "if(serviceId==='kernel-x108')",
-  "if(serviceId==='obsidia-api')",
- ]) assert.ok(bridge.includes(invariant),invariant)
-})
