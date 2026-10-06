@@ -279,7 +279,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  for(const [id,v] of processes)if(processes.size>50&&!v.active)processes.delete(id);
  await awaitObserver(session,p);res.end(JSON.stringify({sessionId:session,started:true}));return
  }
- if(req.method==='GET'&&url.pathname==='/state'){const snap=snapshot(),live=liveSnapshot();res.end(JSON.stringify(buildObsidiaState(snap,live)));return}
+ if(req.method==='GET'&&url.pathname==='/state'){const snap=snapshot(),live=liveSnapshot();live.jarjar=jarjarObservedStatus();res.end(JSON.stringify(buildObsidiaState(snap,live)));return}
  if(req.method==='GET'&&url.pathname==='/live'){res.end(JSON.stringify(liveSnapshot()));return}
  if(req.method==='GET'&&url.pathname==='/reports'){
  const reports=existsSync(liveDirectory)?readdirSync(liveDirectory).filter(f=>/^[a-zA-Z0-9-]+\.report\.json$/.test(f)).slice(-100).flatMap(f=>{try{return [JSON.parse(readFileSync(resolve(liveDirectory,f),'utf8'))]}catch{return []}}):[];res.end(JSON.stringify({reports}));return
