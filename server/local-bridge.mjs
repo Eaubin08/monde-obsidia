@@ -224,6 +224,13 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
 
   const kernelDir=resolve(root,'runtime_terrain_bank_trading_gps'),kernelFile=resolve(kernelDir,'server.kernel.sealed.cjs')
   if(!existsSync(kernelFile))throw Error('Kernel X108 absent : '+kernelFile)
+  const kernelExpress=resolve(kernelDir,'node_modules','express')
+  if(!existsSync(kernelExpress)){
+   if(!existsSync(resolve(kernelDir,'package-lock.json')))throw Error('package-lock Kernel absent : '+resolve(kernelDir,'package-lock.json'))
+   const npmCmd=process.platform==='win32'?'npm.cmd':'npm'
+   execFileSync(npmCmd,['ci'],{cwd:kernelDir,stdio:'inherit',timeout:10*60*1000,windowsHide:false})
+   if(!existsSync(kernelExpress))throw Error('Installation Node Kernel incomplète : express absent après npm ci')
+  }
   const obsidiaPython=pythonFor(root)
 
   const dependencyResults=[]
