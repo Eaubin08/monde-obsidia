@@ -42,8 +42,9 @@ export default function LivePokemon(){
  const domains=state?.entities.filter(e=>e.kind==='domain')||[]
  const agentEntity=state?.entities.find(e=>e.id===selectedAgent)
 
- const openWorkspace=(s:Session)=>{sessionStorage.setItem('obsidia-selected-session',s.sessionId);const area=s.agentId==='brody'?'brody':s.agentId==='obsidure'?'obsidure':s.agentId==='cli'?'cli':'home';sessionStorage.setItem('obsidia-workspace-area',area);location.hash='workspace'}
- const chooseAgent=(id:string)=>{setSelectedAgent(id);const raw=id.startsWith('agent:')?id.slice(6):id;const running=sessions.find(s=>s.agentId===raw&&s.presence==='live');setSelected(running?.sessionId||'')}
+ const selectContext=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
+ const openWorkspace=(s:Session)=>{sessionStorage.setItem('obsidia-selected-session',s.sessionId);selectContext('session:'+s.sessionId);const area=s.agentId==='brody'?'brody':s.agentId==='obsidure'?'obsidure':s.agentId==='cli'?'cli':'home';sessionStorage.setItem('obsidia-workspace-area',area);location.hash='workspace'}
+ const chooseAgent=(id:string)=>{setSelectedAgent(id);selectContext(id);const raw=id.startsWith('agent:')?id.slice(6):id;const running=sessions.find(s=>s.agentId===raw&&s.presence==='live');setSelected(running?.sessionId||'')}
 
  return <section className="pokemon-v3">
   <header className="pokemon-v3-header">
@@ -64,19 +65,19 @@ export default function LivePokemon(){
       const resultRefs=entity?state?.relations.filter(r=>r.from===entity.id&&['PRODUCES_RESULT','PRODUCES_ARTIFACT'].includes(r.type))||[]:[]
       const resultRef=resultRefs[resultRefs.length-1]
       const result=resultRef?state?.entities.find(e=>e.id===resultRef.to):undefined
-      return <article key={s.sessionId} className={'pokemon-v3-card '+(selected===s.sessionId?'selected':'')} onClick={()=>{setSelected(s.sessionId);setSelectedAgent('')}}>
+      return <article key={s.sessionId} className={'pokemon-v3-card '+(selected===s.sessionId?'selected':'')} onClick={()=>{setSelected(s.sessionId);setSelectedAgent('');selectContext('session:'+s.sessionId)}}>
        <div className="pokemon-v3-card-head"><strong>{s.name}</strong><span>{phaseLabel(s.phase)}</span></div>
        <p className="pokemon-v3-objective">{s.objective||'En attente d’un objectif.'}</p>
        <div className="pokemon-context-row"><span><small>Sur</small><strong>{s.repository?.split(/[\\/]/).pop()||'contexte non observé'}</strong></span><span><small>Preuve</small><strong>{mission?mission.traceabilityStatus:'non reliée'}</strong></span></div>
        {result&&<p><small>Dernier résultat</small><br/><strong>{result.label}</strong></p>}
        {mission?.primaryBlocker&&<p className="pokemon-v3-blocker"><small>Blocage</small><br/>{mission.primaryBlocker}</p>}
-       <div className="workspace-v3-actions"><button onClick={e=>{e.stopPropagation();setSelected(s.sessionId)}}>Voir</button><button onClick={e=>{e.stopPropagation();openWorkspace(s)}}>Travailler avec lui</button><button onClick={e=>{e.stopPropagation();sessionStorage.setItem('obsidia-focus-entity',mission?.id||'session:'+s.sessionId);location.hash='world'}}>Monde</button></div>
+       <div className="workspace-v3-actions"><button onClick={e=>{e.stopPropagation();setSelected(s.sessionId);selectContext('session:'+s.sessionId)}}>Voir</button><button onClick={e=>{e.stopPropagation();openWorkspace(s)}}>Travailler avec lui</button><button onClick={e=>{e.stopPropagation();sessionStorage.setItem('obsidia-focus-entity',mission?.id||'session:'+s.sessionId);location.hash='world'}}>Monde</button></div>
       </article>
     })}</div>
    </main>
 
    <aside className="pokemon-v3-inspector">
-    {current?<><span className="eyebrow">AGENT SÉLECTIONNÉ</span><h2>{current.name}</h2><div className="pokemon-v3-state">{phaseLabel(current.phase)}</div><h3>Travail actuel</h3><p>{current.objective||'Aucun objectif observé.'}</p>{currentMission&&<><h3>Mission / preuve</h3><MissionTimeline compact mission={currentMission} entities={state?.entities||[]} onFocus={id=>{sessionStorage.setItem('obsidia-focus-entity',id);location.hash='world'}}/></>}<h3>Résultat</h3>{produced.length?produced.map((e,i)=><div key={i} className="pokemon-v3-result"><strong>{e?.label}</strong></div>):<p>Aucun résultat observé pour cette session.</p>}<div className="pokemon-v3-actions"><button onClick={()=>openWorkspace(current)}>Ouvrir son Workspace</button><button onClick={()=>{sessionStorage.setItem('obsidia-focus-entity',currentMission?.id||'session:'+current.sessionId);location.hash='world'}}>Voir dans le Monde</button></div><details><summary>Détails techniques</summary><p>Session : {current.sessionId}</p><p>Repo : {current.repository}</p><p>Dernier signal : {current.timestamp}</p>{current.events.map((e,i)=><div key={i}><small>{new Date(e.timestamp).toLocaleTimeString()} · {phaseLabel(e.phase)}</small><p>{e.message}</p></div>)}</details></>:agentEntity?<><span className="eyebrow">AGENT DÉCLARÉ</span><h2>{agentEntity.label}</h2><p>Aucune session live observée.</p><button onClick={()=>{sessionStorage.setItem('obsidia-focus-entity',agentEntity.id);location.hash='world'}}>Voir dans le Monde</button></>:<><span className="eyebrow">SÉLECTION</span><h2>Choisis un agent</h2><p>Sa mission, son état et son résultat apparaîtront ici.</p></>}
+    {current?<><span className="eyebrow">AGENT SÉLECTIONNÉ</span><h2>{current.name}</h2><div className="pokemon-v3-state">{phaseLabel(current.phase)}</div><h3>Travail actuel</h3><p>{current.objective||'Aucun objectif observé.'}</p>{currentMission&&<><h3>Mission / preuve</h3><MissionTimeline compact mission={currentMission} entities={state?.entities||[]} onFocus={id=>{selectContext(id);location.hash='world'}}/></>}<h3>Résultat</h3>{produced.length?produced.map((e,i)=><div key={i} className="pokemon-v3-result"><strong>{e?.label}</strong></div>):<p>Aucun résultat observé pour cette session.</p>}<div className="pokemon-v3-actions"><button onClick={()=>openWorkspace(current)}>Ouvrir son Workspace</button><button onClick={()=>{selectContext(currentMission?.id||'session:'+current.sessionId);location.hash='world'}}>Voir dans le Monde</button></div><details><summary>Détails techniques</summary><p>Session : {current.sessionId}</p><p>Repo : {current.repository}</p><p>Dernier signal : {current.timestamp}</p>{current.events.map((e,i)=><div key={i}><small>{new Date(e.timestamp).toLocaleTimeString()} · {phaseLabel(e.phase)}</small><p>{e.message}</p></div>)}</details></>:agentEntity?<><span className="eyebrow">AGENT DÉCLARÉ</span><h2>{agentEntity.label}</h2><p>Aucune session live observée.</p><button onClick={()=>{selectContext(agentEntity.id);location.hash='world'}}>Voir dans le Monde</button></>:<><span className="eyebrow">SÉLECTION</span><h2>Choisis un agent</h2><p>Sa mission, son état et son résultat apparaîtront ici.</p></>}
    </aside>
   </div>
 
