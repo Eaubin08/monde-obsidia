@@ -17,7 +17,7 @@ Prérequis : Node.js/npm, Git, Python et les dépendances du dépôt Obsidia. Le
 
 ## Mise à jour
 
-Fermer le serveur de l’interface avec Ctrl+C, puis double-cliquer `METTRE_A_JOUR.cmd` dans le même dossier. Il fait `git pull --ff-only`, installe les dépendances et relance l’interface. Aucun nouveau ZIP ou dossier de version.
+Double-cliquer `METTRE_A_JOUR.cmd` dans le même dossier. Le lanceur arrête le Vite de ce projet et ses processus enfants, fait `git pull --ff-only`, puis relance. Il installe les dépendances si le lockfile change ou si leur chargement est incomplet. Il vérifie leur chargement après installation et s’arrête sur un échec. `DEMARRER.cmd` détecte aussi une installation incomplète, même lorsque le dossier `node_modules` existe. Aucun nouveau ZIP ou dossier de version.
 
 ## Sessions et tests depuis la page
 

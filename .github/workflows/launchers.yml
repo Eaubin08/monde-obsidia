@@ -26,3 +26,6 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
+      - name: Verify Windows updater and installation failures
+        if: runner.os == 'Windows'
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\update-windows.ps1
