@@ -25,7 +25,7 @@ export function buildObsidiaState(snapshot,live){
  }
  for(const s of live?.sessions||[]){
   const agentId=stable('agent',s.agentId)
-  if(!agents.has(agentId)){
+  if(!agents.has(agentId)&&!entities.find(e=>e.id===agentId)){
    const agent={id:agentId,kind:'agent',label:s.name||s.agentId,agentId:s.agentId,source:'runtime'}
    agents.set(agentId,agent);entities.push(agent);relations.push({from:'obsidia',type:'HAS_AGENT',to:agentId})
   }
