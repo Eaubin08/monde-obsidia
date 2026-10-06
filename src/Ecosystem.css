@@ -254,6 +254,8 @@ linear-gradient(90deg,rgba(69,104,77,.08) 1px,transparent 1px),
  --obs-blue:#6ea8e8;--obs-blue-bg:#142237;
  --obs-violet:#a98ce5;--obs-violet-bg:#211935;
  --obs-gray:#7f8b83;--obs-gray-bg:#171b18;
+ --obs-cyan:#69c6d9;--obs-cyan-bg:#10282d;
+ --obs-orange:#e6a15a;--obs-orange-bg:#302012;
 }
 
 /* Pokémon status summary */
@@ -309,3 +311,26 @@ linear-gradient(90deg,rgba(69,104,77,.08) 1px,transparent 1px),
 .world-zone.selected,.pokemon-scale-bar button[aria-pressed="true"],.pokemon-family-grid button.selected{
  box-shadow:0 0 0 2px rgba(255,255,255,.16) inset,0 0 0 1px currentColor;
 }
+
+/* Data / memory / provenance / sources = cyan */
+.zone-knowledge,.zone-layers,.global-search{border-color:var(--obs-cyan);background:var(--obs-cyan-bg)}
+.zone-knowledge>span,.zone-knowledge>strong,.zone-layers>span,.zone-layers>strong,
+.global-search .eyebrow,.global-search-results button>span{color:var(--obs-cyan)}
+.world-layer-reader,.layer-explorer,.source-content{border-color:var(--obs-cyan)}
+.world-object-card[data-kind="repository"],.world-object-card[data-kind="artifact"],
+.world-object-card[data-kind="objective"],.world-object-card[data-kind="result"]{border-color:var(--obs-cyan);background:var(--obs-cyan-bg)}
+
+/* Domains / physical terrain = orange */
+.zone-domains{border-color:var(--obs-orange);background:var(--obs-orange-bg)}
+.zone-domains>span,.zone-domains>strong{color:var(--obs-orange)}
+.world-domain-agents,.world-object-card.domain-card{border-color:var(--obs-orange)}
+.pokemon-family-grid button[data-kind="physical-workstream"],
+.pokemon-family-grid button[data-kind="sigma-domain"]{border-color:var(--obs-orange);background:var(--obs-orange-bg)}
+.pokemon-family-grid button[data-kind="physical-workstream"]>span,
+.pokemon-family-grid button[data-kind="sigma-domain"]>span{color:var(--obs-orange)}
+
+/* Intensity / certainty language */
+.semantic-outline{background:transparent!important}
+.semantic-muted{opacity:.58}
+.semantic-future{border-style:dashed!important}
+.semantic-live{box-shadow:0 0 18px rgba(118,201,138,.12)}
