@@ -11,6 +11,17 @@ export {repository} from './paths.mjs'
 export function contained(root,path){const r=realpathSync(root),p=realpathSync(resolve(r,path));const rel=relative(r,p);if(rel.startsWith('..'+sep)||rel==='..'||rel.startsWith(sep))throw Error('Chemin hors projet');return p}
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
 const git=(root,...args)=>execFileSync('git',['-C',root,...args],{encoding:'utf8',maxBuffer:12*1024*1024,timeout:10000,windowsHide:true}).trim()
+function sigmaDomains(root){
+ try{
+  const path=resolve(root,'sigma','registry.py');if(!existsSync(path))return []
+  const text=readFileSync(path,'utf8')
+  const tuple=text.match(/_CANONICAL_DOMAINS\s*=\s*\(([^)]*)\)/s)?.[1]||''
+  const ids=[...tuple.matchAll(/["']([^"']+)["']/g)].map(m=>m[1])
+  const displayBlock=text.match(/_DOMAIN_DISPLAY_NAMES[^=]*=\s*\{([\s\S]*?)\n\}/)?.[1]||''
+  const displays=Object.fromEntries([...displayBlock.matchAll(/["']([^"']+)["']\s*:\s*["']([^"']+)["']/g)].map(m=>[m[1],m[2]]))
+  return ids.map(id=>({id,displayName:displays[id]||id,source:'sigma/registry.py',sourcePath:`sigma/domains/${id}_agents.py`,runtimeFilePresent:existsSync(resolve(root,'sigma','domains',id+'_agents.py'))}))
+ }catch{return []}
+}
 export function snapshot(root=repository()){
  if(!existsSync(root))return {available:false,error:'Copie locale du dépôt non trouvée',observedAt:new Date().toISOString(),files:[],proposals:[],tools:[]}
  const sha=git(root,'rev-parse','HEAD'),branch=git(root,'branch','--show-current');
@@ -20,7 +31,7 @@ export function snapshot(root=repository()){
    try{const p=contained(root,`_PATCH_PROPOSALS/${item.name}/proposal.json`);if(statSync(p).size>1024*1024)continue;const data=JSON.parse(readFileSync(p,'utf8'));proposals.push({id:item.name,path:`_PATCH_PROPOSALS/${item.name}/proposal.json`,data,observedAt:statSync(p).mtime.toISOString(),receipt:existsSync(resolve(dir,item.name,'RECEIPT.md'))?`_PATCH_PROPOSALS/${item.name}/RECEIPT.md`:null})}catch{}
   }
  }
- return {available:true,repository:root,sha,branch,observedAt:new Date().toISOString(),files,proposals,agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null}))}
+ return {available:true,repository:root,sha,branch,observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null}))}
 }
 const processes=new Map(),launching=new Set();
 function markEnd(id,message){try{const log=resolve(liveDirectory,id+'.jsonl'),last=JSON.parse(readFileSync(log,'utf8').trim().split('\n').at(-1));if(last.kind!=='session_end')appendFileSync(log,JSON.stringify({...last,timestamp:new Date().toISOString(),kind:'session_end',phase:'PROCESS_EXIT',status:'error',exitCode:null,message})+'\n')}catch{}}
