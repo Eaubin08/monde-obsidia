@@ -6,11 +6,42 @@ import {randomUUID} from 'node:crypto'
 import {execFileSync,spawn} from 'node:child_process'
 import {existsSync,realpathSync,readFileSync,readdirSync,statSync,appendFileSync} from 'node:fs'
 import {resolve,relative,sep} from 'node:path'
+import {homedir} from 'node:os'
 import {repository,observer,pythonFor} from './paths.mjs'
 export {repository} from './paths.mjs'
 export function contained(root,path){const r=realpathSync(root),p=realpathSync(resolve(r,path));const rel=relative(r,p);if(rel.startsWith('..'+sep)||rel==='..'||rel.startsWith(sep))throw Error('Chemin hors projet');return p}
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
 const git=(root,...args)=>execFileSync('git',['-C',root,...args],{encoding:'utf8',maxBuffer:12*1024*1024,timeout:10000,windowsHide:true}).trim()
+function safeJsonFiles(dir,limit=100){
+ if(!existsSync(dir))return []
+ return readdirSync(dir).filter(x=>x.endsWith('.json')).slice(-limit).flatMap(name=>{try{const p=resolve(dir,name);if(statSync(p).size>2*1024*1024)return [];return [{name,data:JSON.parse(readFileSync(p,'utf8')),observedAt:statSync(p).mtime.toISOString()}]}catch{return []}})
+}
+function canonicalRuntimeEvidence(){
+ const local=process.env.LOCALAPPDATA||resolve(homedir(),'AppData','Local'),base=resolve(local,'Obsidia')
+ const decisions=safeJsonFiles(resolve(base,'kx108_decisions')).map(({name,data,observedAt})=>({
+  file:name,observedAt,decision_record_id:data.decision_record_id,decision_record_hash:data.decision_record_hash,
+  decision_phase:data.decision_phase||'POST_EXECUTION',decision_id:data.decision_id,trace_id:data.trace_id,domain:data.domain,
+  x108_gate:data.x108_gate,reason_code:data.reason_code,severity:data.severity,market_verdict:data.market_verdict,
+  decision_authority:data.decision_authority,agent_id:data.agent_id,action_id:data.action_id,context_packet_id:data.context_packet_id,
+  sealed_apply_receipt_id:data.sealed_apply_receipt_id,sealed_apply_receipt_hash:data.sealed_apply_receipt_hash,
+  sealed_rollback_evidence_id:data.sealed_rollback_evidence_id,sealed_rollback_evidence_hash:data.sealed_rollback_evidence_hash
+ }))
+ const receipts=safeJsonFiles(resolve(base,'sealed_receipts')).map(({name,data,observedAt})=>({
+  file:name,observedAt,sealed_apply_receipt_id:data.sealed_apply_receipt_id,sealed_apply_receipt_hash:data.sealed_apply_receipt_hash,
+  created_at:data.created_at,status:data.status,target_path:data.target_path,target_pre_sha256:data.target_pre_sha256,
+  target_post_sha256:data.target_post_sha256,source_content_sha256:data.source_content_sha256,bytes_written:data.bytes_written,
+  kx108_pre_decision_record_id:data.kx108_pre_decision_record_id,kx108_pre_decision_record_hash:data.kx108_pre_decision_record_hash,
+  sealed_rollback_evidence_id:data.sealed_rollback_evidence_id,sealed_rollback_evidence_hash:data.sealed_rollback_evidence_hash,
+  decision_authority:data.decision_authority
+ }))
+ const rollbacks=safeJsonFiles(resolve(base,'sealed_rollback_evidence')).map(({name,data,observedAt})=>({
+  file:name,observedAt,sealed_rollback_evidence_id:data.sealed_rollback_evidence_id,sealed_rollback_evidence_hash:data.sealed_rollback_evidence_hash,
+  created_at:data.created_at,target_path:data.target_path,pre_write_sha256:data.pre_write_sha256,pre_write_size:data.pre_write_size,
+  source_content_sha256:data.source_content_sha256,kx108_pre_decision_record_id:data.kx108_pre_decision_record_id,
+  kx108_pre_decision_record_hash:data.kx108_pre_decision_record_hash,decision_authority:data.decision_authority,sealed:data.sealed===true
+ }))
+ return {decisions,receipts,rollbacks}
+}
 function sigmaDomains(root){
  try{
   const path=resolve(root,'sigma','registry.py');if(!existsSync(path))return []
@@ -38,7 +69,7 @@ export function snapshot(root=repository()){
    try{const p=contained(root,`_PATCH_PROPOSALS/${item.name}/proposal.json`);if(statSync(p).size>1024*1024)continue;const data=JSON.parse(readFileSync(p,'utf8'));proposals.push({id:item.name,path:`_PATCH_PROPOSALS/${item.name}/proposal.json`,data,observedAt:statSync(p).mtime.toISOString(),receipt:existsSync(resolve(dir,item.name,'RECEIPT.md'))?`_PATCH_PROPOSALS/${item.name}/RECEIPT.md`:null})}catch{}
   }
  }
- return {available:true,repository:root,sha,branch,observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null}))}
+ return {available:true,repository:root,sha,branch,observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),runtimeEvidence:canonicalRuntimeEvidence(),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null}))}
 }
 const processes=new Map(),launching=new Set();
 function markEnd(id,message){try{const log=resolve(liveDirectory,id+'.jsonl'),last=JSON.parse(readFileSync(log,'utf8').trim().split('\n').at(-1));if(last.kind!=='session_end')appendFileSync(log,JSON.stringify({...last,timestamp:new Date().toISOString(),kind:'session_end',phase:'PROCESS_EXIT',status:'error',exitCode:null,message})+'\n')}catch{}}
