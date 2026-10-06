@@ -2,7 +2,7 @@ import {useEffect,useState} from 'react'
 
 type JarjarStatus={
  runtime:string
- process?:{sessionId:string;pid:number;active?:boolean}|null
+ process?:{sessionId:string;pid:number;active?:boolean;output?:string}|null
  cockpit?:{
   runtime:string;pid:number;authority:string;decision_authority:string
   last_transcript:string;last_response:string;response_source:string;action_verdict:string
@@ -71,6 +71,7 @@ export default function JarjarCockpit(){
   </div>
 
   {message&&<p className="jarjar-message" role="status">{message}</p>}
+  {(status?.process?.output||status?.error)&&<details className="jarjar-observation"><summary>Diagnostic démarrage Jarjar</summary><pre>{status?.process?.output||status?.error}</pre></details>}
 
   <div className="jarjar-status-grid">
    <article><span>GOUVERNANCE</span><strong>{cockpit?.decision_authority||status?.decisionAuthority||'KX108_ONLY'}</strong><small>Jarjar authority = NONE</small></article>
