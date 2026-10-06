@@ -13,11 +13,34 @@ export function contained(root,path){const r=realpathSync(root),p=realpathSync(r
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
 const jarjarRoot=()=>resolve(process.env.OBSIDIA_JARJAR_ROOT||resolve(homedir(),'Desktop','Jarvis-iron-obsidia-'))
 const jarjarPython=()=>process.env.OBSIDIA_JARJAR_PYTHON||resolve(homedir(),'.cache','codex-runtimes','codex-primary-runtime','dependencies','python','python.exe')
-const jarjarModule='scripts.run_jarjar_live'
+const jarjarModule='scripts.run_jarjar_cockpit'
+const jarjarModuleFile='scripts/run_jarjar_cockpit.py'
+const jarjarCockpitUrl=()=>process.env.JARJAR_COCKPIT_URL||'http://127.0.0.1:47822'
 function emitJarjar(session,kind,fields={}){
  mkdirSync(liveDirectory,{recursive:true})
  const event={schema:'OBSIDIA_VISUAL_EVENT_V1',sessionId:session,agentId:'jarjar',name:'Jarjar',repository:jarjarRoot(),timestamp:new Date().toISOString(),kind,status:'thinking',phase:'STARTING',message:'Jarjar runtime',objective:null,...fields}
  appendFileSync(resolve(liveDirectory,session+'.jsonl'),JSON.stringify(event)+'\n')
+}
+async function jarjarRequest(path,{method='GET',data=null,timeout=120000}={}){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout)
+ try{
+  const response=await fetch(jarjarCockpitUrl()+path,{method,headers:data?{'Content-Type':'application/json'}:undefined,body:data?JSON.stringify(data):undefined,signal:controller.signal})
+  const packet=await response.json()
+  if(!response.ok)throw Error(packet?.error||('Jarjar cockpit HTTP '+response.status))
+  return packet
+ }finally{clearTimeout(timer)}
+}
+function activeJarjarProcess(){return [...processes.entries()].find(([,p])=>p.active&&p.tool==='jarjar')}
+function latestEvidence(){
+ const evidence=canonicalRuntimeEvidence()
+ const sort=(rows)=>[...rows].sort((a,b)=>Date.parse(b.observedAt||b.created_at||0)-Date.parse(a.observedAt||a.created_at||0))
+ const jarjarDecisions=sort(evidence.decisions.filter(x=>String(x.agent_id||'').toLowerCase()==='jarjar'))
+ return {
+  scope:jarjarDecisions.length?'jarjar':'recent_global',
+  decisions:(jarjarDecisions.length?jarjarDecisions:sort(evidence.decisions)).slice(0,8),
+  receipts:sort(evidence.receipts).slice(0,8),
+  rollbacks:sort(evidence.rollbacks).slice(0,8)
+ }
 }
 const git=(root,...args)=>execFileSync('git',['-C',root,...args],{encoding:'utf8',maxBuffer:12*1024*1024,timeout:10000,windowsHide:true}).trim()
 function safeJsonFiles(dir,limit=100){
@@ -117,7 +140,7 @@ function snapshot(root=repository()){
    try{const p=contained(root,`_PATCH_PROPOSALS/${item.name}/proposal.json`);if(statSync(p).size>1024*1024)continue;const data=JSON.parse(readFileSync(p,'utf8'));proposals.push({id:item.name,path:`_PATCH_PROPOSALS/${item.name}/proposal.json`,data,observedAt:statSync(p).mtime.toISOString(),receipt:existsSync(resolve(dir,item.name,'RECEIPT.md'))?`_PATCH_PROPOSALS/${item.name}/RECEIPT.md`:null})}catch{}
   }
  }
- return {available:true,repository:root,sha,branch,worktrees:gitWorktrees(root),observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),agentFamilies:agentFamilies(root),runtimeEvidence:canonicalRuntimeEvidence(),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:[...Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null})),{id:'jarjar',path:jarjarModule,available:process.platform==='win32'&&existsSync(jarjarRoot())&&existsSync(jarjarPython()),reason:process.platform!=='win32'?'Windows requis':!existsSync(jarjarRoot())?'Repo Jarjar absent':!existsSync(jarjarPython())?'Python Jarjar absent':null}]}
+ return {available:true,repository:root,sha,branch,worktrees:gitWorktrees(root),observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),agentFamilies:agentFamilies(root),runtimeEvidence:canonicalRuntimeEvidence(),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:[...Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null})),{id:'jarjar',path:jarjarModule,available:process.platform==='win32'&&existsSync(jarjarRoot())&&existsSync(resolve(jarjarRoot(),jarjarModuleFile))&&existsSync(jarjarPython()),reason:process.platform!=='win32'?'Windows requis':!existsSync(jarjarRoot())?'Repo Jarjar absent':!existsSync(resolve(jarjarRoot(),jarjarModuleFile))?'Bridge cockpit Jarjar absent':!existsSync(jarjarPython())?'Python Jarjar absent':null}]}
 }
 const processes=new Map(),launching=new Set();
 function markEnd(id,message){try{const log=resolve(liveDirectory,id+'.jsonl'),last=JSON.parse(readFileSync(log,'utf8').trim().split('\n').at(-1));if(last.kind!=='session_end')appendFileSync(log,JSON.stringify({...last,timestamp:new Date().toISOString(),kind:'session_end',phase:'PROCESS_EXIT',status:'error',exitCode:null,message})+'\n')}catch{}}
@@ -143,6 +166,23 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  const url=new URL(req.url,'http://localhost');res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');
  try{
  if(req.method==='GET'&&url.pathname==='/services'){res.end(JSON.stringify({brody:await brodyServiceStatus()}));return}
+ if(url.pathname.startsWith('/jarjar/')){
+  if(req.method!=='GET'&&req.headers.origin!==`http://${req.headers.host}`)throw Error('Origine refusée')
+  const active=activeJarjarProcess()
+  if(req.method==='GET'&&url.pathname==='/jarjar/status'){
+   let cockpit=null,error=null
+   try{cockpit=await jarjarRequest('/status',{timeout:1200})}catch(e){error=e.message}
+   res.end(JSON.stringify({runtime:cockpit?.runtime||(active?'STARTING':'STOPPED'),process:active?{sessionId:active[0],pid:active[1].child?.pid||active[1].pid||0,active:true}:null,cockpit,error,evidence:latestEvidence(),authority:'NONE',decisionAuthority:'KX108_ONLY'}));return
+  }
+  if(req.method==='GET'&&url.pathname==='/jarjar/health'){
+   const health=await jarjarRequest('/health',{timeout:2500});res.end(JSON.stringify({...health,process:active?{sessionId:active[0],pid:active[1].child?.pid||active[1].pid||0}:null}));return
+  }
+  if(req.method==='GET'&&url.pathname==='/jarjar/capabilities'){res.end(JSON.stringify(await jarjarRequest('/capabilities',{timeout:2500})));return}
+  if(req.method==='POST'&&url.pathname==='/jarjar/text'){const data=await body(req);if(typeof data.text!=='string'||!data.text.trim()||data.text.length>8192)throw Error('Texte Jarjar invalide');res.end(JSON.stringify(await jarjarRequest('/text',{method:'POST',data:{text:data.text},timeout:120000})));return}
+  if(req.method==='POST'&&url.pathname==='/jarjar/voice/toggle'){res.end(JSON.stringify(await jarjarRequest('/voice/toggle',{method:'POST',data:{},timeout:5000})));return}
+  if(req.method==='POST'&&url.pathname==='/jarjar/voice/listen'){res.end(JSON.stringify(await jarjarRequest('/voice/listen',{method:'POST',data:{},timeout:130000})));return}
+  if(req.method==='POST'&&url.pathname==='/jarjar/observe'){res.end(JSON.stringify(await jarjarRequest('/observe',{method:'POST',data:{},timeout:130000})));return}
+ }
  if(req.method==='GET'&&url.pathname==='/processes'){await Promise.all([...processes.entries()].filter(([,p])=>p.native&&p.active).map(async ([id,p])=>{p.active=await terminalAlive(p.pid);if(!p.active)markEnd(id,'Terminal Windows fermé')}));res.end(JSON.stringify({processes:[...processes.entries()].map(([id,p])=>({sessionId:id,active:p.active,runtimeActive:p.active&&liveSnapshot().sessions.find(s=>s.sessionId===id)?.presence!=='ended',exitCode:p.exitCode,native:!!p.native,tool:p.tool,title:p.title,output:p.native&&existsSync(resolve(liveDirectory,id+'.console.txt'))?readFileSync(resolve(liveDirectory,id+'.console.txt'),'utf8').slice(-32000):p.output}))}));return}
  if(req.method==='POST'&&(url.pathname==='/run'||url.pathname.startsWith('/input/')||url.pathname.startsWith('/stop/')||url.pathname.startsWith('/focus/'))){
  if(req.headers.origin!==`http://${req.headers.host}`)throw Error('Origine refusée');
@@ -155,7 +195,28 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  const tool=data.tool||'obsidure';if(!['obsidure','brody','cli','jarjar'].includes(tool))throw Error('Outil inconnu');const mode=data.mode;if(!['audit','audit-long','interactive'].includes(mode)|| (tool!=='obsidure'&&mode!=='interactive'))throw Error('Mission inconnue');
  if([...processes.entries()].some(([sid,p])=>p.active&&p.tool===tool&&liveSnapshot().sessions.find(s=>s.sessionId===sid)?.presence!=='ended'))throw Error('Une session est déjà en cours : arrête-la ou attends sa fin');
  if(launching.has(tool))throw Error('Cet outil est déjà en cours de lancement');launchKey=tool;launching.add(tool);
- const root=realpathSync(repository());contained(root,launchers[tool]);const session=randomUUID();
+ const root=realpathSync(repository());const session=randomUUID();
+ if(tool==='jarjar'){
+  const jr=jarjarRoot()
+  if(process.platform!=='win32')throw Error('Jarjar local requiert Windows')
+  if(!existsSync(jr))throw Error('Repo Jarjar absent : '+jr)
+  if(!existsSync(resolve(jr,jarjarModuleFile)))throw Error('Bridge cockpit Jarjar absent : '+resolve(jr,jarjarModuleFile))
+  if(!existsSync(jarjarPython()))throw Error('Python Jarjar absent : '+jarjarPython())
+  emitJarjar(session,'session_start',{pid:0,status:'starting',phase:'STARTING',message:'Démarrage cockpit Jarjar'})
+  const child=spawn(jarjarPython(),['-m',jarjarModule],{cwd:jr,stdio:['ignore','pipe','pipe'],windowsHide:true,env:{...process.env,PYTHONUNBUFFERED:'1',PYTHONIOENCODING:'utf-8'}})
+  const p={child,active:true,output:'',exitCode:null,tool};processes.set(session,p)
+  const append=x=>{p.output=(p.output+x.toString('utf8')).slice(-32000)};child.stdout.on('data',append);child.stderr.on('data',append)
+  let pulse=null
+  child.on('spawn',()=>{
+   emitJarjar(session,'activity',{pid:child.pid,status:'thinking',phase:'STARTING',message:'Jarjar initialise voix, cognition et perception'})
+   pulse=setInterval(async()=>{if(!p.active)return;try{const s=await jarjarRequest('/status',{timeout:900});const hud=s.hud||{};emitJarjar(session,'heartbeat',{pid:child.pid,status:hud.state==='error'?'error':hud.state==='idle'?'waiting':'thinking',phase:String(hud.state||'RUNNING').toUpperCase(),message:s.last_response||'Jarjar cockpit connecté',objective:s.last_transcript||null,result:{response_source:s.response_source,action_verdict:s.action_verdict,decision_authority:'KX108_ONLY'}})}catch{emitJarjar(session,'heartbeat',{pid:child.pid,status:'thinking',phase:'STARTING',message:'Jarjar démarre son cockpit'})}},1000)
+  })
+  child.on('error',e=>{p.active=false;append('Erreur de lancement : '+e.message);if(pulse)clearInterval(pulse);emitJarjar(session,'runtime_error',{pid:child.pid||0,status:'error',phase:'DEGRADED',message:e.message})})
+  child.on('close',code=>{p.active=false;p.exitCode=code;if(pulse)clearInterval(pulse);emitJarjar(session,'session_end',{pid:child.pid||0,status:code===0?'success':'error',phase:'PROCESS_EXIT',message:'Jarjar arrêté — code '+code,exitCode:code})})
+  await new Promise((ok,no)=>{child.once('spawn',ok);child.once('error',no)})
+  res.end(JSON.stringify({sessionId:session,started:true,pid:child.pid}));return
+ }
+ contained(root,launchers[tool]);
  if(tool==='brody')await ensureBrodyApi(root);
  const args=[observer,'--repo',root,'--output',liveDirectory,'--agent',tool,'--session',session];
  if(mode!=='interactive')args.push('--audit','--audit-cycles',mode==='audit-long'?'20':'1','--audit-interval',mode==='audit-long'?'4':'0');
