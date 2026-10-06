@@ -7,7 +7,6 @@ const pokemon=readFileSync(resolve(process.cwd(),'src/LivePokemon.tsx'),'utf8')
 const ecosystem=readFileSync(resolve(process.cwd(),'src/Ecosystem.tsx'),'utf8')
 const workspace=readFileSync(resolve(process.cwd(),'src/ToolWorkspace.tsx'),'utf8')
 const bridge=readFileSync(resolve(process.cwd(),'server/local-bridge.mjs'),'utf8')
-const jarjar=readFileSync(resolve(process.cwd(),'src/JarjarCockpit.tsx'),'utf8')
 
 test('Pokémon launcher and cross-view paths remain wired',()=>{
  for(const invariant of [
@@ -54,24 +53,20 @@ test('Pokémon visual order prioritizes work before population catalog',()=>{
 })
 
 
-test('Jarjar cockpit stays on canonical governed paths',()=>{
+
+test('Jarjar stays a launcher in Pokemon and uses the proven live runtime',()=>{
  for(const invariant of [
-  "scripts.run_jarjar_cockpit",
-  "/jarjar/status",
-  "/jarjar/health",
-  "/jarjar/capabilities",
-  "/jarjar/text",
-  "/jarjar/voice/toggle",
-  "/jarjar/voice/listen",
-  "/jarjar/observe",
-  "decisionAuthority:'KX108_ONLY'",
+  "['jarjar','Jarjar',true]",
+  "startSession(id,false)",
+  "startSession(id,true)",
+ ]) assert.ok(pokemon.includes(invariant),invariant)
+ for(const invariant of [
+  "scripts.run_jarjar_live",
+  "C:\\Users\\User\\Desktop\\Jarvis-iron-obsidia-",
+  "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+  "JARJAR_BOUNDED_STRUCTURED_ROUTING_V0:'1'",
+  "JARJAR_LOCAL_BRODY:'1'",
  ]) assert.ok(bridge.includes(invariant),invariant)
- for(const invariant of [
-  'START JARJAR','STOP JARJAR','RESTART JARJAR',
-  '/obsidia-local/jarjar/text',
-  '/obsidia-local/jarjar/voice/toggle',
-  '/obsidia-local/jarjar/voice/listen',
-  '/obsidia-local/jarjar/observe',
-  'Jarjar authority = NONE',
- ]) assert.ok(jarjar.includes(invariant),invariant)
+ assert.ok(!pokemon.includes('JarjarCockpit'))
+ assert.ok(!bridge.includes('/jarjar/status'))
 })
