@@ -30,7 +30,7 @@ export function buildObsidiaState(snapshot,live){
    agents.set(agentId,agent);entities.push(agent);relations.push({from:'obsidia',type:'HAS_AGENT',to:agentId})
   }
   const sessionId=stable('session',s.sessionId)
-  const session={id:sessionId,kind:'session',label:`${s.name||s.agentId} · ${s.sessionId.slice(0,8)}`,sessionId:s.sessionId,agentId:s.agentId,status:s.status,phase:s.phase,presence:s.presence,objective:s.objective||null,timestamp:s.timestamp,repository:s.repository||snapshot?.repository||null,source:'OBSIDIA_VISUAL_EVENT_V1',events:s.events||[]}
+  const session={id:sessionId,kind:'session',label:`${s.name||s.agentId} · ${s.sessionId.slice(0,8)}`,sessionId:s.sessionId,agentId:s.agentId,name:s.name||s.agentId,pid:s.pid||0,status:s.status,phase:s.phase,presence:s.presence,message:s.message||'',objective:s.objective||null,timestamp:s.timestamp,repository:s.repository||snapshot?.repository||null,exitCode:s.exitCode,source:'OBSIDIA_VISUAL_EVENT_V1',events:s.events||[]}
   sessions.push(session);entities.push(session)
   relations.push({from:agentId,type:'RUNS',to:sessionId},{from:sessionId,type:'OPERATES_IN',to:repositoryId})
   const domainId=sigmaAgentDomains[s.agentId]
