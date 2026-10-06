@@ -11,6 +11,11 @@ export function buildObsidiaState(snapshot,live){
  const relations=[{from:'obsidia',type:'CONTAINS',to:repositoryId}]
  const agents=new Map()
  const sessions=[]
+ for(const d of snapshot?.sigmaDomains||[]){
+  const domainId=stable('domain',d.id)
+  entities.push({id:domainId,kind:'domain',label:d.displayName,domainId:d.id,source:d.source,sourcePath:d.sourcePath,runtimeFilePresent:d.runtimeFilePresent,canonicalRegistry:'F60'})
+  relations.push({from:'obsidia',type:'HAS_DOMAIN',to:domainId},{from:repositoryId,type:'DECLARES_DOMAIN',to:domainId})
+ }
  for(const s of live?.sessions||[]){
   const agentId=stable('agent',s.agentId)
   if(!agents.has(agentId)){
@@ -46,8 +51,8 @@ export function buildObsidiaState(snapshot,live){
   observedAt:live?.observedAt||snapshot?.observedAt||new Date().toISOString(),
   entities,relations,sessions,
   views:{
-   world:{question:'OÙ ?',entityRefs:entities.map(e=>e.id)},
-   workspace:{question:'QUOI ?',entityRefs:entities.filter(e=>['repository','proposal','receipt','session','objective'].includes(e.kind)).map(e=>e.id)},
+   world:{question:'OÙ ?',entityRefs:entities.filter(e=>['ecosystem','repository','domain','agent','session','proposal','receipt','objective'].includes(e.kind)).map(e=>e.id)},
+   workspace:{question:'QUOI ?',entityRefs:entities.filter(e=>['repository','domain','proposal','receipt','session','objective'].includes(e.kind)).map(e=>e.id)},
    pokemon:{question:'QUI ?',entityRefs:entities.filter(e=>['agent','session'].includes(e.kind)).map(e=>e.id)}
   }
  }
