@@ -423,3 +423,16 @@ linear-gradient(90deg,rgba(69,104,77,.08) 1px,transparent 1px),
 @media(max-width:1250px){.pokemon-launch-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:1000px){.pokemon-lower-grid{grid-template-columns:1fr}.pokemon-launch-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.pokemon-launch-grid,.pokemon-lower-grid .pokemon-family-grid{grid-template-columns:1fr}}
+
+
+/* Pokemon cockpit navigation: all existing blocks remain visible */
+.pokemon-cockpit{display:grid;grid-template-columns:150px minmax(0,1fr) minmax(280px,340px);gap:14px;align-items:start}
+.pokemon-cockpit-nav{position:sticky;top:12px;display:flex;flex-direction:column;gap:6px;border:2px solid #34563f;background:#0d1b13;padding:10px}
+.pokemon-cockpit-nav button{text-align:left;border:1px solid #34563f;background:#102219;padding:8px 10px}
+.pokemon-cockpit-nav button:hover{border-color:var(--obs-green);background:var(--obs-green-bg)}
+.pokemon-cockpit-main{display:grid;gap:12px;min-width:0}
+.pokemon-cockpit-main>.pokemon-launch-zone{margin-top:0}
+.pokemon-cockpit>.pokemon-v3-inspector{position:sticky;top:12px}
+#pokemon-active,#pokemon-launch,#pokemon-circuit,#pokemon-missions,#pokemon-population,#pokemon-village,#pokemon-registry{scroll-margin-top:16px}
+@media(max-width:1150px){.pokemon-cockpit{grid-template-columns:120px minmax(0,1fr)}.pokemon-cockpit>.pokemon-v3-inspector{grid-column:2;position:static}.pokemon-cockpit-nav{grid-row:1 / span 2}}
+@media(max-width:760px){.pokemon-cockpit{grid-template-columns:1fr}.pokemon-cockpit-nav{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.pokemon-cockpit-main,.pokemon-cockpit>.pokemon-v3-inspector{grid-column:1}.pokemon-cockpit>.pokemon-v3-inspector{position:static}}
