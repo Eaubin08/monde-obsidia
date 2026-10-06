@@ -35,6 +35,7 @@ export default function LivePokemon(){
  const [statusFilter,setStatusFilter]=useState<StatusFilter>('all')
  const [familyFilter,setFamilyFilter]=useState('')
  const [jarjarStatus,setJarjarStatus]=useState<JarjarStatus|null>(null)
+ const [pokemonPage,setPokemonPage]=useState<'active'|'launch'|'missions'|'population'>((sessionStorage.getItem('obsidia-pokemon-page') as 'active'|'launch'|'missions'|'population')||'active')
 
  useEffect(()=>{if(!container.current)return;const scene=new AgentTown({container:container.current,environment:'town',officeSize:'large',roomMode:'environment',onAgentClick:id=>{setSelected(id);setSelectedAgent('');sessionStorage.setItem('obsidia-selected-session',id);sessionStorage.setItem('obsidia-focus-entity','session:'+id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:'session:'+id}))}});town.current=scene;return()=>{scene.destroy();town.current=null}},[])
 
@@ -129,7 +130,20 @@ export default function LivePokemon(){
 
   {error&&<p role="alert">{error}</p>}
 
-  <div className="pokemon-v3-layout">
+  <nav className="pokemon-subnav" aria-label="Sections Pokémon">
+   {([
+    ['active','Actifs'],
+    ['launch','Lancements'],
+    ['missions','Missions'],
+    ['population','Population']
+   ] as const).map(([id,label])=><button key={id} aria-current={pokemonPage===id?'page':undefined} onClick={()=>{sessionStorage.setItem('obsidia-pokemon-page',id);setPokemonPage(id)}}>{label}</button>)}
+  </nav>
+
+  <section className="pokemon-scale-bar" aria-label="État global des agents">
+   {statusCards.map(({id,label,count})=><button key={id} aria-pressed={statusFilter===id} onClick={()=>setStatusFilter(id)}><strong>{count}</strong><span>{label}</span></button>)}
+  </section>
+
+  {pokemonPage==='active'&&<div className="pokemon-v3-layout">
    <main className="pokemon-v3-active">
     <span className="eyebrow">EN CE MOMENT</span>
     <h2>Agents actifs</h2>
@@ -151,7 +165,12 @@ export default function LivePokemon(){
     })}</div>
    </main>
 
-   <section className="pokemon-launch-zone">
+   <aside className="pokemon-v3-inspector">
+    {current?<><span className="eyebrow">AGENT SÉLECTIONNÉ</span><h2>{current.name}</h2><div className="pokemon-v3-state">{phaseLabel(current.phase)}</div><h3>Travail actuel</h3><p>{current.objective||'Aucun objectif observé.'}</p>{currentMission&&<><h3>Mission / preuve</h3><MissionTimeline compact mission={currentMission} entities={state?.entities||[]} onFocus={id=>{selectContext(id);location.hash='world'}}/></>}<h3>Résultat</h3>{produced.length?produced.map((e,i)=><div key={i} className="pokemon-v3-result"><strong>{e?.label}</strong></div>):<p>Aucun résultat observé pour cette session.</p>}<div className="pokemon-v3-actions"><button onClick={()=>openWorkspace(current)}>Ouvrir son Workspace</button><button onClick={()=>{selectContext(currentMission?.id||'session:'+current.sessionId);location.hash='world'}}>Voir dans le Monde</button></div><details><summary>Détails techniques</summary><p>Session : {current.sessionId}</p><p>Repo : {current.repository}</p><p>Dernier signal : {current.timestamp}</p>{current.events.map((e,i)=><div key={i}><small>{new Date(e.timestamp).toLocaleTimeString()} · {phaseLabel(e.phase)}</small><p>{e.message}</p></div>)}</details></>:agentEntity?<><span className="eyebrow">AGENT DÉCLARÉ</span><h2>{agentEntity.label}</h2><p>Aucune session live observée.</p><button onClick={()=>{selectContext(agentEntity.id);location.hash='world'}}>Voir dans le Monde</button></>:<><span className="eyebrow">SÉLECTION</span><h2>Choisis un agent</h2><p>Sa mission, son état et son résultat apparaîtront ici.</p></>}
+   </aside>
+  </div>}
+
+  {pokemonPage==='launch'&&<section className="pokemon-launch-zone">
     <div className="pokemon-launch-head"><div><span className="eyebrow">DISPONIBLES</span><h2>Lancer un agent</h2><p>Uniquement les launchers réellement disponibles dans Obsidia.</p></div>{launchMessage&&<small>{launchMessage}</small>}</div>
     <article className={"pokemon-launch-card "+(jarjarStatus?.state==='READY'?'active ':'')+(jarjarStatus?.state==='DEGRADED'?'blocked ':'')}>
      <div><strong>Jarjar</strong><span>{jarjarStatus?.state||'OFFLINE'}</span></div>
@@ -185,24 +204,25 @@ export default function LivePokemon(){
      </div>
     </article>
     <div className="pokemon-launch-grid">{launchable.map(([id,label,ready])=>{const active=sessions.find(s=>s.agentId===id&&s.presence==='live');const previous=lastSession(id);return <article key={id} className={"pokemon-launch-card "+(active?'active ':'')+(ready?'':'coming-soon')}><div><strong>{label}</strong><span>{active?'LIVE':ready?'Disponible':'Bientôt'}</span></div><p>{active?.objective||previous?.objective||previous?.message||(ready?'Aucune activité récente observée.':'Point d’entrée préparé côté UI · raccordement backend à venir.')}</p><small>{previous?'Dernière activité · '+new Date(previous.timestamp).toLocaleString():ready?'Jamais observé dans ce runtime':'Préparé pour activation future'}</small><div className="workspace-v3-actions">{active?<><button onClick={()=>{setSelected(active.sessionId);selectContext('session:'+active.sessionId)}}>Continuer</button><button onClick={()=>openWorkspace(active)}>Workspace</button></>:ready?(id==='jarjar'?<button disabled={launching.startsWith(id)} onClick={()=>startSession(id,true)}>{launching===id+':terminal'?'Démarrage complet…':'Lancer Jarjar'}</button>:terminalOnly.has(id)?<button disabled={launching.startsWith(id)} onClick={()=>startSession(id,true)}>{launching===id+':terminal'?'Ouverture…':'Lancer terminal'}</button>:<><button disabled={launching.startsWith(id)} onClick={()=>startSession(id,false)}>{launching===id+':integrated'?'Lancement…':'Lancer ici'}</button><button disabled={launching.startsWith(id)} onClick={()=>startSession(id,true)}>{launching===id+':terminal'?'Ouverture…':'Ouvrir terminal'}</button></>):<button disabled>Activation à venir</button>}<button onClick={()=>{const target=active?'session:'+active.sessionId:'agent:'+id;selectContext(target);location.hash='world'}}>Monde</button></div></article>})}</div>
-   </section>
+   </section>}
 
-
-   <aside className="pokemon-v3-inspector">
-    {current?<><span className="eyebrow">AGENT SÉLECTIONNÉ</span><h2>{current.name}</h2><div className="pokemon-v3-state">{phaseLabel(current.phase)}</div><h3>Travail actuel</h3><p>{current.objective||'Aucun objectif observé.'}</p>{currentMission&&<><h3>Mission / preuve</h3><MissionTimeline compact mission={currentMission} entities={state?.entities||[]} onFocus={id=>{selectContext(id);location.hash='world'}}/></>}<h3>Résultat</h3>{produced.length?produced.map((e,i)=><div key={i} className="pokemon-v3-result"><strong>{e?.label}</strong></div>):<p>Aucun résultat observé pour cette session.</p>}<div className="pokemon-v3-actions"><button onClick={()=>openWorkspace(current)}>Ouvrir son Workspace</button><button onClick={()=>{selectContext(currentMission?.id||'session:'+current.sessionId);location.hash='world'}}>Voir dans le Monde</button></div><details><summary>Détails techniques</summary><p>Session : {current.sessionId}</p><p>Repo : {current.repository}</p><p>Dernier signal : {current.timestamp}</p>{current.events.map((e,i)=><div key={i}><small>{new Date(e.timestamp).toLocaleTimeString()} · {phaseLabel(e.phase)}</small><p>{e.message}</p></div>)}</details></>:agentEntity?<><span className="eyebrow">AGENT DÉCLARÉ</span><h2>{agentEntity.label}</h2><p>Aucune session live observée.</p><button onClick={()=>{selectContext(agentEntity.id);location.hash='world'}}>Voir dans le Monde</button></>:<><span className="eyebrow">SÉLECTION</span><h2>Choisis un agent</h2><p>Sa mission, son état et son résultat apparaîtront ici.</p></>}
-   </aside>
-  </div>
-
-  <section className="pokemon-scale-bar" aria-label="État global des agents">
-   {statusCards.map(({id,label,count})=><button key={id} aria-pressed={statusFilter===id} onClick={()=>setStatusFilter(id)}><strong>{count}</strong><span>{label}</span></button>)}
-  </section>
-
-  <section className="pokemon-families">
+  {pokemonPage==='population'&&<><section className="pokemon-families">
    <div className="pokemon-families-head"><div><span className="eyebrow">CATALOGUE</span><h2>Population connue</h2><p>Ce bloc recense ce qui existe dans les différentes stacks. Il ne veut pas dire que tous ces agents sont lançables depuis cette page.</p></div>{familyFilter&&<button onClick={()=>setFamilyFilter('')}>Toutes les familles</button>}</div>
    <div className="pokemon-family-grid">{families.map(f=>{const active=f.agents.filter(id=>liveIds.has(id)).length;return <button key={f.id} data-kind={f.kind==='physical-workstream'?'physical-workstream':f.kind==='sigma'?'sigma-domain':f.kind} className={familyFilter===f.id?'selected':''} onClick={()=>setFamilyFilter(familyFilter===f.id?'':f.id)}><span>{f.kind}</span><strong>{f.label}</strong><small>{active} LIVE · {f.agents.length} catalogué(s){!f.localPresent?' · repo local absent':''}</small></button>})}</div>
   </section>
 
-  <section className="pokemon-circuit">
+  {pokemonPage==='population'&&<><details className="pokemon-v3-secondary">
+   <summary>Village visuel</summary>
+   <div ref={container} className="live-town" aria-label="Village des agents lancés"/>
+   <p className="muted">Le village affiche uniquement les sessions LIVE confirmées, une seule par agent. Les sessions terminées ou incertaines sont exclues. Clique un personnage pour synchroniser Pokémon, le Context Bridge, Workspace et Monde sur cette session.</p>
+  </details>
+
+  <details className="pokemon-v3-secondary">
+   <summary>Registre détaillé du catalogue</summary>
+   {domains.map(d=>{const refs=state?.relations.filter(r=>r.from===d.id&&r.type==='HAS_AGENT')||[];return <section key={d.id}><h3>{d.label} · {refs.length}</h3><div className="office-toolbar">{refs.map(r=>{const a=state?.entities.find(e=>e.id===r.to);const active=sessions.some(s=>s.agentId===a?.agentId&&s.presence==='live');return <button key={r.to} onClick={()=>chooseAgent(r.to)}>{a?.label||r.to}<small>{active?'LIVE':'inactif'}</small></button>})}</div></section>})}
+  </details></>}
+
+  {pokemonPage==='missions'&&<><section className="pokemon-circuit">
    <div className="pokemon-families-head"><div><span className="eyebrow">PARCOURS VIVANT</span><h2>Où en sont les agents</h2><p>Leur place vient de leur phase runtime réelle.</p></div></div>
    <div className="pokemon-circuit-track">{stageSessions.map(({stage,sessions:stageItems},i)=><section key={stage} className={"pokemon-stage "+(stage==='Bloqué'?'blocked':'')}><div><span>{i+1}</span><strong>{stage}</strong><small>{stageItems.length}</small></div><div className="pokemon-stage-agents">{stageItems.length?stageItems.map(s=><button key={s.sessionId} onClick={()=>{setSelected(s.sessionId);setSelectedAgent('');selectContext('session:'+s.sessionId)}}><strong>{s.name}</strong><small>{s.objective||phaseLabel(s.phase)}</small></button>):<span className="pokemon-stage-empty">—</span>}</div></section>)}</div>
   </section>
@@ -214,17 +234,6 @@ export default function LivePokemon(){
     {ungroupedLive.length>0&&<article><span className="world-object-kind">LIVE SANS MISSION RELIÉE</span><strong>{ungroupedLive.length} agent(s)</strong><small>Activité réelle, relation de mission absente.</small><div>{ungroupedLive.map(s=><button key={s.sessionId} onClick={()=>{setSelected(s.sessionId);selectContext('session:'+s.sessionId)}}>{s.name}<small>{phaseLabel(s.phase)}</small></button>)}</div></article>}
     {!missionTeams.length&&!ungroupedLive.length&&<p className="muted">Aucune équipe active observée.</p>}
    </div>
-  </section>
-
-  <details className="pokemon-v3-secondary">
-   <summary>Village visuel</summary>
-   <div ref={container} className="live-town" aria-label="Village des agents lancés"/>
-   <p className="muted">Le village affiche uniquement les sessions LIVE confirmées, une seule par agent. Les sessions terminées ou incertaines sont exclues. Clique un personnage pour synchroniser Pokémon, le Context Bridge, Workspace et Monde sur cette session.</p>
-  </details>
-
-  <details className="pokemon-v3-secondary">
-   <summary>Registre détaillé du catalogue</summary>
-   {domains.map(d=>{const refs=state?.relations.filter(r=>r.from===d.id&&r.type==='HAS_AGENT')||[];return <section key={d.id}><h3>{d.label} · {refs.length}</h3><div className="office-toolbar">{refs.map(r=>{const a=state?.entities.find(e=>e.id===r.to);const active=sessions.some(s=>s.agentId===a?.agentId&&s.presence==='live');return <button key={r.to} onClick={()=>chooseAgent(r.to)}>{a?.label||r.to}<small>{active?'LIVE':'inactif'}</small></button>})}</div></section>})}
-  </details>
+  </section></>}
  </section>
 }
