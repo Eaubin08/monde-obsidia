@@ -395,3 +395,57 @@ linear-gradient(90deg,rgba(69,104,77,.08) 1px,transparent 1px),
 @media(prefers-reduced-motion:reduce){
  .world-live-token,.world-object-card.live,.pokemon-launch-card.active,.pokemon-v3-card.selected{animation:none}
 }
+
+/* Jarjar cockpit */
+.jarjar-cockpit{grid-column:1/-1;border:2px solid var(--obs-blue);background:#0b151d;padding:16px;display:grid;gap:14px}
+.jarjar-cockpit-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.jarjar-cockpit-head h2{margin:4px 0}
+.jarjar-cockpit-head p{margin:4px 0;color:#9bbfa4;max-width:760px}
+.jarjar-runtime{min-width:145px;border:2px solid var(--obs-gray);background:var(--obs-gray-bg);padding:10px 12px;text-align:center}
+.jarjar-runtime.live{border-color:var(--obs-green);background:var(--obs-green-bg)}
+.jarjar-runtime strong,.jarjar-runtime span{display:block}
+.jarjar-runtime.live strong{color:var(--obs-green)}
+.jarjar-control-row{display:flex;gap:8px;flex-wrap:wrap}
+.jarjar-control-row button{border:1px solid #45684d;background:#102219;padding:8px 10px}
+.jarjar-control-row button:first-child{border-color:var(--obs-green)}
+.jarjar-message{margin:0;border-left:3px solid var(--obs-cyan);padding:7px 10px;background:#0d1f24}
+.jarjar-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.jarjar-status-grid article{border:1px solid #34563f;background:#102219;padding:10px;display:flex;flex-direction:column;gap:3px}
+.jarjar-status-grid article>span{font-size:.68rem;letter-spacing:.08em;color:#9bbfa4}
+.jarjar-status-grid article>small{color:#9bbfa4}
+.jarjar-status-grid article[data-verdict="ACT"]{border-color:var(--obs-green);background:var(--obs-green-bg)}
+.jarjar-status-grid article[data-verdict="HOLD"]{border-color:var(--obs-amber);background:var(--obs-amber-bg)}
+.jarjar-status-grid article[data-verdict="BLOCK"]{border-color:var(--obs-red);background:var(--obs-red-bg)}
+.jarjar-text-console{display:grid;grid-template-columns:1fr 1fr;gap:12px;border:1px solid var(--obs-cyan);background:var(--obs-cyan-bg);padding:12px}
+.jarjar-text-console>div:first-child{min-width:0}
+.jarjar-text-console>div:first-child>strong,.jarjar-text-console>div:first-child>p{display:block;overflow-wrap:anywhere}
+.jarjar-text-console>div:first-child>p{margin:6px 0 0;color:#d7e8ea}
+.jarjar-text-input{display:flex;gap:8px;align-items:center}
+.jarjar-text-input input{flex:1;min-width:0;padding:9px 10px}
+.jarjar-health{border:1px solid #34563f;padding:12px;background:#0d1b13}
+.jarjar-health-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.jarjar-health-grid>span{border:1px solid var(--obs-gray);background:var(--obs-gray-bg);padding:8px;display:flex;flex-direction:column;gap:3px}
+.jarjar-health-grid>span[data-ok="true"]{border-color:var(--obs-green);background:var(--obs-green-bg)}
+.jarjar-health-grid>span>strong{font-size:.8rem}
+.jarjar-health-grid>span>small{color:#9bbfa4;overflow-wrap:anywhere}
+.jarjar-capabilities{border:1px solid var(--obs-orange);background:#17120d;padding:12px}
+.jarjar-cap-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.jarjar-cap-grid article{border:1px solid var(--obs-orange);background:var(--obs-orange-bg);padding:10px;display:flex;flex-direction:column;gap:5px}
+.jarjar-cap-grid article.unwired{border-style:dashed;opacity:.62;background:transparent}
+.jarjar-cap-grid article>span{font-size:.65rem;letter-spacing:.08em;color:var(--obs-orange)}
+.jarjar-cap-grid article>small{color:#9bbfa4}
+.jarjar-cap-grid article>p{font-size:.78rem;margin:2px 0;color:#9bbfa4}
+.jarjar-cap-grid article>div{display:flex;flex-wrap:wrap;gap:4px}
+.jarjar-cap-grid code{font-size:.67rem;border:1px solid #664a2d;padding:2px 4px}
+.jarjar-confirm{border:2px solid var(--obs-amber);background:var(--obs-amber-bg);padding:12px;display:flex;flex-direction:column;gap:4px}
+.jarjar-confirm>span{font-size:.68rem;letter-spacing:.08em;color:var(--obs-amber)}
+.jarjar-confirm>p{margin:0;color:#c8baa0}
+.jarjar-proof-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.jarjar-proof-grid>article{border:1px solid var(--obs-violet);background:var(--obs-violet-bg);padding:12px}
+.jarjar-proof-grid p{border-top:1px solid #46365f;padding-top:7px;margin:7px 0 0}
+.jarjar-proof-grid p strong{color:var(--obs-violet)}
+.jarjar-proof-grid p small{display:block;color:#a99dbb;margin-top:2px;overflow-wrap:anywhere}
+.jarjar-observation{border:1px solid var(--obs-cyan);background:var(--obs-cyan-bg);padding:10px}
+.jarjar-observation summary{cursor:pointer}
+@media(max-width:1100px){.jarjar-status-grid,.jarjar-cap-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.jarjar-health-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.jarjar-cockpit-head,.jarjar-text-console{grid-template-columns:1fr;display:grid}.jarjar-status-grid,.jarjar-cap-grid,.jarjar-health-grid,.jarjar-proof-grid{grid-template-columns:1fr}.jarjar-runtime{min-width:0}.jarjar-text-input{flex-direction:column;align-items:stretch}}
