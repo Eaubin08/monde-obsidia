@@ -1,8 +1,8 @@
-$ErrorActionPreference = 'Stop'
 param(
   [Parameter(Mandatory=$true)][string]$Service,
   [Parameter(Mandatory=$true)][string]$Root
 )
+$ErrorActionPreference = 'Stop'
 
 chcp 65001 | Out-Null
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
