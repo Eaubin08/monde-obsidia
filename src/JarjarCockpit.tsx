@@ -12,7 +12,7 @@ type JarjarStatus={
  evidence?:{scope:string;decisions:any[];receipts:any[];rollbacks:any[]}
  authority:string;decisionAuthority:string
 }
-type Health={jarjar_alive:boolean;pid:number;voice_ready:boolean;micro_ready:boolean;obsidia:{reachable:boolean;url?:string|null};kx108_ready:boolean|null;kx108_note?:string;screens:{ready:boolean;count:number};process?:{sessionId:string;pid:number}|null}
+type Health={jarjar_alive:boolean;pid:number;voice_ready:boolean;micro_ready:boolean;obsidia:{reachable:boolean;url?:string|null};kx108_ready:boolean|null;kx108_note?:string;screens:{ready:boolean;count:number};canonical_environment?:{ok:boolean;brody:{ready:boolean;memory_source_mode?:string|null;decision_authority?:string|null;readonly?:boolean};qwen_text:{ready:boolean};qwen_vision:{ready:boolean};environment:Record<string,string>};process?:{sessionId:string;pid:number}|null}
 type Caps={families:{family:string;wired:boolean;authority:string;note?:string;capabilities:string[]}[]}
 
 export default function JarjarCockpit(){
@@ -92,6 +92,9 @@ export default function JarjarCockpit(){
     <span data-ok={health?.kx108_ready===true}>KX108<strong>{health?.kx108_ready===true?'READY':'NON CONFIRMÉ'}</strong></span>
     <span data-ok={!!health?.micro_ready}>Micro<strong>{health?.micro_ready?'READY':'OFF/UNKNOWN'}</strong></span>
     <span data-ok={!!health?.screens?.ready}>Écrans<strong>{health?.screens?.ready?(health.screens.count+' détecté(s)'):'UNKNOWN'}</strong></span>
+    <span data-ok={health?.canonical_environment?.ok===true}>Env canonique<strong>{health?.canonical_environment?.ok?'PASS':'BLOCK/UNKNOWN'}</strong><small>{health?.canonical_environment?.brody?.memory_source_mode||'Native Memory non prouvée'}</small></span>
+    <span data-ok={health?.canonical_environment?.qwen_text?.ready===true}>Qwen texte<strong>{health?.canonical_environment?.qwen_text?.ready?'READY':'OFF'}</strong></span>
+    <span data-ok={health?.canonical_environment?.qwen_vision?.ready===true}>Qwen-VL<strong>{health?.canonical_environment?.qwen_vision?.ready?'READY':'OFF'}</strong></span>
    </div>
   </section>
 
