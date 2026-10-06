@@ -11,7 +11,7 @@ type Mission=MissionTimelineMission
 type AgentFamily={id:string;label:string;sourceRepo:string;sourcePath?:string;localPresent:boolean;kind:string;agents:string[]}
 type SharedState={schema:string;entities:Entity[];relations:Relation[];sessions:Session[];missions:Mission[];agentFamilies?:AgentFamily[]}
 type StatusFilter='all'|'live'|'ready'|'planned'|'blocked'|'inactive'
-type JarjarStatus={state:'OFFLINE'|'STARTING'|'READY'|'DEGRADED';managed:boolean;sessionId:string|null;decisionAuthority:string;observedAt:string;components:{kernel:{port:number;ready:boolean};brodyApi:{port:number;ready:boolean};qwenText:{port:number;ready:boolean};qwenVL:{port:number;ready:boolean};hud:{port:null;ready:boolean}}}
+type JarjarStatus={state:'OFFLINE'|'STARTING'|'READY'|'DEGRADED';managed:boolean;sessionId:string|null;decisionAuthority:string;inputMode:string|null;hudState:string|null;voiceEnabled:boolean|null;keyboardAvailable:boolean;sessionOpen:boolean|null;cognitionSource:string;governanceSource:string;governancePhase:string;humanConfirmationRequired:boolean;telemetryFresh:boolean;observedAt:string;components:{kernel:{port:number;ready:boolean};brodyApi:{port:number;ready:boolean};qwenText:{port:number;ready:boolean};qwenVL:{port:number;ready:boolean};hud:{port:null;ready:boolean}}}
 
 const phaseLabel=(phase:string)=>({
  STARTING:'Démarrage',SESSION_CONFIG:'Configuration',WAITING_INPUT:'En attente',
@@ -153,6 +153,12 @@ export default function LivePokemon(){
     <article className={"pokemon-launch-card "+(jarjarStatus?.state==='READY'?'active ':'')+(jarjarStatus?.state==='DEGRADED'?'blocked ':'')}>
      <div><strong>Jarjar</strong><span>{jarjarStatus?.state||'OFFLINE'}</span></div>
      <p>État runtime réel · autorité {jarjarStatus?.decisionAuthority||'KX108_ONLY'}</p>
+     <div className="pokemon-context-row">
+      <span><small>Entrée</small><strong>{jarjarStatus?.inputMode||'non observé'}</strong></span>
+      <span><small>HUD</small><strong>{jarjarStatus?.hudState||'non observé'}</strong></span>
+      <span><small>Cognition</small><strong>{jarjarStatus?.cognitionSource||'en attente'}</strong></span>
+      <span><small>Session voix</small><strong>{jarjarStatus?.sessionOpen?'OUVERTE':'FERMÉE'}</strong></span>
+     </div>
      <div className="pokemon-context-row">
       <span><small>Kernel 3001</small><strong>{jarjarStatus?.components.kernel.ready?'READY':'OFFLINE'}</strong></span>
       <span><small>Brody/API 8000</small><strong>{jarjarStatus?.components.brodyApi.ready?'READY':'OFFLINE'}</strong></span>
