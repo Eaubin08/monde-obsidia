@@ -64,6 +64,60 @@ export function buildObsidiaState(snapshot,live){
    }
   }
  }
+ const jarjar=live?.jarjar
+ if(jarjar&&jarjar.state!=='OFFLINE'){
+  const agentId=stable('agent','jarjar')
+  let agent=entities.find(e=>e.id===agentId)
+  if(!agent){
+   agent={id:agentId,kind:'agent',label:'Jarjar',agentId:'jarjar',source:'jarjar_runtime',runtimeDeclared:true}
+   entities.push(agent)
+   relations.push({from:'obsidia',type:'HAS_AGENT',to:agentId})
+  }
+
+  const existing=sessions.find(s=>s.agentId==='jarjar')
+  const observedSessionId=jarjar.sessionId||'jarjar-observed'
+  const sessionId=existing?.id||stable('session',observedSessionId)
+  const phase=String(jarjar.hudState||jarjar.state||'STARTING').toUpperCase()
+  const statusMap={THINKING:'thinking',SPEAKING:'typing',ERROR:'error',LISTENING:'waiting',IDLE:'idle'}
+  const status=statusMap[phase]||(jarjar.state==='STARTING'?'waiting':'idle')
+  const message=jarjar.lastResult||jarjar.lastUserInput||('Jarjar '+jarjar.state)
+  if(existing){
+   Object.assign(existing,{
+    status,phase,presence:'live',message,
+    objective:jarjar.lastUserInput||existing.objective||null,
+    jarjarRuntime:true,inputMode:jarjar.inputMode||null,
+    cognitionSource:jarjar.cognitionSource||'',
+    decisionAuthority:jarjar.decisionAuthority||'KX108_ONLY',
+    governanceSource:jarjar.governanceSource||'',
+    governancePhase:jarjar.governancePhase||'',
+    humanConfirmationRequired:!!jarjar.humanConfirmationRequired,
+    confirmationPrompt:jarjar.confirmationPrompt||'',
+    telemetryFresh:!!jarjar.telemetryFresh,
+    components:jarjar.components||null
+   })
+   const entity=entities.find(e=>e.id===existing.id)
+   if(entity)Object.assign(entity,existing)
+  }else{
+   const session={
+    id:sessionId,kind:'session',label:'Jarjar · runtime',sessionId:observedSessionId,
+    agentId:'jarjar',name:'Jarjar',pid:0,status,phase,presence:'live',
+    message,objective:jarjar.lastUserInput||null,timestamp:jarjar.observedAt,
+    repository:null,exitCode:null,source:'JARJAR_RUNTIME_STATUS_V1',events:[],
+    jarjarRuntime:true,inputMode:jarjar.inputMode||null,cognitionSource:jarjar.cognitionSource||'',
+    decisionAuthority:jarjar.decisionAuthority||'KX108_ONLY',
+    governanceSource:jarjar.governanceSource||'',governancePhase:jarjar.governancePhase||'',
+    humanConfirmationRequired:!!jarjar.humanConfirmationRequired,
+    confirmationPrompt:jarjar.confirmationPrompt||'',
+    telemetryFresh:!!jarjar.telemetryFresh,components:jarjar.components||null
+   }
+   sessions.push(session);entities.push(session)
+   relations.push(
+    {from:agentId,type:'RUNS',to:sessionId},
+    {from:sessionId,type:'OPERATES_IN',to:repositoryId}
+   )
+  }
+ }
+
  for(const d of snapshot?.runtimeEvidence?.decisions||[]){
   if(!d.decision_record_id)continue
   const id=stable('decision_record',d.decision_record_id)
