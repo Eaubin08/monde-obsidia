@@ -59,6 +59,34 @@ export function buildObsidiaState(snapshot,live){
    }
   }
  }
+ for(const d of snapshot?.runtimeEvidence?.decisions||[]){
+  if(!d.decision_record_id)continue
+  const id=stable('decision_record',d.decision_record_id)
+  entities.push({id,kind:'decision_record',label:d.x108_gate||d.decision_record_id,source:'LOCALAPPDATA/kx108_decisions',recordId:d.decision_record_id,recordHash:d.decision_record_hash,decisionId:d.decision_id,traceId:d.trace_id,domainId:d.domain,gate:d.x108_gate,reasonCode:d.reason_code,severity:d.severity,decisionAuthority:d.decision_authority,decisionPhase:d.decision_phase,observedAt:d.observedAt})
+  relations.push({from:'obsidia',type:'HAS_DECISION_RECORD',to:id})
+  if(d.domain){const domainId=stable('domain',d.domain);if(entities.some(e=>e.id===domainId))relations.push({from:id,type:'DECIDES_IN_DOMAIN',to:domainId})}
+  if(d.agent_id){const agentId=stable('agent',d.agent_id);if(entities.some(e=>e.id===agentId))relations.push({from:agentId,type:'HAS_DECISION_RECORD',to:id})}
+ }
+ for(const r of snapshot?.runtimeEvidence?.receipts||[]){
+  if(!r.sealed_apply_receipt_id)continue
+  const rid=stable('sealed_receipt',r.sealed_apply_receipt_id)
+  entities.push({id:rid,kind:'sealed_receipt',label:r.status||r.sealed_apply_receipt_id,source:'LOCALAPPDATA/sealed_receipts',receiptId:r.sealed_apply_receipt_id,receiptHash:r.sealed_apply_receipt_hash,targetPath:r.target_path,targetPreSha256:r.target_pre_sha256,targetPostSha256:r.target_post_sha256,bytesWritten:r.bytes_written,status:r.status,decisionAuthority:r.decision_authority,observedAt:r.observedAt})
+  relations.push({from:'obsidia',type:'HAS_SEALED_RECEIPT',to:rid})
+  if(r.kx108_pre_decision_record_id)relations.push({from:stable('decision_record',r.kx108_pre_decision_record_id),type:'AUTHORIZES_RECEIPT',to:rid})
+  if(r.sealed_rollback_evidence_id)relations.push({from:stable('rollback_evidence',r.sealed_rollback_evidence_id),type:'PROTECTS_CHANGE',to:rid})
+  if(r.target_path){
+   const impactId=stable('impact',r.sealed_apply_receipt_id)
+   entities.push({id:impactId,kind:'impact',label:r.target_path,source:'sealed_apply_receipt',targetPath:r.target_path,beforeSha256:r.target_pre_sha256,afterSha256:r.target_post_sha256,status:r.status,bytesWritten:r.bytes_written,observedAt:r.observedAt})
+   relations.push({from:rid,type:'PROVES_IMPACT',to:impactId})
+  }
+ }
+ for(const r of snapshot?.runtimeEvidence?.rollbacks||[]){
+  if(!r.sealed_rollback_evidence_id)continue
+  const id=stable('rollback_evidence',r.sealed_rollback_evidence_id)
+  entities.push({id,kind:'rollback_evidence',label:r.target_path||r.sealed_rollback_evidence_id,source:'LOCALAPPDATA/sealed_rollback_evidence',evidenceId:r.sealed_rollback_evidence_id,evidenceHash:r.sealed_rollback_evidence_hash,targetPath:r.target_path,preWriteSha256:r.pre_write_sha256,preWriteSize:r.pre_write_size,sealed:r.sealed,decisionAuthority:r.decision_authority,observedAt:r.observedAt})
+  relations.push({from:'obsidia',type:'HAS_ROLLBACK_EVIDENCE',to:id})
+  if(r.kx108_pre_decision_record_id)relations.push({from:stable('decision_record',r.kx108_pre_decision_record_id),type:'HAS_ROLLBACK_EVIDENCE',to:id})
+ }
  for(const p of snapshot?.proposals||[]){
   const proposalId=stable('proposal',p.id)
   entities.push({id:proposalId,kind:'proposal',label:p.id,path:p.path,observedAt:p.observedAt,source:'_PATCH_PROPOSALS'})
@@ -78,8 +106,8 @@ export function buildObsidiaState(snapshot,live){
   observedAt:live?.observedAt||snapshot?.observedAt||new Date().toISOString(),
   entities,relations,sessions,
   views:{
-   world:{question:'OÙ ?',entityRefs:entities.filter(e=>['ecosystem','repository','domain','agent','session','proposal','receipt','objective','result','artifact','decision'].includes(e.kind)).map(e=>e.id)},
-   workspace:{question:'QUOI ?',entityRefs:entities.filter(e=>['repository','domain','proposal','receipt','session','objective','result','artifact','decision'].includes(e.kind)).map(e=>e.id)},
+   world:{question:'OÙ ?',entityRefs:entities.filter(e=>['ecosystem','repository','domain','agent','session','proposal','receipt','objective','result','artifact','decision','decision_record','sealed_receipt','rollback_evidence','impact'].includes(e.kind)).map(e=>e.id)},
+   workspace:{question:'QUOI ?',entityRefs:entities.filter(e=>['repository','domain','proposal','receipt','session','objective','result','artifact','decision','decision_record','sealed_receipt','rollback_evidence','impact'].includes(e.kind)).map(e=>e.id)},
    pokemon:{question:'QUI ?',entityRefs:entities.filter(e=>['agent','session'].includes(e.kind)).map(e=>e.id)}
   }
  }
