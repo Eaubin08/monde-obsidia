@@ -12,7 +12,12 @@ export {repository} from './paths.mjs'
 export function contained(root,path){const r=realpathSync(root),p=realpathSync(resolve(r,path));const rel=relative(r,p);if(rel.startsWith('..'+sep)||rel==='..'||rel.startsWith(sep))throw Error('Chemin hors projet');return p}
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
 const jarjarRoot=()=>resolve(process.env.OBSIDIA_JARJAR_ROOT||resolve(homedir(),'Desktop','Jarvis-iron-obsidia-'))
-const jarjarPython=()=>process.env.OBSIDIA_JARJAR_PYTHON||resolve(homedir(),'.cache','codex-runtimes','codex-primary-runtime','dependencies','python','python.exe')
+const jarjarPythonCandidates=()=>[
+ process.env.OBSIDIA_JARJAR_PYTHON,
+ resolve(homedir(),'.cache','codex-runtimes','codex-primary-runtime','dependencies','python','python.exe'),
+ resolve(jarjarRoot(),'.venv','Scripts','python.exe')
+].filter(Boolean)
+const jarjarPython=()=>jarjarPythonCandidates().find(p=>existsSync(p))||jarjarPythonCandidates()[0]
 const jarjarModule='scripts.run_jarjar_cockpit'
 const jarjarModuleFile='scripts/run_jarjar_cockpit.py'
 const jarjarCockpitUrl=()=>process.env.JARJAR_COCKPIT_URL||'http://127.0.0.1:47822'
@@ -140,7 +145,7 @@ function snapshot(root=repository()){
    try{const p=contained(root,`_PATCH_PROPOSALS/${item.name}/proposal.json`);if(statSync(p).size>1024*1024)continue;const data=JSON.parse(readFileSync(p,'utf8'));proposals.push({id:item.name,path:`_PATCH_PROPOSALS/${item.name}/proposal.json`,data,observedAt:statSync(p).mtime.toISOString(),receipt:existsSync(resolve(dir,item.name,'RECEIPT.md'))?`_PATCH_PROPOSALS/${item.name}/RECEIPT.md`:null})}catch{}
   }
  }
- return {available:true,repository:root,sha,branch,worktrees:gitWorktrees(root),observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),agentFamilies:agentFamilies(root),runtimeEvidence:canonicalRuntimeEvidence(),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:[...Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null})),{id:'jarjar',path:jarjarModule,available:process.platform==='win32'&&existsSync(jarjarRoot())&&existsSync(resolve(jarjarRoot(),jarjarModuleFile))&&existsSync(jarjarPython()),reason:process.platform!=='win32'?'Windows requis':!existsSync(jarjarRoot())?'Repo Jarjar absent':!existsSync(resolve(jarjarRoot(),jarjarModuleFile))?'Bridge cockpit Jarjar absent':!existsSync(jarjarPython())?'Python Jarjar absent':null}]}
+ return {available:true,repository:root,sha,branch,worktrees:gitWorktrees(root),observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),agentFamilies:agentFamilies(root),runtimeEvidence:canonicalRuntimeEvidence(),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:[...Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null})),{id:'jarjar',path:jarjarModule,available:process.platform==='win32'&&existsSync(jarjarRoot())&&existsSync(resolve(jarjarRoot(),jarjarModuleFile))&&existsSync(jarjarPython()),reason:process.platform!=='win32'?'Windows requis':!existsSync(jarjarRoot())?'Repo Jarjar absent':!existsSync(resolve(jarjarRoot(),jarjarModuleFile))?'Bridge cockpit Jarjar absent':!existsSync(jarjarPython())?'Python Jarjar canonique absent':null}]}
 }
 const processes=new Map(),launching=new Set();
 function markEnd(id,message){try{const log=resolve(liveDirectory,id+'.jsonl'),last=JSON.parse(readFileSync(log,'utf8').trim().split('\n').at(-1));if(last.kind!=='session_end')appendFileSync(log,JSON.stringify({...last,timestamp:new Date().toISOString(),kind:'session_end',phase:'PROCESS_EXIT',status:'error',exitCode:null,message})+'\n')}catch{}}
@@ -201,7 +206,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   if(process.platform!=='win32')throw Error('Jarjar local requiert Windows')
   if(!existsSync(jr))throw Error('Repo Jarjar absent : '+jr)
   if(!existsSync(resolve(jr,jarjarModuleFile)))throw Error('Bridge cockpit Jarjar absent : '+resolve(jr,jarjarModuleFile))
-  if(!existsSync(jarjarPython()))throw Error('Python Jarjar absent : '+jarjarPython())
+  if(!existsSync(jarjarPython()))throw Error('Python Jarjar canonique absent. Candidats : '+jarjarPythonCandidates().join(' | '))
   emitJarjar(session,'session_start',{pid:0,status:'starting',phase:'STARTING',message:'Démarrage cockpit Jarjar'})
   const child=spawn(jarjarPython(),['-m',jarjarModule],{cwd:jr,stdio:['ignore','pipe','pipe'],windowsHide:true,env:{...process.env,PYTHONUNBUFFERED:'1',PYTHONIOENCODING:'utf-8'}})
   const p={child,active:true,output:'',exitCode:null,tool};processes.set(session,p)
