@@ -65,6 +65,23 @@ function nativeServiceSpec(id,root){
  }
  return specs[id]
 }
+async function prepareCanonicalApiLaunch(){
+ const state=await brodyServiceStatus()
+ if(!state.ready&&!state.reachable)return {ready:false}
+ if(state.ready&&state.managed){
+  closeOwnedBrodyApi()
+  const deadline=Date.now()+5000
+  while(Date.now()<deadline){
+   const next=await brodyServiceStatus()
+   if(!next.reachable)return {ready:false,replacedManaged:true}
+   await new Promise(r=>setTimeout(r,150))
+  }
+  throw Error('API 8000 gérée par Monde encore active après arrêt — relance annulée')
+ }
+ if(state.ready&&!state.managed)return {ready:true,reusedExternal:true}
+ if(state.reachable)throw Error('Le port 8000 est occupé par un service qui n’est pas l’API Obsidia attendue')
+ return {ready:false}
+}
 function emitNativeService(session,id,spec,root){
  mkdirSync(liveDirectory,{recursive:true})
  const event={schema:'OBSIDIA_VISUAL_EVENT_V1',sessionId:session,agentId:id,name:spec.title,repository:root,timestamp:new Date().toISOString(),kind:'session_start',status:'thinking',phase:'STARTING',message:'Terminal service natif',objective:null,tier:spec.tier||'primary',launcher:spec.launcher||null}
@@ -256,6 +273,12 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   if(launching.has(id))throw Error('Ce service est déjà en cours de lancement');launchKey=id;launching.add(id)
   const root=realpathSync(repository()),spec=nativeServiceSpec(id,root)
   if(!spec)throw Error('Service non raccordé')
+  if(id==='obsidia-api'){
+   const apiPrep=await prepareCanonicalApiLaunch()
+   if(apiPrep.reusedExternal){
+    res.end(JSON.stringify({opened:false,reused:true,tool:id,endpoint:'http://127.0.0.1:8000',reason:'API Obsidia 8000 déjà active hors gestion Monde'}));return
+   }
+  }
   for(const [session,p] of processes){
    if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}
    if(p.active&&p.tool===id){await focusTerminal(p.title,p.pid);res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return}
