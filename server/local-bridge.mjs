@@ -93,7 +93,30 @@ function jarjarObservedStatus(){
  }else if(managed){
   state='STARTING'
  }
- return {state,components,managed:!!managed,sessionId:managed?.[0]||null,decisionAuthority:'KX108_ONLY',observedAt:new Date().toISOString()}
+ let telemetry=null
+ try{
+  const local=process.env.LOCALAPPDATA||resolve(homedir(),'AppData','Local')
+  const path=resolve(local,'Obsidia','jarjar_runtime_status.json')
+  if(existsSync(path)){
+   const stat=statSync(path)
+   if(Date.now()-stat.mtimeMs<10000)telemetry=JSON.parse(readFileSync(path,'utf8'))
+  }
+ }catch{}
+ return {
+  state,components,managed:!!managed,sessionId:managed?.[0]||null,
+  decisionAuthority:telemetry?.decision_authority||'KX108_ONLY',
+  inputMode:telemetry?.mode||null,
+  hudState:telemetry?.hud_state||null,
+  voiceEnabled:telemetry?.voice_enabled??null,
+  keyboardAvailable:telemetry?.keyboard_available??true,
+  sessionOpen:telemetry?.session_open??null,
+  cognitionSource:telemetry?.cognition_source||'',
+  governanceSource:telemetry?.governance_source||'',
+  governancePhase:telemetry?.governance_phase||'',
+  humanConfirmationRequired:telemetry?.human_confirmation_required??false,
+  telemetryFresh:!!telemetry,
+  observedAt:new Date().toISOString()
+ }
 }
 const git=(root,...args)=>execFileSync('git',['-C',root,...args],{encoding:'utf8',maxBuffer:12*1024*1024,timeout:10000,windowsHide:true}).trim()
 function safeJsonFiles(dir,limit=100){
