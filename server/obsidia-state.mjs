@@ -64,6 +64,61 @@ export function buildObsidiaState(snapshot,live){
    }
   }
  }
+ for(const service of live?.nativeServices||[]){
+  const agentId=stable('agent',service.id)
+  let agent=entities.find(e=>e.id===agentId)
+  if(!agent){
+   agent={id:agentId,kind:'agent',label:service.label,agentId:service.id,source:'native_service_observation',runtimeDeclared:true}
+   entities.push(agent)
+   relations.push({from:'obsidia',type:'HAS_AGENT',to:agentId})
+  }
+
+  const existingLive=sessions.find(s=>s.agentId===service.id&&s.presence==='live')
+  if(service.state==='OFFLINE'){
+   if(existingLive){
+    existingLive.presence='ended'
+    existingLive.status='idle'
+    existingLive.phase='OFFLINE'
+    existingLive.message='Service non observé'
+    const entity=entities.find(e=>e.id===existingLive.id)
+    if(entity)Object.assign(entity,existingLive)
+   }
+   continue
+  }
+
+  const observedSessionId=service.sessionId||('observed-'+service.id)
+  const sessionId=existingLive?.id||stable('session',observedSessionId)
+  const status=service.state==='STARTING'?'waiting':'idle'
+  const phase=service.state
+  const message=service.state==='READY'?'Service observé actif':'Démarrage observé'
+  if(existingLive){
+   Object.assign(existingLive,{
+    status,phase,presence:'live',message,
+    nativeService:true,observationEvidence:service.evidence,
+    decisionAuthority:service.decisionAuthority||'KX108_ONLY',
+    observedState:service.state
+   })
+   const entity=entities.find(e=>e.id===existingLive.id)
+   if(entity)Object.assign(entity,existingLive)
+  }else{
+   const session={
+    id:sessionId,kind:'session',label:service.label+' · runtime',sessionId:observedSessionId,
+    agentId:service.id,name:service.label,pid:0,status,phase,presence:'live',
+    message,objective:null,timestamp:service.observedAt,
+    repository:snapshot?.repository||null,exitCode:null,
+    source:'NATIVE_SERVICE_OBSERVATION_V1',events:[],
+    nativeService:true,observationEvidence:service.evidence,
+    decisionAuthority:service.decisionAuthority||'KX108_ONLY',
+    observedState:service.state
+   }
+   sessions.push(session);entities.push(session)
+   relations.push(
+    {from:agentId,type:'RUNS',to:sessionId},
+    {from:sessionId,type:'OPERATES_IN',to:repositoryId}
+   )
+  }
+ }
+
  const jarjar=live?.jarjar
  if(jarjar&&jarjar.state!=='OFFLINE'){
   const agentId=stable('agent','jarjar')
