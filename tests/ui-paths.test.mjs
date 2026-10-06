@@ -39,27 +39,28 @@ test('Cross-view context remains shared',()=>{
  for(const invariant of ['obsidia-selected-session','obsidia-context'])assert.ok(pokemon.includes(invariant),invariant)
 })
 
-test('Pokémon conservative layout keeps every block visible and ordered',()=>{
- const scale=pokemon.indexOf('État global des agents')
- const active=pokemon.indexOf('Agents actifs')
- const inspector=pokemon.indexOf('pokemon-v3-inspector')
- const launch=pokemon.indexOf('Lancer un agent')
- const circuit=pokemon.indexOf('PARCOURS VIVANT')
- const lower=pokemon.indexOf('pokemon-lower-grid')
- const teams=pokemon.indexOf('MISSIONS / ÉQUIPES')
- const catalog=pokemon.indexOf('Population connue')
- const village=pokemon.indexOf('Village visuel')
- const registry=pokemon.indexOf('Registre détaillé du catalogue')
- assert.ok(scale>=0,'global state missing')
- assert.ok(active>scale,'active work must follow global state')
- assert.ok(inspector>active,'inspector must remain visible with active work')
- assert.ok(launch>inspector,'launchers must remain visible after active work')
- assert.ok(circuit>launch,'live circuit must remain visible')
- assert.ok(lower>circuit,'lower visual grouping missing')
- assert.ok(teams>lower,'missions must remain visible')
- assert.ok(catalog>teams,'population must remain visible')
- assert.ok(village>catalog,'village must remain visible')
- assert.ok(registry>village,'registry must remain visible')
+test('Pokémon cockpit keeps every block visible and navigable',()=>{
+ for(const invariant of [
+  'pokemon-cockpit',
+  'pokemon-cockpit-nav',
+  'pokemon-cockpit-main',
+  "scrollPokemon('pokemon-active')",
+  "scrollPokemon('pokemon-launch')",
+  "scrollPokemon('pokemon-circuit')",
+  "scrollPokemon('pokemon-missions')",
+  "scrollPokemon('pokemon-population')",
+  "scrollPokemon('pokemon-village')",
+  "scrollPokemon('pokemon-registry')",
+  'État global des agents',
+  'Agents actifs',
+  'pokemon-v3-inspector',
+  'Lancer un agent',
+  'PARCOURS VIVANT',
+  'MISSIONS / ÉQUIPES',
+  'Population connue',
+  'Village visuel',
+  'Registre détaillé du catalogue',
+ ]) assert.ok(pokemon.includes(invariant),invariant)
 })
 
 
