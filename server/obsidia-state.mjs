@@ -12,6 +12,7 @@ export function buildObsidiaState(snapshot,live){
  const agents=new Map()
  const sessions=[]
  const sessionActionIds=new Map()
+ const actionResultIds=new Map()
  const sigmaAgentDomains={}
  for(const d of snapshot?.sigmaDomains||[]){
   const domainId=stable('domain',d.id)
@@ -44,11 +45,12 @@ export function buildObsidiaState(snapshot,live){
   for(let i=0;i<(s.events||[]).length;i++){
    const event=s.events[i]
    const observedActionId=event?.result?.action_id||event?.result?.actionId||event?.action_id||event?.actionId
-   if(observedActionId){if(!sessionActionIds.has(observedActionId))sessionActionIds.set(observedActionId,[]);sessionActionIds.get(observedActionId).push(sessionId)}
+   if(observedActionId){if(!sessionActionIds.has(observedActionId))sessionActionIds.set(observedActionId,[]);if(!sessionActionIds.get(observedActionId).includes(sessionId))sessionActionIds.get(observedActionId).push(sessionId)}
    if(event.kind==='response'||event.kind==='audit_result'){
     const resultId=stable('result',s.sessionId+':'+i)
     entities.push({id:resultId,kind:'result',label:event.kind==='response'?'Réponse produite':'Résultat d’audit',source:'runtime_event',sessionId:s.sessionId,eventKind:event.kind,timestamp:event.timestamp,data:event.result||null})
     relations.push({from:sessionId,type:'PRODUCES_RESULT',to:resultId})
+    if(observedActionId){if(!actionResultIds.has(observedActionId))actionResultIds.set(observedActionId,[]);actionResultIds.get(observedActionId).push(resultId)}
     if(event.result&&event.result.decision_authority==='KX108_ONLY'&&event.result.verdict){
      const decisionId=stable('decision',s.sessionId+':'+i)
      entities.push({id:decisionId,kind:'decision',label:String(event.result.verdict),source:'canonical_runtime_result',sessionId:s.sessionId,decisionAuthority:'KX108_ONLY',verdict:String(event.result.verdict),timestamp:event.timestamp})
@@ -96,11 +98,12 @@ export function buildObsidiaState(snapshot,live){
   const missionId=stable('mission',d.action_id)
   let mission=missions.find(m=>m.id===missionId)
   if(!mission){
-   mission={id:missionId,kind:'mission',label:d.action_id,actionId:d.action_id,domainId:d.domain||null,agentId:d.agent_id||null,decisionRecordRefs:[],sessionRefs:[],receiptRefs:[],impactRefs:[],status:'DECISION_OBSERVED'}
+   mission={id:missionId,kind:'mission',label:d.action_id,actionId:d.action_id,domainId:d.domain||null,agentId:d.agent_id||null,decisionRecordRefs:[],sessionRefs:[],resultRefs:[],receiptRefs:[],impactRefs:[],status:'DECISION_OBSERVED'}
    missions.push(mission);entities.push(mission);relations.push({from:'obsidia',type:'HAS_MISSION',to:missionId})
    const domainRef=d.domain?stable('domain',d.domain):null;if(domainRef&&entities.some(e=>e.id===domainRef))relations.push({from:missionId,type:'IN_DOMAIN',to:domainRef})
    const agentRef=d.agent_id?stable('agent',d.agent_id):null;if(agentRef&&entities.some(e=>e.id===agentRef))relations.push({from:missionId,type:'USES_AGENT',to:agentRef})
    for(const sessionRef of sessionActionIds.get(d.action_id)||[]){mission.sessionRefs.push(sessionRef);relations.push({from:missionId,type:'HAS_SESSION',to:sessionRef})}
+   for(const resultRef of actionResultIds.get(d.action_id)||[]){mission.resultRefs.push(resultRef);relations.push({from:missionId,type:'HAS_RESULT',to:resultRef})}
   }
   const decisionRef=stable('decision_record',d.decision_record_id);if(!mission.decisionRecordRefs.includes(decisionRef))mission.decisionRecordRefs.push(decisionRef);relations.push({from:missionId,type:'HAS_DECISION',to:decisionRef})
  }
@@ -118,17 +121,19 @@ export function buildObsidiaState(snapshot,live){
   const gaps=[]
   if(!mission.agentId)gaps.push('AGENT_UNLINKED')
   if(!mission.sessionRefs.length)gaps.push('SESSION_UNLINKED')
+  if(!mission.resultRefs.length)gaps.push('RESULT_UNLINKED')
   if(!mission.decisionRecordRefs.length)gaps.push('DECISION_MISSING')
   if(mission.decisionRecordRefs.length&&!mission.receiptRefs.length)gaps.push('RECEIPT_MISSING')
   if(mission.receiptRefs.length&&!mission.impactRefs.length)gaps.push('IMPACT_UNPROVED')
   mission.traceabilityGaps=gaps
   mission.traceabilityStatus=gaps.length?'INCOMPLETE':'COMPLETE'
-  const priorityOrder=['DECISION_MISSING','RECEIPT_MISSING','IMPACT_UNPROVED','SESSION_UNLINKED','AGENT_UNLINKED']
+  const priorityOrder=['DECISION_MISSING','RECEIPT_MISSING','RESULT_UNLINKED','IMPACT_UNPROVED','SESSION_UNLINKED','AGENT_UNLINKED']
   mission.primaryBlocker=priorityOrder.find(x=>gaps.includes(x))||null
   const advice={
    DECISION_MISSING:'Obtenir ou relier une décision KX108 canonique avant toute suite.',
    RECEIPT_MISSING:'Compléter la preuve d’exécution : aucun receipt scellé n’est relié.',
    IMPACT_UNPROVED:'Vérifier et relier l’impact mesuré avant de considérer la mission clôturée.',
+   RESULT_UNLINKED:'Relier le résultat runtime portant le même action_id pour compléter la chaîne de mission.',
    SESSION_UNLINKED:'Relier la session réelle via le même action_id pour restaurer la traçabilité.',
    AGENT_UNLINKED:'Relier l’agent canonique responsable de la mission.'
   }
