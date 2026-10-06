@@ -47,7 +47,20 @@ export default function LivePokemon(){
  const currentMission=currentEntity?state?.missions.find(m=>m.sessionRefs.includes(currentEntity.id)):undefined
  const domains=state?.entities.filter(e=>e.kind==='domain')||[]
  const agentEntity=state?.entities.find(e=>e.id===selectedAgent)
- const launchable=[['brody','Brody',true],['obsidure','Obsidure',true],['cli','CLI Obsidia',true],['jarjar','Jarjar',true],['jarvis','Jarvis',false]] as const
+ const launchable=[
+  ['brody','Brody',true],
+  ['obsidure','Obsidure',true],
+  ['cli','CLI Obsidia',true],
+  ['kernel-x108','Kernel X108',true],
+  ['obsidia-api','API Obsidia + Brody + Native Memory',true],
+  ['gps-defense','GPS / Defense / Aviation',true],
+  ['trading-x108','Trading → X108',true],
+  ['brody-enriched','Brody Enriched',true],
+  ['obsidure-dry','Obsidure DryRun',true],
+  ['jarjar','Jarjar',true],
+  ['jarvis','Jarvis',false]
+ ] as const
+ const terminalOnly=new Set(['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
  const lastSession=(agentId:string)=>sessions.filter(s=>s.agentId===agentId).sort((a,b)=>Date.parse(b.timestamp)-Date.parse(a.timestamp))[0]
  const organFamily:AgentFamily={id:'organs',label:'Organes / outils',sourceRepo:'monde-obsidia',localPresent:true,kind:'launcher',agents:launchable.map(x=>x[0]) as string[]}
  const families=[organFamily,...(state?.agentFamilies||[])]
@@ -124,7 +137,7 @@ export default function LivePokemon(){
 
    <section className="pokemon-launch-zone">
     <div className="pokemon-launch-head"><div><span className="eyebrow">DISPONIBLES</span><h2>Lancer un agent</h2><p>Uniquement les launchers réellement disponibles dans Obsidia.</p></div>{launchMessage&&<small>{launchMessage}</small>}</div>
-    <div className="pokemon-launch-grid">{launchable.map(([id,label,ready])=>{const active=sessions.find(s=>s.agentId===id&&s.presence==='live');const previous=lastSession(id);return <article key={id} className={"pokemon-launch-card "+(active?'active ':'')+(ready?'':'coming-soon')}><div><strong>{label}</strong><span>{active?'LIVE':ready?'Disponible':'Bientôt'}</span></div><p>{active?.objective||previous?.objective||previous?.message||(ready?'Aucune activité récente observée.':'Point d’entrée préparé côté UI · raccordement backend à venir.')}</p><small>{previous?'Dernière activité · '+new Date(previous.timestamp).toLocaleString():ready?'Jamais observé dans ce runtime':'Préparé pour activation future'}</small><div className="workspace-v3-actions">{active?<><button onClick={()=>{setSelected(active.sessionId);selectContext('session:'+active.sessionId)}}>Continuer</button><button onClick={()=>openWorkspace(active)}>Workspace</button></>:ready?(id==='jarjar'?<button disabled={launching.startsWith(id)} onClick={()=>startSession(id,true)}>{launching===id+':terminal'?'Démarrage complet…':'Lancer Jarjar'}</button>:<><button disabled={launching.startsWith(id)} onClick={()=>startSession(id,false)}>{launching===id+':integrated'?'Lancement…':'Lancer ici'}</button><button disabled={launching.startsWith(id)} onClick={()=>startSession(id,true)}>{launching===id+':terminal'?'Ouverture…':'Ouvrir terminal'}</button></>):<button disabled>Activation à venir</button>}<button onClick={()=>{const target=active?'session:'+active.sessionId:'agent:'+id;selectContext(target);location.hash='world'}}>Monde</button></div></article>})}</div>
+    <div className="pokemon-launch-grid">{launchable.map(([id,label,ready])=>{const active=sessions.find(s=>s.agentId===id&&s.presence==='live');const previous=lastSession(id);return <article key={id} className={"pokemon-launch-card "+(active?'active ':'')+(ready?'':'coming-soon')}><div><strong>{label}</strong><span>{active?'LIVE':ready?'Disponible':'Bientôt'}</span></div><p>{active?.objective||previous?.objective||previous?.message||(ready?'Aucune activité récente observée.':'Point d’entrée préparé côté UI · raccordement backend à venir.')}</p><small>{previous?'Dernière activité · '+new Date(previous.timestamp).toLocaleString():ready?'Jamais observé dans ce runtime':'Préparé pour activation future'}</small><div className="workspace-v3-actions">{active?<><button onClick={()=>{setSelected(active.sessionId);selectContext('session:'+active.sessionId)}}>Continuer</button><button onClick={()=>openWorkspace(active)}>Workspace</button></>:ready?(id==='jarjar'?<button disabled={launching.startsWith(id)} onClick={()=>startSession(id,true)}>{launching===id+':terminal'?'Démarrage complet…':'Lancer Jarjar'}</button>:terminalOnly.has(id)?<button disabled={launching.startsWith(id)} onClick={()=>startSession(id,true)}>{launching===id+':terminal'?'Ouverture…':'Lancer terminal'}</button>:<><button disabled={launching.startsWith(id)} onClick={()=>startSession(id,false)}>{launching===id+':integrated'?'Lancement…':'Lancer ici'}</button><button disabled={launching.startsWith(id)} onClick={()=>startSession(id,true)}>{launching===id+':terminal'?'Ouverture…':'Ouvrir terminal'}</button></>):<button disabled>Activation à venir</button>}<button onClick={()=>{const target=active?'session:'+active.sessionId:'agent:'+id;selectContext(target);location.hash='world'}}>Monde</button></div></article>})}</div>
    </section>
 
 
