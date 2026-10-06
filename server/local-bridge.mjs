@@ -18,28 +18,28 @@ function nativeServiceSpec(id,root){
  const api='http://127.0.0.1:8000'
  const specs={
   'kernel-x108':{
-   title:'KERNEL X108 - 3001',
-   command:`Set-Location -LiteralPath ${q(rt)}; node .\\server.kernel.sealed.cjs`
+   title:'RAGNAROK KERNEL 3001 - AUTHORITY',
+   command:`chcp 65001 | Out-Null; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $env:OBSIDIA_TERMINAL_COLOR='1'; Set-Location -LiteralPath ${q(rt)}; node .\\server.kernel.sealed.cjs`
   },
   'obsidia-api':{
-   title:'OBSIDIA API + BRODY + NATIVE MEMORY - 8000',
-   command:`Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_KERNEL_URL='http://127.0.0.1:3001/kernel/ragnarok'; python -m uvicorn apps.obsidia_api.main:app --host 127.0.0.1 --port 8000`
+   title:'OBSIDIA API 8000 - LIVE KERNEL BRIDGE',
+   command:`chcp 65001 | Out-Null; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $env:PYTHONIOENCODING='utf-8'; $env:OBSIDIA_TERMINAL_COLOR='1'; Write-Host ''; Write-Host '=== OBSIDIA / X108 — START API 8000 ===' -ForegroundColor Cyan; Write-Host ('Repo=' + ${q(root)}) -ForegroundColor Gray; Write-Host 'Command=python -m uvicorn apps.obsidia_api.main:app --host 127.0.0.1 --port 8000' -ForegroundColor Gray; Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_KERNEL_URL='http://127.0.0.1:3001/kernel/ragnarok'; python -m uvicorn apps.obsidia_api.main:app --host 127.0.0.1 --port 8000`
   },
   'gps-defense':{
-   title:'GPS DEFENSE AVIATION',
-   command:`Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_API_BASE='${api}'; python .\\connectors\\aviation_robo.py`
+   title:'GPS/AVIATION LIVE -> KERNEL BRIDGE',
+   command:`chcp 65001 | Out-Null; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $env:PYTHONIOENCODING='utf-8'; $env:OBSIDIA_TERMINAL_COLOR='1'; Write-Host ''; Write-Host '=== GPS / AVIATION LIVE -> KERNEL BRIDGE ===' -ForegroundColor Blue; Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_API_BASE='${api}'; python .\\connectors\\aviation_robo.py`
   },
   'trading-x108':{
-   title:'TRADING -> X108',
-   command:`Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_API_BASE='${api}'; python .\\connectors\\trading_live.py`
+   title:'TRADING LIVE -> KERNEL BRIDGE',
+   command:`chcp 65001 | Out-Null; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $env:PYTHONIOENCODING='utf-8'; $env:OBSIDIA_TERMINAL_COLOR='1'; Write-Host ''; Write-Host '=== TRADING LIVE -> KERNEL BRIDGE ===' -ForegroundColor Magenta; Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_API_BASE='${api}'; python .\\connectors\\trading_live.py`
   },
   'brody-enriched':{
    title:'BRODY ENRICHED',
-   command:`Set-Location -LiteralPath ${q(root)}; .\\scripts\\run_brody_terminal_enriched.ps1 -Base '${api}'`
+   command:`chcp 65001 | Out-Null; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $env:PYTHONIOENCODING='utf-8'; $env:OBSIDIA_TERMINAL_COLOR='1'; Set-Location -LiteralPath ${q(root)}; .\\scripts\\run_brody_terminal_enriched.ps1 -Base '${api}'`
   },
   'obsidure-dry':{
    title:'OBSIDURE',
-   command:`Set-Location -LiteralPath ${q(root)}; .\\scripts\\run_agent_obsidure.ps1 -DryRun`
+   command:`chcp 65001 | Out-Null; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $env:PYTHONIOENCODING='utf-8'; $env:OBSIDURE_COLOR='1'; Set-Location -LiteralPath ${q(root)}; .\\scripts\\run_agent_obsidure.ps1 -DryRun`
   }
  }
  return specs[id]
