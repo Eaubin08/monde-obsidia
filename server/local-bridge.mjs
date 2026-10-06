@@ -114,6 +114,9 @@ function jarjarObservedStatus(){
   governanceSource:telemetry?.governance_source||'',
   governancePhase:telemetry?.governance_phase||'',
   humanConfirmationRequired:telemetry?.human_confirmation_required??false,
+  confirmationPrompt:telemetry?.confirmation_prompt||'',
+  lastUserInput:telemetry?.last_user_input||'',
+  lastResult:telemetry?.last_result||'',
   telemetryFresh:!!telemetry,
   observedAt:new Date().toISOString()
  }
