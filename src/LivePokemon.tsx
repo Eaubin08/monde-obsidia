@@ -130,7 +130,7 @@ export default function LivePokemon(){
 
   {error&&<p role="alert">{error}</p>}
 
-  <nav className="pokemon-subnav" aria-label="Sections Pokémon">
+  <nav className="pokemon-subnav" aria-label="Sections Pokémon" style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:8,margin:'12px 0 10px'}}>
    {([
     ['active','Actifs'],
     ['launch','Lancements'],
