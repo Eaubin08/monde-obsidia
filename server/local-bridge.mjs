@@ -177,7 +177,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   if(req.method==='GET'&&url.pathname==='/jarjar/status'){
    let cockpit=null,error=null
    try{cockpit=await jarjarRequest('/status',{timeout:1200})}catch(e){error=e.message}
-   res.end(JSON.stringify({runtime:cockpit?.runtime||(active?'STARTING':'STOPPED'),process:active?{sessionId:active[0],pid:active[1].child?.pid||active[1].pid||0,active:true}:null,cockpit,error,evidence:latestEvidence(),authority:'NONE',decisionAuthority:'KX108_ONLY'}));return
+   res.end(JSON.stringify({runtime:cockpit?.runtime||(active?'STARTING':'STOPPED'),process:active?{sessionId:active[0],pid:active[1].child?.pid||active[1].pid||0,active:true,output:(active[1].output||'').slice(-12000)}:null,cockpit,error,evidence:latestEvidence(),authority:'NONE',decisionAuthority:'KX108_ONLY'}));return
   }
   if(req.method==='GET'&&url.pathname==='/jarjar/health'){
    const health=await jarjarRequest('/health',{timeout:2500});res.end(JSON.stringify({...health,process:active?{sessionId:active[0],pid:active[1].child?.pid||active[1].pid||0}:null}));return
