@@ -7,6 +7,7 @@ const pokemon=readFileSync(resolve(process.cwd(),'src/LivePokemon.tsx'),'utf8')
 const ecosystem=readFileSync(resolve(process.cwd(),'src/Ecosystem.tsx'),'utf8')
 const workspace=readFileSync(resolve(process.cwd(),'src/ToolWorkspace.tsx'),'utf8')
 const bridge=readFileSync(resolve(process.cwd(),'server/local-bridge.mjs'),'utf8')
+const jarjar=readFileSync(resolve(process.cwd(),'src/JarjarCockpit.tsx'),'utf8')
 
 test('Pokémon launcher and cross-view paths remain wired',()=>{
  for(const invariant of [
@@ -50,4 +51,27 @@ test('Pokémon visual order prioritizes work before population catalog',()=>{
  assert.ok(catalog>scale,'catalog must follow state summary')
  assert.ok(village>catalog,'village must follow catalog')
  assert.ok(registry>village,'registry must remain last')
+})
+
+
+test('Jarjar cockpit stays on canonical governed paths',()=>{
+ for(const invariant of [
+  "scripts.run_jarjar_cockpit",
+  "/jarjar/status",
+  "/jarjar/health",
+  "/jarjar/capabilities",
+  "/jarjar/text",
+  "/jarjar/voice/toggle",
+  "/jarjar/voice/listen",
+  "/jarjar/observe",
+  "decisionAuthority:'KX108_ONLY'",
+ ]) assert.ok(bridge.includes(invariant),invariant)
+ for(const invariant of [
+  'START JARJAR','STOP JARJAR','RESTART JARJAR',
+  '/obsidia-local/jarjar/text',
+  '/obsidia-local/jarjar/voice/toggle',
+  '/obsidia-local/jarjar/voice/listen',
+  '/obsidia-local/jarjar/observe',
+  'Jarjar authority = NONE',
+ ]) assert.ok(jarjar.includes(invariant),invariant)
 })
