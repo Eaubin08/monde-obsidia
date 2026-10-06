@@ -250,7 +250,19 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  }
  if(req.method==='POST'&&url.pathname.startsWith('/open/')){
  const origin=req.headers.origin;if(origin!==`http://${req.headers.host}`)throw Error('Origine refusée');if(process.platform!=='win32')throw Error('Ouverture native disponible sur le fixe Windows');
- const id=url.pathname.split('/').pop();if(id==='jarjar')throw Error('Jarjar se lance depuis « Lancer ici » pour garder un PID et un statut réel dans le Monde');const file=launchers[id];if(!file)throw Error('Outil non raccordé');if(launching.has(id))throw Error('Cet outil est déjà en cours de lancement');launchKey=id;launching.add(id);const root=realpathSync(repository());contained(root,file);
+ const id=url.pathname.split('/').pop();if(id==='jarjar'){
+  if(launching.has(id))throw Error('Jarjar est déjà en cours de lancement');launchKey=id;launching.add(id)
+  const jr=jarjarRoot();if(!existsSync(jr))throw Error('Repo Jarjar absent. Candidats : '+jarjarRootCandidates().join(' | '))
+  if(!existsSync(resolve(jr,jarjarModuleFile)))throw Error('Launcher Jarjar absent : '+resolve(jr,jarjarModuleFile))
+  if(!existsSync(jarjarPython()))throw Error('Python Jarjar validé absent. Candidats : '+jarjarPythonCandidates().join(' | '))
+  const session=randomUUID(),title='OBSIDIA · jarjar · '+session.slice(0,8)
+  const args=['-NoExit','-ExecutionPolicy','Bypass','-Command',`$env:JARJAR_BOUNDED_STRUCTURED_ROUTING_V0='1'; $env:JARJAR_LOCAL_BRODY='1'; Set-Location -LiteralPath "${jr.replace(/"/g,'`"')}"; & "${jarjarPython().replace(/"/g,'`"')}" -m ${jarjarModule}`]
+  const pid=await launchTerminal(['powershell.exe',...args])
+  const p={pid,active:true,output:'',exitCode:null,native:true,tool:id,title};processes.set(session,p)
+  emitJarjar(session,'session_start',{pid,status:'thinking',phase:'RUNNING',message:'Jarjar live ouvert en terminal'})
+  res.end(JSON.stringify({opened:true,tool:id,sessionId:session,pid}));return
+ }
+ const file=launchers[id];if(!file)throw Error('Outil non raccordé');if(launching.has(id))throw Error('Cet outil est déjà en cours de lancement');launchKey=id;launching.add(id);const root=realpathSync(repository());contained(root,file);
  for(const [session,p] of processes){if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}if(p.active&&p.tool===id){if(!p.native)throw Error('Une session de cet outil est active dans la page. La sélectionner ou l’arrêter avant d’ouvrir un terminal.');const live=liveSnapshot().sessions.find(s=>s.sessionId===session);if(live?.presence==='ended')continue;await focusTerminal(p.title,p.pid);res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return}}
  if(id==='brody')await ensureBrodyApi(root);
  const wrapper=observer,session=randomUUID(),title='OBSIDIA · '+id+' · '+session.slice(0,8);
