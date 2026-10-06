@@ -11,6 +11,44 @@ import {projectRoot,repository,observer,pythonFor} from './paths.mjs'
 export {repository} from './paths.mjs'
 export function contained(root,path){const r=realpathSync(root),p=realpathSync(resolve(r,path));const rel=relative(r,p);if(rel.startsWith('..'+sep)||rel==='..'||rel.startsWith(sep))throw Error('Chemin hors projet');return p}
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
+const nativeServiceIds=new Set(['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
+function nativeServiceSpec(id,root){
+ const q=s=>"'" + String(s).replaceAll("'","''") + "'"
+ const rt=resolve(root,'runtime_terrain_bank_trading_gps')
+ const api='http://127.0.0.1:8000'
+ const specs={
+  'kernel-x108':{
+   title:'KERNEL X108 - 3001',
+   command:`Set-Location -LiteralPath ${q(rt)}; node .\\server.kernel.sealed.cjs`
+  },
+  'obsidia-api':{
+   title:'OBSIDIA API + BRODY + NATIVE MEMORY - 8000',
+   command:`Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_KERNEL_URL='http://127.0.0.1:3001/kernel/ragnarok'; python -m uvicorn apps.obsidia_api.main:app --host 127.0.0.1 --port 8000`
+  },
+  'gps-defense':{
+   title:'GPS DEFENSE AVIATION',
+   command:`Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_API_BASE='${api}'; python .\\connectors\\aviation_robo.py`
+  },
+  'trading-x108':{
+   title:'TRADING -> X108',
+   command:`Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_API_BASE='${api}'; python .\\connectors\\trading_live.py`
+  },
+  'brody-enriched':{
+   title:'BRODY ENRICHED',
+   command:`Set-Location -LiteralPath ${q(root)}; .\\scripts\\run_brody_terminal_enriched.ps1 -Base '${api}'`
+  },
+  'obsidure-dry':{
+   title:'OBSIDURE',
+   command:`Set-Location -LiteralPath ${q(root)}; .\\scripts\\run_agent_obsidure.ps1 -DryRun`
+  }
+ }
+ return specs[id]
+}
+function emitNativeService(session,id,title,root){
+ mkdirSync(liveDirectory,{recursive:true})
+ const event={schema:'OBSIDIA_VISUAL_EVENT_V1',sessionId:session,agentId:id,name:title,repository:root,timestamp:new Date().toISOString(),kind:'session_start',status:'thinking',phase:'STARTING',message:'Terminal service natif',objective:null}
+ appendFileSync(resolve(liveDirectory,session+'.jsonl'),JSON.stringify(event)+'\n')
+}
 const jarjarRootCandidates=()=>[
  process.env.OBSIDIA_JARJAR_ROOT,
  'C:\\Users\\User\\Desktop\\Jarvis-iron-obsidia-',
@@ -192,7 +230,23 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  }
  if(req.method==='POST'&&url.pathname.startsWith('/open/')){
  const origin=req.headers.origin;if(origin!==`http://${req.headers.host}`)throw Error('Origine refusée');if(process.platform!=='win32')throw Error('Ouverture native disponible sur le fixe Windows');
- const id=url.pathname.split('/').pop();if(id==='jarjar'){
+ const id=url.pathname.split('/').pop();
+ if(nativeServiceIds.has(id)){
+  if(launching.has(id))throw Error('Ce service est déjà en cours de lancement');launchKey=id;launching.add(id)
+  const root=realpathSync(repository()),spec=nativeServiceSpec(id,root)
+  if(!spec)throw Error('Service non raccordé')
+  for(const [session,p] of processes){
+   if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}
+   if(p.active&&p.tool===id){await focusTerminal(p.title,p.pid);res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return}
+  }
+  const session=randomUUID(),title='OBSIDIA · '+spec.title+' · '+session.slice(0,8)
+  emitNativeService(session,id,spec.title,root)
+  const command=`$host.UI.RawUI.WindowTitle='${title.replaceAll("'","''")}'; ${spec.command}`
+  const pid=await launchTerminal(command)
+  const p={pid,active:true,output:'',exitCode:null,native:true,tool:id,title};processes.set(session,p)
+  res.end(JSON.stringify({opened:true,tool:id,sessionId:session,pid}));return
+ }
+ if(id==='jarjar'){
   if(launching.has(id))throw Error('Jarjar est déjà en cours de lancement');launchKey=id;launching.add(id)
   const jr=jarjarRoot()
   if(!existsSync(jr))throw Error('Repo Jarjar absent. Candidats : '+jarjarRootCandidates().join(' | '))
