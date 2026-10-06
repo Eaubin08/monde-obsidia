@@ -13,19 +13,20 @@ export function contained(root,path){const r=realpathSync(root),p=realpathSync(r
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
 const jarjarRootCandidates=()=>[
  process.env.OBSIDIA_JARJAR_ROOT,
- resolve(homedir(),'Desktop','Jarvis-iron-obsidia-'),
  'C:\\Users\\User\\Desktop\\Jarvis-iron-obsidia-',
+ resolve(homedir(),'Desktop','Jarvis-iron-obsidia-'),
  'C:\\Users\\Aubin\\Desktop\\Jarvis-iron-obsidia-'
 ].filter(Boolean)
 const jarjarRoot=()=>jarjarRootCandidates().find(p=>existsSync(p))||jarjarRootCandidates()[0]
 const jarjarPythonCandidates=()=>[
  process.env.OBSIDIA_JARJAR_PYTHON,
+ 'C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe',
  resolve(homedir(),'.cache','codex-runtimes','codex-primary-runtime','dependencies','python','python.exe'),
  resolve(jarjarRoot(),'.venv','Scripts','python.exe')
 ].filter(Boolean)
 const jarjarPython=()=>jarjarPythonCandidates().find(p=>existsSync(p))||jarjarPythonCandidates()[0]
-const jarjarModule='scripts.run_jarjar_cockpit'
-const jarjarModuleFile='scripts/run_jarjar_cockpit.py'
+const jarjarModule='scripts.run_jarjar_live'
+const jarjarModuleFile='scripts/run_jarjar_live.py'
 const jarjarCockpitUrl=()=>process.env.JARJAR_COCKPIT_URL||'http://127.0.0.1:47822'
 function emitJarjar(session,kind,fields={}){
  mkdirSync(liveDirectory,{recursive:true})
@@ -151,7 +152,7 @@ function snapshot(root=repository()){
    try{const p=contained(root,`_PATCH_PROPOSALS/${item.name}/proposal.json`);if(statSync(p).size>1024*1024)continue;const data=JSON.parse(readFileSync(p,'utf8'));proposals.push({id:item.name,path:`_PATCH_PROPOSALS/${item.name}/proposal.json`,data,observedAt:statSync(p).mtime.toISOString(),receipt:existsSync(resolve(dir,item.name,'RECEIPT.md'))?`_PATCH_PROPOSALS/${item.name}/RECEIPT.md`:null})}catch{}
   }
  }
- return {available:true,repository:root,sha,branch,worktrees:gitWorktrees(root),observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),agentFamilies:agentFamilies(root),runtimeEvidence:canonicalRuntimeEvidence(),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:[...Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null})),{id:'jarjar',path:jarjarModule,available:process.platform==='win32'&&existsSync(jarjarRoot())&&existsSync(resolve(jarjarRoot(),jarjarModuleFile))&&existsSync(jarjarPython()),reason:process.platform!=='win32'?'Windows requis':!existsSync(jarjarRoot())?'Repo Jarjar absent':!existsSync(resolve(jarjarRoot(),jarjarModuleFile))?'Bridge cockpit Jarjar absent':!existsSync(jarjarPython())?'Python Jarjar canonique absent':null}]}
+ return {available:true,repository:root,sha,branch,worktrees:gitWorktrees(root),observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),agentFamilies:agentFamilies(root),runtimeEvidence:canonicalRuntimeEvidence(),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:[...Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null})),{id:'jarjar',path:jarjarModule,available:process.platform==='win32'&&existsSync(jarjarRoot())&&existsSync(resolve(jarjarRoot(),jarjarModuleFile))&&existsSync(jarjarPython()),reason:process.platform!=='win32'?'Windows requis':!existsSync(jarjarRoot())?'Repo Jarjar absent':!existsSync(resolve(jarjarRoot(),jarjarModuleFile))?'Launcher Jarjar absent':!existsSync(jarjarPython())?'Python Jarjar canonique absent':null}]}
 }
 const processes=new Map(),launching=new Set();
 function markEnd(id,message){try{const log=resolve(liveDirectory,id+'.jsonl'),last=JSON.parse(readFileSync(log,'utf8').trim().split('\n').at(-1));if(last.kind!=='session_end')appendFileSync(log,JSON.stringify({...last,timestamp:new Date().toISOString(),kind:'session_end',phase:'PROCESS_EXIT',status:'error',exitCode:null,message})+'\n')}catch{}}
@@ -211,21 +212,20 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   const jr=jarjarRoot()
   if(process.platform!=='win32')throw Error('Jarjar local requiert Windows')
   if(!existsSync(jr))throw Error('Repo Jarjar absent. Candidats : '+jarjarRootCandidates().join(' | '))
-  if(!existsSync(resolve(jr,jarjarModuleFile)))throw Error('Bridge cockpit Jarjar absent : '+resolve(jr,jarjarModuleFile))
-  if(!existsSync(jarjarPython()))throw Error('Python Jarjar canonique absent. Candidats : '+jarjarPythonCandidates().join(' | '))
-  emitJarjar(session,'session_start',{pid:0,status:'starting',phase:'STARTING',message:'Démarrage cockpit Jarjar'})
-  const child=spawn(jarjarPython(),['-m',jarjarModule],{cwd:jr,stdio:['ignore','pipe','pipe'],windowsHide:true,env:{...process.env,PYTHONUNBUFFERED:'1',PYTHONIOENCODING:'utf-8'}})
+  if(!existsSync(resolve(jr,jarjarModuleFile)))throw Error('Launcher Jarjar absent : '+resolve(jr,jarjarModuleFile))
+  if(!existsSync(jarjarPython()))throw Error('Python Jarjar validé absent. Candidats : '+jarjarPythonCandidates().join(' | '))
+  emitJarjar(session,'session_start',{pid:0,status:'starting',phase:'STARTING',message:'Démarrage Jarjar live'})
+  const child=spawn(jarjarPython(),['-m',jarjarModule],{cwd:jr,stdio:['ignore','pipe','pipe'],windowsHide:false,env:{...process.env,JARJAR_BOUNDED_STRUCTURED_ROUTING_V0:'1',JARJAR_LOCAL_BRODY:'1',PYTHONUNBUFFERED:'1',PYTHONIOENCODING:'utf-8'}})
   const p={child,active:true,output:'',exitCode:null,tool};processes.set(session,p)
-  const append=x=>{p.output=(p.output+x.toString('utf8')).slice(-32000)};child.stdout.on('data',append);child.stderr.on('data',append)
-  let pulse=null
-  child.on('spawn',()=>{
-   emitJarjar(session,'activity',{pid:child.pid,status:'thinking',phase:'STARTING',message:'Jarjar initialise voix, cognition et perception'})
-   pulse=setInterval(async()=>{if(!p.active)return;try{const s=await jarjarRequest('/status',{timeout:900});const hud=s.hud||{};emitJarjar(session,'heartbeat',{pid:child.pid,status:hud.state==='error'?'error':hud.state==='idle'?'waiting':'thinking',phase:String(hud.state||'RUNNING').toUpperCase(),message:s.last_response||'Jarjar cockpit connecté',objective:s.last_transcript||null,result:{response_source:s.response_source,action_verdict:s.action_verdict,decision_authority:'KX108_ONLY'}})}catch{emitJarjar(session,'heartbeat',{pid:child.pid,status:'thinking',phase:'STARTING',message:'Jarjar démarre son cockpit'})}},1000)
-  })
-  child.on('error',e=>{p.active=false;append('Erreur de lancement : '+e.message);if(pulse)clearInterval(pulse);emitJarjar(session,'runtime_error',{pid:child.pid||0,status:'error',phase:'DEGRADED',message:e.message})})
-  child.on('close',code=>{p.active=false;p.exitCode=code;if(pulse)clearInterval(pulse);emitJarjar(session,'session_end',{pid:child.pid||0,status:code===0?'success':'error',phase:'PROCESS_EXIT',message:'Jarjar arrêté — code '+code,exitCode:code})})
+  const append=x=>{p.output=(p.output+x.toString('utf8')).slice(-32000)}
+  child.stdout.on('data',append);child.stderr.on('data',append)
+  child.on('spawn',()=>emitJarjar(session,'activity',{pid:child.pid,status:'thinking',phase:'RUNNING',message:'Jarjar live lancé'}))
+  child.on('error',e=>{p.active=false;append('Erreur de lancement : '+e.message);emitJarjar(session,'runtime_error',{pid:child.pid||0,status:'error',phase:'DEGRADED',message:e.message})})
+  child.on('close',code=>{p.active=false;p.exitCode=code;emitJarjar(session,'session_end',{pid:child.pid||0,status:code===0?'success':'error',phase:'PROCESS_EXIT',message:'Jarjar arrêté — code '+code,exitCode:code})})
   await new Promise((ok,no)=>{child.once('spawn',ok);child.once('error',no)})
-  res.end(JSON.stringify({sessionId:session,started:true,pid:child.pid}));return
+  await new Promise(r=>setTimeout(r,900))
+  if(!p.active)throw Error('Jarjar a quitté au démarrage. '+p.output.slice(-6000))
+  res.end(JSON.stringify({sessionId:session,started:true,pid:child.pid,repository:jr,python:jarjarPython(),module:jarjarModule}));return
  }
  contained(root,launchers[tool]);
  if(tool==='brody')await ensureBrodyApi(root);
