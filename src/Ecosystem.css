@@ -243,3 +243,69 @@ linear-gradient(90deg,rgba(69,104,77,.08) 1px,transparent 1px),
 .pokemon-team-grid article>div button small{color:#9bbfa4}
 @media(max-width:1100px){.global-search-results{grid-template-columns:repeat(2,minmax(0,1fr))}.world-rnd-grid,.pokemon-team-grid{grid-template-columns:1fr 1fr}.pokemon-circuit-track{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:650px){.global-search-head{flex-direction:column}.global-search-head input{min-width:0;width:100%;max-width:none}.global-search-results,.world-rnd-grid,.pokemon-team-grid,.pokemon-circuit-track{grid-template-columns:1fr}.zone-rnd{position:static;transform:none!important}}
+
+/* Semantic color language — same meaning everywhere
+   green = live/ok; amber = waiting/future; red = blocked/error;
+   blue = R&D/build; violet = governance/proof; gray = inactive/history */
+:root{
+ --obs-green:#76c98a;--obs-green-bg:#14271c;
+ --obs-amber:#d6b85b;--obs-amber-bg:#2b2412;
+ --obs-red:#d86f6f;--obs-red-bg:#321717;
+ --obs-blue:#6ea8e8;--obs-blue-bg:#142237;
+ --obs-violet:#a98ce5;--obs-violet-bg:#211935;
+ --obs-gray:#7f8b83;--obs-gray-bg:#171b18;
+}
+
+/* Pokémon status summary */
+.pokemon-scale-bar button:nth-child(2){border-color:var(--obs-green);background:var(--obs-green-bg)}
+.pokemon-scale-bar button:nth-child(3),.pokemon-scale-bar button:nth-child(4){border-color:var(--obs-amber);background:var(--obs-amber-bg)}
+.pokemon-scale-bar button:nth-child(5){border-color:var(--obs-red);background:var(--obs-red-bg)}
+.pokemon-scale-bar button:nth-child(6){border-color:var(--obs-gray);background:var(--obs-gray-bg)}
+.pokemon-scale-bar button:nth-child(2)>strong{color:var(--obs-green)}
+.pokemon-scale-bar button:nth-child(3)>strong,.pokemon-scale-bar button:nth-child(4)>strong{color:var(--obs-amber)}
+.pokemon-scale-bar button:nth-child(5)>strong{color:var(--obs-red)}
+.pokemon-scale-bar button:nth-child(6)>strong{color:var(--obs-gray)}
+
+/* Launchers */
+.pokemon-launch-card.active{border-color:var(--obs-green);background:var(--obs-green-bg)}
+.pokemon-launch-card.active>div:first-child span{color:var(--obs-green)}
+.pokemon-launch-card.coming-soon{border-color:var(--obs-amber);background:var(--obs-amber-bg)}
+.pokemon-launch-card.coming-soon>div:first-child span{color:var(--obs-amber)}
+
+/* Live circuit */
+.pokemon-stage:nth-child(1),.pokemon-stage:nth-child(2){border-color:var(--obs-amber);background:var(--obs-amber-bg)}
+.pokemon-stage:nth-child(3){border-color:var(--obs-green);background:var(--obs-green-bg)}
+.pokemon-stage:nth-child(4),.pokemon-stage:nth-child(5){border-color:var(--obs-violet);background:var(--obs-violet-bg)}
+.pokemon-stage.blocked{border-color:var(--obs-red);background:var(--obs-red-bg)}
+.pokemon-stage.blocked strong{color:var(--obs-red)}
+.pokemon-stage:nth-child(3)>div:first-child>strong{color:var(--obs-green)}
+.pokemon-stage:nth-child(1)>div:first-child>strong,.pokemon-stage:nth-child(2)>div:first-child>strong{color:var(--obs-amber)}
+.pokemon-stage:nth-child(4)>div:first-child>strong,.pokemon-stage:nth-child(5)>div:first-child>strong{color:var(--obs-violet)}
+
+/* Mission teams / proof */
+.pokemon-team-grid article{border-color:var(--obs-violet)}
+.pokemon-team-grid article>.world-object-kind{color:var(--obs-violet)}
+.trace-badge.complete,.proof-step.ok{border-color:var(--obs-green)}
+.trace-badge.complete{background:var(--obs-green-bg);color:var(--obs-green)}
+.trace-badge.incomplete,.proof-warning{border-color:var(--obs-amber)}
+.trace-badge.incomplete{background:var(--obs-amber-bg);color:var(--obs-amber)}
+
+/* World semantics */
+.zone-activity,.world-live-token,.world-object-card.live{border-color:var(--obs-green);background:var(--obs-green-bg)}
+.zone-rnd,.world-rnd-panel{border-color:var(--obs-blue);background:var(--obs-blue-bg)}
+.zone-rnd>span,.zone-rnd>strong,.world-rnd-panel>.world-object-kind{color:var(--obs-blue)}
+.zone-governance{border-color:var(--obs-violet);background:var(--obs-violet-bg)}
+.zone-governance>span,.zone-governance>strong{color:var(--obs-violet)}
+.world-zone-explorer:has(.world-object-kind){transition:border-color .15s ease}
+.world-card-alert,.pokemon-v3-blocker,.tool-error{color:var(--obs-red)}
+.world-object-card:has(.world-card-alert){border-color:var(--obs-red);background:var(--obs-red-bg)}
+
+/* Historical / inactive */
+.inventory-panel,.pokemon-v3-secondary{border-color:#414b44}
+.inventory-panel>summary,.pokemon-v3-secondary>summary{color:#a4ada7}
+.agent-token small,.muted{color:#89948d}
+
+/* Keep selection readable over semantic base */
+.world-zone.selected,.pokemon-scale-bar button[aria-pressed="true"],.pokemon-family-grid button.selected{
+ box-shadow:0 0 0 2px rgba(255,255,255,.16) inset,0 0 0 1px currentColor;
+}
