@@ -36,48 +36,40 @@ function Port-Open([int]$Port) {
 }
 
 function Resolve-Executable([string]$FilePath) {
-    if (Test-Path -LiteralPath $FilePath) {
-        return (Resolve-Path -LiteralPath $FilePath).Path
-    }
-
+    if (Test-Path -LiteralPath $FilePath) { return (Resolve-Path -LiteralPath $FilePath).Path }
     $command = Get-Command $FilePath -ErrorAction SilentlyContinue
-    if ($command -and $command.Source) {
-        return $command.Source
-    }
-
+    if ($command -and $command.Source) { return $command.Source }
     if ($FilePath -ieq 'powershell.exe') {
         $candidate = Join-Path $PSHOME 'powershell.exe'
-        if (Test-Path -LiteralPath $candidate) {
-            return $candidate
-        }
+        if (Test-Path -LiteralPath $candidate) { return $candidate }
     }
-
     throw "Executable introuvable: $FilePath"
+}
+
+function Quote-Arg([string]$Value) {
+    if ($null -eq $Value) { return '""' }
+    $escaped = $Value.Replace('\','\\').Replace('"','\"')
+    return '"' + $escaped + '"'
 }
 
 function Start-Server([string]$Name, [string]$FilePath, [string[]]$Arguments, [string]$WorkingDirectory) {
     Write-Host "[$Name] lancement..." -ForegroundColor DarkCyan
-
     $resolvedFile = Resolve-Executable $FilePath
+    $argLine = (@($Arguments) | Where-Object { $null -ne $_ } | ForEach-Object { Quote-Arg ([string]$_) }) -join ' '
 
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = $resolvedFile
+    $psi.Arguments = $argLine
     $psi.WorkingDirectory = $WorkingDirectory
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow = $true
 
-    foreach ($arg in @($Arguments)) {
-        if ($null -ne $arg -and -not [string]::IsNullOrWhiteSpace([string]$arg)) {
-            [void]$psi.ArgumentList.Add([string]$arg)
-        }
-    }
-
     $process = [System.Diagnostics.Process]::Start($psi)
     if (-not $process) { throw "Impossible de lancer $Name" }
-
     Write-Host "[$Name] PID=$($process.Id)" -ForegroundColor DarkGray
     return $process
 }
+
 
 $WorldRoot = Split-Path -Parent $PSScriptRoot
 $ObsidiaCandidates = @(
@@ -122,8 +114,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $KernelDir 'node_modules\express')))
 
 if (-not (Port-Open 3001)) {
     Write-Host '[2/6] Demarrage Kernel X108 :3001...' -ForegroundColor Cyan
-    $cmd = "Set-Location -LiteralPath '$($KernelDir.Replace("'","''"))'; node .\server.kernel.sealed.cjs"
-    Start-Server 'JARJAR - KERNEL X108 - 3001' $cmd
+    $null = Start-Server 'KERNEL X108' 'node.exe' @('.\server.kernel.sealed.cjs') $KernelDir
 } else { Write-Host '[2/6] Kernel X108 deja actif.' -ForegroundColor DarkGray }
 Wait-Port 3001 'KERNEL X108' 60
 
@@ -139,8 +130,9 @@ if (-not $ObsidiaPython) {
 
 if (-not (Port-Open 8000)) {
     Write-Host '[3/6] Demarrage API Obsidia/Brody :8000...' -ForegroundColor Cyan
-    $cmd = "Set-Location -LiteralPath '$($Obsidia.Replace("'","''"))'; `$env:PYTHONPATH='$($Obsidia.Replace("'","''"))'; `$env:OBSIDIA_KERNEL_URL='http://127.0.0.1:3001/kernel/ragnarok'; & '$($ObsidiaPython.Replace("'","''"))' -m uvicorn apps.obsidia_api.main:app --host 127.0.0.1 --port 8000"
-    Start-Server 'JARJAR - OBSIDIA API BRODY - 8000' $cmd
+    $env:PYTHONPATH = $Obsidia
+    $env:OBSIDIA_KERNEL_URL = 'http://127.0.0.1:3001/kernel/ragnarok'
+    $null = Start-Server 'OBSIDIA API/BRODY' $ObsidiaPython @('-m','uvicorn','apps.obsidia_api.main:app','--host','127.0.0.1','--port','8000') $Obsidia
 } else { Write-Host '[3/6] API Obsidia/Brody deja active.' -ForegroundColor DarkGray }
 Wait-Port 8000 'OBSIDIA API/BRODY' 120
 
@@ -148,8 +140,7 @@ if (-not (Port-Open 8080)) {
     Write-Host '[4/6] Demarrage Qwen texte :8080...' -ForegroundColor Cyan
     $launcher = Join-Path $Jarjar 'scripts\start_qwen_text.ps1'
     if (-not (Test-Path $launcher)) { throw "Launcher Qwen texte absent: $launcher" }
-    $cmd = "Set-Location -LiteralPath '$($Jarjar.Replace("'","''"))'; & '$($launcher.Replace("'","''"))'"
-    Start-Server 'JARJAR - QWEN TEXT - 8080' $cmd
+    $null = Start-Server 'QWEN TEXT' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher) $Jarjar
 } else { Write-Host '[4/6] Qwen texte deja actif.' -ForegroundColor DarkGray }
 Wait-Port 8080 'QWEN TEXT' 600
 
@@ -157,8 +148,7 @@ if (-not (Port-Open 8081)) {
     Write-Host '[5/6] Demarrage Qwen-VL :8081...' -ForegroundColor Cyan
     $launcher = Join-Path $Jarjar 'scripts\start_qwen_vl.ps1'
     if (-not (Test-Path $launcher)) { throw "Launcher Qwen-VL absent: $launcher" }
-    $cmd = "Set-Location -LiteralPath '$($Jarjar.Replace("'","''"))'; & '$($launcher.Replace("'","''"))'"
-    Start-Server 'JARJAR - QWEN-VL - 8081' $cmd
+    $null = Start-Server 'QWEN-VL' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher) $Jarjar
 } else { Write-Host '[5/6] Qwen-VL deja actif.' -ForegroundColor DarkGray }
 Wait-Port 8081 'QWEN-VL' 600
 
