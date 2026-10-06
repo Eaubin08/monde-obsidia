@@ -1,0 +1,136 @@
+/* OBSIDIA UI V4 — isolated experimental shell */
+:root{
+  --v4-bg:#08100c;
+  --v4-panel:#0d1711;
+  --v4-panel-2:#111d16;
+  --v4-line:#294235;
+  --v4-line-strong:#3f6650;
+  --v4-text:#e5eee8;
+  --v4-muted:#91a698;
+  --v4-live:#76c98a;
+  --v4-cyan:#69c6d9;
+  --v4-amber:#d6b85b;
+  --v4-red:#d86f6f;
+}
+
+body{background:var(--v4-bg)}
+.v4-shell{max-width:none;width:100%;padding:0 18px 18px}
+.v4-topbar{
+  position:sticky;top:0;z-index:40;
+  min-height:58px;
+  display:grid;grid-template-columns:auto minmax(420px,720px) auto;
+  align-items:center;gap:18px;
+  border-bottom:1px solid var(--v4-line);
+  background:rgba(8,16,12,.96);
+  backdrop-filter:blur(12px);
+}
+.v4-brand{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--v4-text);letter-spacing:.08em}
+.v4-brand>span{font-size:1.15rem;color:var(--v4-live)}
+.v4-primary-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.v4-primary-nav a{
+  min-height:38px;display:grid;place-items:center;
+  border:1px solid transparent;border-radius:7px;
+  color:var(--v4-muted);text-decoration:none;font-weight:700;
+}
+.v4-primary-nav a:hover{border-color:var(--v4-line);color:var(--v4-text);background:var(--v4-panel)}
+.v4-primary-nav a[aria-current="page"]{border-color:var(--v4-line-strong);background:var(--v4-panel-2);color:var(--v4-text)}
+.v4-runtime{display:flex;align-items:center;gap:8px;justify-self:end}
+.v4-runtime>div{display:flex;flex-direction:column;line-height:1.05}
+.v4-runtime small{color:var(--v4-muted);font-size:.67rem;margin-top:3px}
+.v4-context{max-width:1600px;margin:10px auto 0}
+.v4-context .context-bridge{
+  margin:0;padding:8px 10px;
+  grid-template-columns:minmax(180px,1fr) minmax(380px,1.5fr) auto;
+  border:1px solid var(--v4-line);background:var(--v4-panel);
+}
+.v4-context .context-bridge-main .eyebrow{display:none}
+.v4-context .context-bridge-main strong{font-size:.9rem}
+.v4-context .context-bridge-facts{gap:5px}
+.v4-context .context-bridge-facts span{padding:5px 7px;background:transparent;border-color:var(--v4-line)}
+.v4-context .context-bridge-nav button{padding:6px 8px}
+.v4-status-message{max-width:1600px;margin:8px auto;padding:8px 10px;border:1px solid var(--v4-line);background:var(--v4-panel)}
+.v4-content{max-width:1600px;margin:12px auto 0;display:grid;gap:14px}
+
+/* V4 common page headers */
+.v4-content .world-v2-header,
+.v4-content .workspace-v3-header,
+.v4-content .pokemon-v3-header,
+.v4-content .search-page-head{
+  border:0;border-bottom:1px solid var(--v4-line);
+  background:transparent;padding:4px 0 12px;margin:0;
+}
+.v4-content h1{font-size:clamp(1.45rem,2vw,2.15rem);margin:3px 0}
+.v4-content h2{margin-top:4px}
+.v4-content .eyebrow{font-size:.67rem;letter-spacing:.12em;color:var(--v4-muted)}
+
+/* Pokemon V4 flow: status -> active + inspector -> launch -> circuit -> mission/population -> archives */
+.v4-content .pokemon-v3{gap:12px}
+.v4-content .pokemon-scale-bar{order:0;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.v4-content .pokemon-scale-bar button{min-height:50px;padding:6px 10px;border-width:1px}
+.v4-content .pokemon-scale-bar strong{font-size:1.12rem}
+.v4-content .pokemon-v3-layout{grid-template-columns:minmax(0,1fr) minmax(300px,360px);gap:12px}
+.v4-content .pokemon-v3-inspector{top:72px;border-width:1px;background:var(--v4-panel);padding:12px}
+.v4-content .pokemon-v3-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.v4-content .pokemon-v3-card{padding:11px;border-width:1px;background:var(--v4-panel)}
+.v4-content .pokemon-launch-zone{border-width:1px;background:var(--v4-panel);padding:12px}
+.v4-content .pokemon-launch-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.v4-content .pokemon-launch-card{border-width:1px;padding:9px}
+.v4-content .pokemon-circuit,.v4-content .pokemon-teams,.v4-content .pokemon-families{border-width:1px;background:var(--v4-panel);padding:12px}
+.v4-content .pokemon-stage{min-height:96px;padding:7px}
+.v4-content .pokemon-lower-grid{gap:10px}
+.v4-content .pokemon-v3-secondary{border-width:1px;background:var(--v4-panel);padding:9px 11px}
+
+/* Workspace V4 */
+.v4-content .workspace-v3{display:grid;gap:10px}
+.v4-content .workspace-v3-tabs{
+  position:sticky;top:68px;z-index:20;
+  background:rgba(8,16,12,.94);
+  backdrop-filter:blur(10px);
+  border:1px solid var(--v4-line);padding:5px;gap:5px
+}
+.v4-content .workspace-v3-tabs button{padding:8px 10px;border-radius:5px}
+.v4-content .workspace-v3-dashboard{gap:12px}
+.v4-content .workspace-v3-session,.v4-content .workspace-v3-rail,.v4-content .workspace-v3-files-grid>section,.v4-content .workspace-v3-focus-object{border-width:1px;background:var(--v4-panel)}
+
+/* World V4 */
+.v4-content .world-map-v2{border-width:1px;background:var(--v4-panel)}
+.v4-content .world-zone-explorer,.v4-content .world-focus-v2,.v4-content .world-layer-reader{border-width:1px;background:var(--v4-panel)}
+.v4-content .world-object-card{border-width:1px}
+
+/* Search V4 */
+.v4-content .search-page{gap:10px}
+.v4-content .global-search{margin:0;border-width:1px;background:var(--v4-panel)}
+.v4-content .global-search-filters{padding-top:2px}
+.v4-content .recent-activity{margin:0;border-width:1px;background:var(--v4-panel)}
+
+/* Contextual footer actions */
+.obs-quick-links{
+  max-width:1600px;margin:16px auto 0;
+  border:1px solid var(--v4-line);background:var(--v4-panel);
+  border-radius:8px;padding:10px 12px;
+}
+.office-footer{max-width:1600px;margin:8px auto 0;opacity:.7}
+
+/* Do not use the discarded Pokemon cockpit sidebar in V4 */
+.pokemon-cockpit-nav{display:none!important}
+
+@media(max-width:1250px){
+  .v4-topbar{grid-template-columns:auto 1fr auto}
+  .v4-content .pokemon-launch-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .v4-context .context-bridge{grid-template-columns:1fr}
+}
+@media(max-width:900px){
+  .v4-shell{padding:0 10px 12px}
+  .v4-topbar{position:static;grid-template-columns:1fr;gap:7px;padding:10px 0}
+  .v4-primary-nav{grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  .v4-runtime{justify-self:start}
+  .v4-content .pokemon-v3-layout{grid-template-columns:1fr}
+  .v4-content .pokemon-v3-inspector{position:static}
+  .v4-content .pokemon-scale-bar{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .v4-content .pokemon-lower-grid{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .v4-content .pokemon-v3-grid,
+  .v4-content .pokemon-launch-grid,
+  .v4-content .pokemon-scale-bar{grid-template-columns:1fr}
+}
