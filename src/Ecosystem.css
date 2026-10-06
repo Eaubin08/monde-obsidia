@@ -72,3 +72,26 @@
 .pokemon-v3-secondary{border:2px solid #34563f;background:#0d1b13;padding:12px 14px}
 .pokemon-v3-secondary>summary{cursor:pointer;font-weight:700;padding:8px 0}
 @media(max-width:900px){.workspace-v3-dashboard,.pokemon-v3-layout,.workspace-v3-files-grid{grid-template-columns:1fr}.pokemon-v3-inspector{position:static}.pokemon-v3-grid{grid-template-columns:1fr}.workspace-v3-files-head{align-items:stretch;flex-direction:column}}
+
+/* Shared context + proof chain */
+.work-context-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.work-context-grid>div,.pokemon-context-row>span{display:flex;flex-direction:column;gap:3px;border:1px solid #34563f;background:#0b1810;padding:10px}
+.work-context-grid small,.pokemon-context-row small{color:#9bbfa4;text-transform:uppercase;letter-spacing:.08em}
+.work-context-grid span{color:#9bbfa4;font-size:.9rem}
+.pokemon-context-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.mission-timeline{display:grid;gap:10px;border:1px solid #34563f;background:#0b1810;padding:12px;margin:12px 0}
+.mission-timeline.compact{padding:10px}
+.mission-timeline-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.mission-timeline-head h3{margin:2px 0 0;font-size:1rem}
+.trace-badge{padding:5px 8px;border:1px solid #45684d;font-size:.78rem;font-weight:700}
+.trace-badge.complete{background:#183122}
+.trace-badge.incomplete{background:#2b2112}
+.proof-chain{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.proof-step{min-width:0;border:1px solid #34563f;padding:9px;background:#102219;display:flex;flex-direction:column;gap:4px}
+.proof-step>small{width:20px;height:20px;display:grid;place-items:center;border:1px solid currentColor;border-radius:50%}
+.proof-step>span{font-size:.82rem;overflow-wrap:anywhere}
+.proof-step.ok{border-color:#4c7657}
+.proof-step.missing{opacity:.68;border-style:dashed}
+.proof-warning{border-left:3px solid currentColor;padding:8px 10px;background:#17150d}
+.proof-warning p{margin:4px 0 0}
+@media(max-width:1000px){.proof-chain{grid-template-columns:1fr 1fr}.work-context-grid{grid-template-columns:1fr}.pokemon-context-row{grid-template-columns:1fr}}
