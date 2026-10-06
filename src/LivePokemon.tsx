@@ -27,6 +27,8 @@ export default function LivePokemon(){
  const [selectedAgent,setSelectedAgent]=useState('')
  const [error,setError]=useState('')
  const [connected,setConnected]=useState(false)
+ const [launching,setLaunching]=useState('')
+ const [launchMessage,setLaunchMessage]=useState('')
 
  useEffect(()=>{if(!container.current)return;const scene=new AgentTown({container:container.current,environment:'town',officeSize:'large',roomMode:'environment',onAgentClick:setSelected});town.current=scene;return()=>{scene.destroy();town.current=null}},[])
 
@@ -41,10 +43,25 @@ export default function LivePokemon(){
  const currentMission=currentEntity?state?.missions.find(m=>m.sessionRefs.includes(currentEntity.id)):undefined
  const domains=state?.entities.filter(e=>e.kind==='domain')||[]
  const agentEntity=state?.entities.find(e=>e.id===selectedAgent)
+ const launchable=[['brody','Brody'],['obsidure','Obsidure'],['jarjar','Jarjar'],['jarvis','Jarvis']] as const
+ const lastSession=(agentId:string)=>sessions.filter(s=>s.agentId===agentId).sort((a,b)=>Date.parse(b.timestamp)-Date.parse(a.timestamp))[0]
 
  const selectContext=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
  const openWorkspace=(s:Session)=>{sessionStorage.setItem('obsidia-selected-session',s.sessionId);selectContext('session:'+s.sessionId);const area=s.agentId==='brody'?'brody':s.agentId==='obsidure'?'obsidure':s.agentId==='cli'?'cli':'home';sessionStorage.setItem('obsidia-workspace-area',area);location.hash='workspace'}
  const chooseAgent=(id:string)=>{setSelectedAgent(id);selectContext(id);const raw=id.startsWith('agent:')?id.slice(6):id;const running=sessions.find(s=>s.agentId===raw&&s.presence==='live');setSelected(running?.sessionId||'')}
+ const launchAgent=async(agentId:string)=>{
+  setLaunching(agentId);setLaunchMessage('Lancement de '+agentId+'…')
+  try{
+   const r=await fetch('/obsidia-local/open/'+agentId,{method:'POST'}),d=await r.json()
+   if(!r.ok)throw Error(d.error||('HTTP '+r.status))
+   sessionStorage.setItem('obsidia-selected-session',d.sessionId)
+   setSelected(d.sessionId);setSelectedAgent('')
+   selectContext('session:'+d.sessionId)
+   window.dispatchEvent(new CustomEvent('obsidia-session',{detail:d.sessionId}))
+   setLaunchMessage('Session lancée : '+agentId)
+  }catch(e){setLaunchMessage(String(e))}
+  finally{setLaunching('')}
+ }
 
  return <section className="pokemon-v3">
   <header className="pokemon-v3-header">
@@ -76,6 +93,11 @@ export default function LivePokemon(){
     })}</div>
    </main>
 
+   <section className="pokemon-launch-zone">
+    <div className="pokemon-launch-head"><div><span className="eyebrow">DISPONIBLES</span><h2>Lancer un agent</h2><p>Uniquement les launchers réellement disponibles dans Obsidia.</p></div>{launchMessage&&<small>{launchMessage}</small>}</div>
+    <div className="pokemon-launch-grid">{launchable.map(([id,label])=>{const active=sessions.find(s=>s.agentId===id&&s.presence==='live');const previous=lastSession(id);return <article key={id} className={"pokemon-launch-card "+(active?'active':'')}><div><strong>{label}</strong><span>{active?'LIVE':'Disponible'}</span></div><p>{active?.objective||previous?.objective||previous?.message||'Aucune activité récente observée.'}</p><small>{previous?'Dernière activité · '+new Date(previous.timestamp).toLocaleString():'Jamais observé dans ce runtime'}</small><div className="workspace-v3-actions">{active?<><button onClick={()=>{setSelected(active.sessionId);selectContext('session:'+active.sessionId)}}>Continuer</button><button onClick={()=>openWorkspace(active)}>Workspace</button></>:<button disabled={launching===id} onClick={()=>launchAgent(id)}>{launching===id?'Lancement…':'Lancer'}</button>}<button onClick={()=>{const target=active?'session:'+active.sessionId:'agent:'+id;selectContext(target);location.hash='world'}}>Monde</button></div></article>})}</div>
+   </section>
+
    <aside className="pokemon-v3-inspector">
     {current?<><span className="eyebrow">AGENT SÉLECTIONNÉ</span><h2>{current.name}</h2><div className="pokemon-v3-state">{phaseLabel(current.phase)}</div><h3>Travail actuel</h3><p>{current.objective||'Aucun objectif observé.'}</p>{currentMission&&<><h3>Mission / preuve</h3><MissionTimeline compact mission={currentMission} entities={state?.entities||[]} onFocus={id=>{selectContext(id);location.hash='world'}}/></>}<h3>Résultat</h3>{produced.length?produced.map((e,i)=><div key={i} className="pokemon-v3-result"><strong>{e?.label}</strong></div>):<p>Aucun résultat observé pour cette session.</p>}<div className="pokemon-v3-actions"><button onClick={()=>openWorkspace(current)}>Ouvrir son Workspace</button><button onClick={()=>{selectContext(currentMission?.id||'session:'+current.sessionId);location.hash='world'}}>Voir dans le Monde</button></div><details><summary>Détails techniques</summary><p>Session : {current.sessionId}</p><p>Repo : {current.repository}</p><p>Dernier signal : {current.timestamp}</p>{current.events.map((e,i)=><div key={i}><small>{new Date(e.timestamp).toLocaleTimeString()} · {phaseLabel(e.phase)}</small><p>{e.message}</p></div>)}</details></>:agentEntity?<><span className="eyebrow">AGENT DÉCLARÉ</span><h2>{agentEntity.label}</h2><p>Aucune session live observée.</p><button onClick={()=>{selectContext(agentEntity.id);location.hash='world'}}>Voir dans le Monde</button></>:<><span className="eyebrow">SÉLECTION</span><h2>Choisis un agent</h2><p>Sa mission, son état et son résultat apparaîtront ici.</p></>}
    </aside>
@@ -88,7 +110,7 @@ export default function LivePokemon(){
   </details>
 
   <details className="pokemon-v3-secondary">
-   <summary>Population canonique Sigma</summary>
+   <summary>Population canonique Sigma · agents non lançables directement inclus</summary>
    {domains.map(d=>{const refs=state?.relations.filter(r=>r.from===d.id&&r.type==='HAS_AGENT')||[];return <section key={d.id}><h3>{d.label} · {refs.length}</h3><div className="office-toolbar">{refs.map(r=>{const a=state?.entities.find(e=>e.id===r.to);const active=sessions.some(s=>s.agentId===a?.agentId&&s.presence==='live');return <button key={r.to} onClick={()=>chooseAgent(r.to)}>{a?.label||r.to}<small>{active?'LIVE':'inactif'}</small></button>})}</div></section>})}
   </details>
  </section>
