@@ -23,23 +23,23 @@ function nativeServiceSpec(id,root){
   },
   'obsidia-api':{
    title:'OBSIDIA API 8000 - LIVE KERNEL BRIDGE',
-   command:`chcp 65001 | Out-Null; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $env:PYTHONIOENCODING='utf-8'; $env:OBSIDIA_TERMINAL_COLOR='1'; Write-Host ''; Write-Host '=== OBSIDIA / X108 — START API 8000 ===' -ForegroundColor Cyan; Write-Host ('Repo=' + ${q(root)}) -ForegroundColor Gray; Write-Host 'Command=python -m uvicorn apps.obsidia_api.main:app --host 127.0.0.1 --port 8000' -ForegroundColor Gray; Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_KERNEL_URL='http://127.0.0.1:3001/kernel/ragnarok'; python -m uvicorn apps.obsidia_api.main:app --host 127.0.0.1 --port 8000`
+   command:`& ${q(resolve(projectRoot,'scripts','start-service-colored.ps1'))} -Service 'obsidia-api' -Root ${q(root)}`
   },
   'gps-defense':{
    title:'GPS/AVIATION LIVE -> KERNEL BRIDGE',
-   command:`chcp 65001 | Out-Null; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $env:PYTHONIOENCODING='utf-8'; $env:OBSIDIA_TERMINAL_COLOR='1'; Write-Host ''; Write-Host '=== GPS / AVIATION LIVE -> KERNEL BRIDGE ===' -ForegroundColor Blue; Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_API_BASE='${api}'; python .\\connectors\\aviation_robo.py`
+   command:`& ${q(resolve(projectRoot,'scripts','start-service-colored.ps1'))} -Service 'gps-defense' -Root ${q(root)}`
   },
   'trading-x108':{
    title:'TRADING LIVE -> KERNEL BRIDGE',
-   command:`chcp 65001 | Out-Null; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $env:PYTHONIOENCODING='utf-8'; $env:OBSIDIA_TERMINAL_COLOR='1'; Write-Host ''; Write-Host '=== TRADING LIVE -> KERNEL BRIDGE ===' -ForegroundColor Magenta; Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_API_BASE='${api}'; python .\\connectors\\trading_live.py`
+   command:`& ${q(resolve(projectRoot,'scripts','start-service-colored.ps1'))} -Service 'trading-x108' -Root ${q(root)}`
   },
   'brody-enriched':{
    title:'BRODY ENRICHED',
-   command:`chcp 65001 | Out-Null; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $env:PYTHONIOENCODING='utf-8'; $env:OBSIDIA_TERMINAL_COLOR='1'; Set-Location -LiteralPath ${q(root)}; .\\scripts\\run_brody_terminal_enriched.ps1 -Base '${api}'`
+   command:`& ${q(resolve(projectRoot,'scripts','start-service-colored.ps1'))} -Service 'brody-enriched' -Root ${q(root)}`
   },
   'obsidure-dry':{
    title:'OBSIDURE',
-   command:`chcp 65001 | Out-Null; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $env:PYTHONIOENCODING='utf-8'; $env:OBSIDURE_COLOR='1'; Set-Location -LiteralPath ${q(root)}; .\\scripts\\run_agent_obsidure.ps1 -DryRun`
+   command:`& ${q(resolve(projectRoot,'scripts','start-service-colored.ps1'))} -Service 'obsidure-dry' -Root ${q(root)}`
   }
  }
  return specs[id]
