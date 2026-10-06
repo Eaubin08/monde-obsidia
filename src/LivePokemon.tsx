@@ -47,7 +47,7 @@ export default function LivePokemon(){
  const currentMission=currentEntity?state?.missions.find(m=>m.sessionRefs.includes(currentEntity.id)):undefined
  const domains=state?.entities.filter(e=>e.kind==='domain')||[]
  const agentEntity=state?.entities.find(e=>e.id===selectedAgent)
- const launchable=[['brody','Brody',true],['obsidure','Obsidure',true],['cli','CLI Obsidia',true],['jarjar','Jarjar',false],['jarvis','Jarvis',false]] as const
+ const launchable=[['brody','Brody',true],['obsidure','Obsidure',true],['cli','CLI Obsidia',true],['jarjar','Jarjar',true],['jarvis','Jarvis',false]] as const
  const lastSession=(agentId:string)=>sessions.filter(s=>s.agentId===agentId).sort((a,b)=>Date.parse(b.timestamp)-Date.parse(a.timestamp))[0]
  const organFamily:AgentFamily={id:'organs',label:'Organes / outils',sourceRepo:'monde-obsidia',localPresent:true,kind:'launcher',agents:launchable.map(x=>x[0]) as string[]}
  const families=[organFamily,...(state?.agentFamilies||[])]
