@@ -65,7 +65,7 @@ if (-not $JarjarPython) { throw "Python Jarjar introuvable. Candidats: $($Jarjar
 $KernelDir = Join-Path $Obsidia 'runtime_terrain_bank_trading_gps'
 
 Write-Host ''
-Write-Host '=== JARJAR FULL START ===' -ForegroundColor Cyan
+Write-Host '=== JARJAR SERVER ===' -ForegroundColor Cyan
 Write-Host "Obsidia: $Obsidia"
 Write-Host "Jarjar : $Jarjar"
 Write-Host "Python : $JarjarPython"
@@ -81,7 +81,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $KernelDir 'node_modules\express')))
 if (-not (Port-Open 3001)) {
     Write-Host '[2/6] Démarrage Kernel X108 :3001...' -ForegroundColor Cyan
     $cmd = "Set-Location -LiteralPath '$($KernelDir.Replace("'","''"))'; node .\server.kernel.sealed.cjs"
-    Start-Terminal 'JARJAR - KERNEL X108 - 3001' $cmd
+    Start-Server 'JARJAR - KERNEL X108 - 3001' $cmd
 } else { Write-Host '[2/6] Kernel X108 déjà actif.' -ForegroundColor DarkGray }
 Wait-Port 3001 'KERNEL X108' 60
 
@@ -98,7 +98,7 @@ if (-not $ObsidiaPython) {
 if (-not (Port-Open 8000)) {
     Write-Host '[3/6] Démarrage API Obsidia/Brody :8000...' -ForegroundColor Cyan
     $cmd = "Set-Location -LiteralPath '$($Obsidia.Replace("'","''"))'; `$env:PYTHONPATH='$($Obsidia.Replace("'","''"))'; `$env:OBSIDIA_KERNEL_URL='http://127.0.0.1:3001/kernel/ragnarok'; & '$($ObsidiaPython.Replace("'","''"))' -m uvicorn apps.obsidia_api.main:app --host 127.0.0.1 --port 8000"
-    Start-Terminal 'JARJAR - OBSIDIA API BRODY - 8000' $cmd
+    Start-Server 'JARJAR - OBSIDIA API BRODY - 8000' $cmd
 } else { Write-Host '[3/6] API Obsidia/Brody déjà active.' -ForegroundColor DarkGray }
 Wait-Port 8000 'OBSIDIA API/BRODY' 120
 
@@ -107,7 +107,7 @@ if (-not (Port-Open 8080)) {
     $launcher = Join-Path $Jarjar 'scripts\start_qwen_text.ps1'
     if (-not (Test-Path $launcher)) { throw "Launcher Qwen texte absent: $launcher" }
     $cmd = "Set-Location -LiteralPath '$($Jarjar.Replace("'","''"))'; & '$($launcher.Replace("'","''"))'"
-    Start-Terminal 'JARJAR - QWEN TEXT - 8080' $cmd
+    Start-Server 'JARJAR - QWEN TEXT - 8080' $cmd
 } else { Write-Host '[4/6] Qwen texte déjà actif.' -ForegroundColor DarkGray }
 Wait-Port 8080 'QWEN TEXT' 600
 
@@ -116,11 +116,11 @@ if (-not (Port-Open 8081)) {
     $launcher = Join-Path $Jarjar 'scripts\start_qwen_vl.ps1'
     if (-not (Test-Path $launcher)) { throw "Launcher Qwen-VL absent: $launcher" }
     $cmd = "Set-Location -LiteralPath '$($Jarjar.Replace("'","''"))'; & '$($launcher.Replace("'","''"))'"
-    Start-Terminal 'JARJAR - QWEN-VL - 8081' $cmd
+    Start-Server 'JARJAR - QWEN-VL - 8081' $cmd
 } else { Write-Host '[5/6] Qwen-VL déjà actif.' -ForegroundColor DarkGray }
 Wait-Port 8081 'QWEN-VL' 600
 
-Write-Host '[6/6] Démarrage Jarjar...' -ForegroundColor Cyan
+Write-Host '[6/6] Serveurs prêts. Lancement interface Jarjar...' -ForegroundColor Green
 $env:JARJAR_BOUNDED_STRUCTURED_ROUTING_V0='1'
 $env:JARJAR_LOCAL_BRODY='1'
 $env:JARJAR_OBSIDIA_CHAT_URL='http://127.0.0.1:8000/api/brody/chat'
