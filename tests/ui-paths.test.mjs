@@ -121,6 +121,23 @@ test('Jarjar Pokemon exposes activity governance and last result',()=>{
  ]) assert.ok(pokemon.includes(invariant),invariant)
 })
 
+test('Jarjar is one shared object across World Workspace and Pokemon',()=>{
+ for(const invariant of [
+  "const jarjar=live?.jarjar",
+  "source:'JARJAR_RUNTIME_STATUS_V1'",
+  "jarjarRuntime:true",
+  "inputMode:jarjar.inputMode||null",
+  "cognitionSource:jarjar.cognitionSource||''",
+ ]) assert.ok(stateProjection.includes(invariant),invariant)
+ assert.ok(bridge.includes("live.jarjar=jarjarObservedStatus()"))
+ for(const invariant of [
+  "const jarjarShared=",
+  "const jarjarContextId=",
+  "openWorkspace(jarjarShared)",
+  "selectContext(jarjarContextId)",
+ ]) assert.ok(pokemon.includes(invariant),invariant)
+})
+
 test('Validated Obsidia service terminals remain wired individually',()=>{
  for(const invariant of [
   "['kernel-x108','Kernel X108',true]",
