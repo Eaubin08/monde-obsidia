@@ -12,6 +12,7 @@ export {repository} from './paths.mjs'
 export function contained(root,path){const r=realpathSync(root),p=realpathSync(resolve(r,path));const rel=relative(r,p);if(rel.startsWith('..'+sep)||rel==='..'||rel.startsWith(sep))throw Error('Chemin hors projet');return p}
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
 const nativeServiceIds=new Set(['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
+const fullStackServiceIds=['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-dry']
 function nativeServiceSpec(id,root){
  const q=s=>"'" + String(s).replaceAll("'","''") + "'"
  const rt=resolve(root,'runtime_terrain_bank_trading_gps')
@@ -231,6 +232,30 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  if(req.method==='POST'&&url.pathname.startsWith('/open/')){
  const origin=req.headers.origin;if(origin!==`http://${req.headers.host}`)throw Error('Origine refusée');if(process.platform!=='win32')throw Error('Ouverture native disponible sur le fixe Windows');
  const id=url.pathname.split('/').pop();
+ if(id==='obsidia-stack'){
+  if(launching.has(id))throw Error('La stack Obsidia est déjà en cours de lancement');launchKey=id;launching.add(id)
+  const root=realpathSync(repository()),started=[]
+  for(const serviceId of fullStackServiceIds){
+   const spec=nativeServiceSpec(serviceId,root)
+   if(!spec)throw Error('Service non raccordé : '+serviceId)
+   let reused=false
+   for(const [session,p] of processes){
+    if(p.active&&p.native&&p.tool===serviceId&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}
+    if(p.active&&p.tool===serviceId){reused=true;started.push({tool:serviceId,sessionId:session,reused:true});break}
+   }
+   if(!reused){
+    const session=randomUUID(),title='OBSIDIA · '+spec.title+' · '+session.slice(0,8)
+    emitNativeService(session,serviceId,spec.title,root)
+    const command=`$host.UI.RawUI.WindowTitle='${title.replaceAll("'","''")}'; ${spec.command}`
+    const pid=await launchTerminal(command)
+    processes.set(session,{pid,active:true,output:'',exitCode:null,native:true,tool:serviceId,title})
+    started.push({tool:serviceId,sessionId:session,pid,reused:false})
+   }
+   if(serviceId==='kernel-x108')await new Promise(r=>setTimeout(r,4000))
+   if(serviceId==='obsidia-api')await new Promise(r=>setTimeout(r,7000))
+  }
+  res.end(JSON.stringify({opened:true,tool:id,started,sessionId:started[0]?.sessionId||null}));return
+ }
  if(nativeServiceIds.has(id)){
   if(launching.has(id))throw Error('Ce service est déjà en cours de lancement');launchKey=id;launching.add(id)
   const root=realpathSync(repository()),spec=nativeServiceSpec(id,root)
