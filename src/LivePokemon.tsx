@@ -43,22 +43,24 @@ export default function LivePokemon(){
  const currentMission=currentEntity?state?.missions.find(m=>m.sessionRefs.includes(currentEntity.id)):undefined
  const domains=state?.entities.filter(e=>e.kind==='domain')||[]
  const agentEntity=state?.entities.find(e=>e.id===selectedAgent)
- const launchable=[['brody','Brody'],['obsidure','Obsidure'],['jarjar','Jarjar'],['jarvis','Jarvis']] as const
+ const launchable=[['brody','Brody'],['obsidure','Obsidure'],['cli','CLI Obsidia']] as const
  const lastSession=(agentId:string)=>sessions.filter(s=>s.agentId===agentId).sort((a,b)=>Date.parse(b.timestamp)-Date.parse(a.timestamp))[0]
 
  const selectContext=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
  const openWorkspace=(s:Session)=>{sessionStorage.setItem('obsidia-selected-session',s.sessionId);selectContext('session:'+s.sessionId);const area=s.agentId==='brody'?'brody':s.agentId==='obsidure'?'obsidure':s.agentId==='cli'?'cli':'home';sessionStorage.setItem('obsidia-workspace-area',area);location.hash='workspace'}
  const chooseAgent=(id:string)=>{setSelectedAgent(id);selectContext(id);const raw=id.startsWith('agent:')?id.slice(6):id;const running=sessions.find(s=>s.agentId===raw&&s.presence==='live');setSelected(running?.sessionId||'')}
- const launchAgent=async(agentId:string)=>{
-  setLaunching(agentId);setLaunchMessage('Lancement de '+agentId+'…')
+ const startSession=async(agentId:string,terminal=false)=>{
+  setLaunching(agentId+(terminal?':terminal':':integrated'));setLaunchMessage((terminal?'Ouverture terminal ':'Lancement intégré ')+agentId+'…')
   try{
-   const r=await fetch('/obsidia-local/open/'+agentId,{method:'POST'}),d=await r.json()
+   const url=terminal?'/obsidia-local/open/'+agentId:'/obsidia-local/run'
+   const init=terminal?{method:'POST'}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:agentId,mode:'interactive'})}
+   const r=await fetch(url,init),d=await r.json()
    if(!r.ok)throw Error(d.error||('HTTP '+r.status))
    sessionStorage.setItem('obsidia-selected-session',d.sessionId)
    setSelected(d.sessionId);setSelectedAgent('')
    selectContext('session:'+d.sessionId)
    window.dispatchEvent(new CustomEvent('obsidia-session',{detail:d.sessionId}))
-   setLaunchMessage('Session lancée : '+agentId)
+   setLaunchMessage((terminal?'Terminal ouvert · ':'Session intégrée · ')+agentId)
   }catch(e){setLaunchMessage(String(e))}
   finally{setLaunching('')}
  }
@@ -95,7 +97,7 @@ export default function LivePokemon(){
 
    <section className="pokemon-launch-zone">
     <div className="pokemon-launch-head"><div><span className="eyebrow">DISPONIBLES</span><h2>Lancer un agent</h2><p>Uniquement les launchers réellement disponibles dans Obsidia.</p></div>{launchMessage&&<small>{launchMessage}</small>}</div>
-    <div className="pokemon-launch-grid">{launchable.map(([id,label])=>{const active=sessions.find(s=>s.agentId===id&&s.presence==='live');const previous=lastSession(id);return <article key={id} className={"pokemon-launch-card "+(active?'active':'')}><div><strong>{label}</strong><span>{active?'LIVE':'Disponible'}</span></div><p>{active?.objective||previous?.objective||previous?.message||'Aucune activité récente observée.'}</p><small>{previous?'Dernière activité · '+new Date(previous.timestamp).toLocaleString():'Jamais observé dans ce runtime'}</small><div className="workspace-v3-actions">{active?<><button onClick={()=>{setSelected(active.sessionId);selectContext('session:'+active.sessionId)}}>Continuer</button><button onClick={()=>openWorkspace(active)}>Workspace</button></>:<button disabled={launching===id} onClick={()=>launchAgent(id)}>{launching===id?'Lancement…':'Lancer'}</button>}<button onClick={()=>{const target=active?'session:'+active.sessionId:'agent:'+id;selectContext(target);location.hash='world'}}>Monde</button></div></article>})}</div>
+    <div className="pokemon-launch-grid">{launchable.map(([id,label])=>{const active=sessions.find(s=>s.agentId===id&&s.presence==='live');const previous=lastSession(id);return <article key={id} className={"pokemon-launch-card "+(active?'active':'')}><div><strong>{label}</strong><span>{active?'LIVE':'Disponible'}</span></div><p>{active?.objective||previous?.objective||previous?.message||'Aucune activité récente observée.'}</p><small>{previous?'Dernière activité · '+new Date(previous.timestamp).toLocaleString():'Jamais observé dans ce runtime'}</small><div className="workspace-v3-actions">{active?<><button onClick={()=>{setSelected(active.sessionId);selectContext('session:'+active.sessionId)}}>Continuer</button><button onClick={()=>openWorkspace(active)}>Workspace</button></>:<><button disabled={launching.startsWith(id)} onClick={()=>startSession(id,false)}>{launching===id+':integrated'?'Lancement…':'Lancer ici'}</button><button disabled={launching.startsWith(id)} onClick={()=>startSession(id,true)}>{launching===id+':terminal'?'Ouverture…':'Ouvrir terminal'}</button></>}<button onClick={()=>{const target=active?'session:'+active.sessionId:'agent:'+id;selectContext(target);location.hash='world'}}>Monde</button></div></article>})}</div>
    </section>
 
    <aside className="pokemon-v3-inspector">
