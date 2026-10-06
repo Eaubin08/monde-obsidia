@@ -1,6 +1,7 @@
 import {existsSync,readdirSync,readFileSync,statSync} from 'node:fs'
 import {resolve} from 'node:path'
-export const liveDirectory=resolve('.obsidia-live')
+import {projectRoot} from './paths.mjs'
+export const liveDirectory=resolve(projectRoot,process.env.OBSIDIA_LIVE_DIRECTORY||'.obsidia-live')
 export function liveSnapshot(directory=liveDirectory,now=Date.now()){
  const sessions=[];if(!existsSync(directory))return {sessions,observedAt:new Date(now).toISOString()}
  for(const file of readdirSync(directory).filter(f=>/^[a-zA-Z0-9-]+\.jsonl$/.test(f)).slice(-200)){
