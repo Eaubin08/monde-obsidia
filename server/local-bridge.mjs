@@ -11,7 +11,13 @@ import {repository,observer,pythonFor} from './paths.mjs'
 export {repository} from './paths.mjs'
 export function contained(root,path){const r=realpathSync(root),p=realpathSync(resolve(r,path));const rel=relative(r,p);if(rel.startsWith('..'+sep)||rel==='..'||rel.startsWith(sep))throw Error('Chemin hors projet');return p}
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
-const jarjarRoot=()=>resolve(process.env.OBSIDIA_JARJAR_ROOT||resolve(homedir(),'Desktop','Jarvis-iron-obsidia-'))
+const jarjarRootCandidates=()=>[
+ process.env.OBSIDIA_JARJAR_ROOT,
+ resolve(homedir(),'Desktop','Jarvis-iron-obsidia-'),
+ 'C:\\Users\\User\\Desktop\\Jarvis-iron-obsidia-',
+ 'C:\\Users\\Aubin\\Desktop\\Jarvis-iron-obsidia-'
+].filter(Boolean)
+const jarjarRoot=()=>jarjarRootCandidates().find(p=>existsSync(p))||jarjarRootCandidates()[0]
 const jarjarPythonCandidates=()=>[
  process.env.OBSIDIA_JARJAR_PYTHON,
  resolve(homedir(),'.cache','codex-runtimes','codex-primary-runtime','dependencies','python','python.exe'),
@@ -204,7 +210,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  if(tool==='jarjar'){
   const jr=jarjarRoot()
   if(process.platform!=='win32')throw Error('Jarjar local requiert Windows')
-  if(!existsSync(jr))throw Error('Repo Jarjar absent : '+jr)
+  if(!existsSync(jr))throw Error('Repo Jarjar absent. Candidats : '+jarjarRootCandidates().join(' | '))
   if(!existsSync(resolve(jr,jarjarModuleFile)))throw Error('Bridge cockpit Jarjar absent : '+resolve(jr,jarjarModuleFile))
   if(!existsSync(jarjarPython()))throw Error('Python Jarjar canonique absent. Candidats : '+jarjarPythonCandidates().join(' | '))
   emitJarjar(session,'session_start',{pid:0,status:'starting',phase:'STARTING',message:'Démarrage cockpit Jarjar'})
