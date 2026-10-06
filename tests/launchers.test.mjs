@@ -102,6 +102,20 @@ test('Launchers and live process contracts',async t=>{
    const report=JSON.parse(readFileSync(resolve(output,sessionId+'.report.json'),'utf8'))
    assert.equal(report.requestedCycles,1);assert.equal(report.entries[0].exists,true)
   })
+  await t.test('Shared state projects one runtime fact across World, Workspace and Pokémon',async()=>{
+   const {sessionId}=await post('run',{mode:'audit'})
+   await until(()=>session(sessionId),s=>s?.presence==='ended')
+   const state=await get('state')
+   assert.equal(state.schema,'OBSIDIA_WORLD_PROJECTION_V0')
+   assert.equal(state.readonly,true);assert.equal(state.canonicalTruth,false);assert.equal(state.decisionAuthority,'KX108_ONLY')
+   const sid='session:'+sessionId
+   const projected=state.entities.filter(e=>e.id===sid)
+   assert.equal(projected.length,1)
+   assert.ok(state.views.world.entityRefs.includes(sid))
+   assert.ok(state.views.workspace.entityRefs.includes(sid))
+   assert.ok(state.views.pokemon.entityRefs.includes(sid))
+   assert.ok(state.relations.some(r=>r.from==='agent:obsidure'&&r.type==='RUNS'&&r.to===sid))
+  })
   await t.test('Long audit really runs repeatedly and can be stopped during interval',async()=>{
    const {sessionId}=await post('run',{mode:'audit-long'})
    await until(()=>session(sessionId),s=>s?.phase==='AUDIT_INTERVAL')
