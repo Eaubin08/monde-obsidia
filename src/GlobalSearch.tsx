@@ -1,4 +1,4 @@
-import {useMemo,useState} from 'react'
+import {useEffect,useMemo,useState} from 'react'
 
 type Layer={id:string;title:string;content:string;path:string;commit:string}
 type Agent={id:number;name:string;family:string;role:string|null;output:string|null}
@@ -12,6 +12,7 @@ export default function GlobalSearch({layers,agents,files,shared,onFocus,onOpenF
  const initial=(sessionStorage.getItem('obsidia-search-kind')||'all') as SearchKind
  const [query,setQuery]=useState('')
  const [kindFilter,setKindFilter]=useState<SearchKind>(['all','agent','mission','domain','file','proof','layer'].includes(initial)?initial:'all')
+ useEffect(()=>{const sync=(e:Event)=>{const kind=(e as CustomEvent<SearchKind>).detail;if(['all','agent','mission','domain','file','proof','layer'].includes(kind))setKindFilter(kind)};window.addEventListener('obsidia-search-kind',sync as EventListener);return()=>window.removeEventListener('obsidia-search-kind',sync as EventListener)},[])
  const q=query.trim().toLowerCase()
  const results=useMemo(()=>{
   if(q.length<2)return []
