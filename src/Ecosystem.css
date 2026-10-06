@@ -95,3 +95,17 @@
 .proof-warning{border-left:3px solid currentColor;padding:8px 10px;background:#17150d}
 .proof-warning p{margin:4px 0 0}
 @media(max-width:1000px){.proof-chain{grid-template-columns:1fr 1fr}.work-context-grid{grid-template-columns:1fr}.pokemon-context-row{grid-template-columns:1fr}}
+
+/* Context Bridge V1 */
+.context-bridge{display:grid;grid-template-columns:minmax(220px,1.2fr) minmax(420px,2fr) auto;gap:12px;align-items:stretch;border:2px solid #45684d;background:#0a1710;padding:12px 14px;margin:10px 0 14px;position:sticky;top:0;z-index:20;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.context-bridge-main{display:flex;flex-direction:column;justify-content:center;min-width:0}
+.context-bridge-main>strong{font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.context-bridge-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.context-bridge-facts>span{display:flex;flex-direction:column;min-width:0;border-left:1px solid #34563f;padding-left:8px}
+.context-bridge-facts small{color:#9bbfa4;font-size:.68rem;letter-spacing:.08em}
+.context-bridge-facts strong{font-size:.84rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.context-bridge-nav{display:flex;gap:6px;align-items:stretch}
+.context-bridge-nav button{min-width:116px;background:#12241a;border:1px solid #34563f;padding:8px 10px}
+.context-bridge-nav button[aria-current="true"]{background:#2a4f35;border-color:#9bc49b}
+@media(max-width:1180px){.context-bridge{grid-template-columns:1fr}.context-bridge-facts{grid-template-columns:repeat(2,minmax(0,1fr))}.context-bridge-nav{display:grid;grid-template-columns:repeat(3,1fr)}.context-bridge-nav button{min-width:0}}
+@media(max-width:700px){.context-bridge-facts{grid-template-columns:1fr 1fr}.context-bridge-nav{grid-template-columns:1fr}.context-bridge{position:static}}
