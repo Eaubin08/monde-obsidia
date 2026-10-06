@@ -211,7 +211,7 @@ export default function LivePokemon(){
    <div className="pokemon-family-grid">{families.map(f=>{const active=f.agents.filter(id=>liveIds.has(id)).length;return <button key={f.id} data-kind={f.kind==='physical-workstream'?'physical-workstream':f.kind==='sigma'?'sigma-domain':f.kind} className={familyFilter===f.id?'selected':''} onClick={()=>setFamilyFilter(familyFilter===f.id?'':f.id)}><span>{f.kind}</span><strong>{f.label}</strong><small>{active} LIVE · {f.agents.length} catalogué(s){!f.localPresent?' · repo local absent':''}</small></button>})}</div>
   </section>
 
-  {pokemonPage==='population'&&<><details className="pokemon-v3-secondary">
+  <details className="pokemon-v3-secondary">
    <summary>Village visuel</summary>
    <div ref={container} className="live-town" aria-label="Village des agents lancés"/>
    <p className="muted">Le village affiche uniquement les sessions LIVE confirmées, une seule par agent. Les sessions terminées ou incertaines sont exclues. Clique un personnage pour synchroniser Pokémon, le Context Bridge, Workspace et Monde sur cette session.</p>
