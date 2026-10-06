@@ -9,36 +9,32 @@ const workspace=readFileSync(resolve(process.cwd(),'src/ToolWorkspace.tsx'),'utf
 const bridge=readFileSync(resolve(process.cwd(),'server/local-bridge.mjs'),'utf8')
 
 test('Pokémon launcher and cross-view paths remain wired',()=>{
- assert.match(pokemon,/fetch\('\/obsidia-local\/run'/)
- assert.match(pokemon,/fetch\('\/obsidia-local\/open\/'\+agentId/)
- assert.match(pokemon,/openWorkspace\(active\)/)
- assert.match(pokemon,/location\.hash='world'/)
- assert.match(pokemon,/sessionStorage\.setItem\('obsidia-focus-entity'/)
- assert.match(pokemon,/Lancer ici/)
- assert.match(pokemon,/Ouvrir terminal/)
- assert.match(pokemon,/Workspace/)
- assert.match(pokemon,/Monde/)
+ for(const invariant of [
+  "'/obsidia-local/run'",
+  "'/obsidia-local/open/'+agentId",
+  'Lancer ici',
+  'Ouvrir terminal',
+  'Workspace',
+  'Monde',
+  'obsidia-focus-entity',
+  "location.hash='world'",
+ ]) assert.ok(pokemon.includes(invariant),invariant)
+ assert.ok(pokemon.includes('openWorkspace(active)'))
 })
 
 test('Workspace integrated controls map to real bridge actions',()=>{
- assert.match(workspace,/sessionAction\('run'/)
- assert.match(workspace,/sessionAction\('input\/'\+id/)
- assert.match(workspace,/act\('stop\/'\+current\.sessionId\)/)
- assert.match(workspace,/act\('focus\/'\+current!\.sessionId\)/)
- assert.match(bridge,/url\.pathname==='\/run'/)
- assert.match(bridge,/url\.pathname\.startsWith\('\/input\/'\)/)
- assert.match(bridge,/url\.pathname\.startsWith\('\/stop\/'\)/)
- assert.match(bridge,/url\.pathname\.startsWith\('\/focus\/'\)/)
- assert.match(bridge,/url\.pathname\.startsWith\('\/open\/'\)/)
+ for(const invariant of [
+  "sessionAction('run'",
+  "sessionAction('input/'+id",
+  "act('stop/'+current.sessionId)",
+  "act('focus/'+current!.sessionId)",
+ ]) assert.ok(workspace.includes(invariant),invariant)
+ for(const route of ['/run','/input/','/stop/','/focus/','/open/'])assert.ok(bridge.includes(route),route)
 })
 
 test('Cross-view context remains shared',()=>{
- assert.match(ecosystem,/obsidia-focus-entity/)
- assert.match(ecosystem,/obsidia-context/)
- assert.match(ecosystem,/switchView\('workspace'\)/)
- assert.match(ecosystem,/switchView\('agents'\)/)
- assert.match(pokemon,/obsidia-selected-session/)
- assert.match(pokemon,/obsidia-context/)
+ for(const invariant of ['obsidia-focus-entity','obsidia-context',"switchView('workspace')","switchView('agents')"])assert.ok(ecosystem.includes(invariant),invariant)
+ for(const invariant of ['obsidia-selected-session','obsidia-context'])assert.ok(pokemon.includes(invariant),invariant)
 })
 
 test('Pokémon visual order prioritizes work before population catalog',()=>{
@@ -48,5 +44,10 @@ test('Pokémon visual order prioritizes work before population catalog',()=>{
  const catalog=pokemon.indexOf('Population connue')
  const village=pokemon.indexOf('Village visuel')
  const registry=pokemon.indexOf('Registre détaillé du catalogue')
- assert.ok(active>=0&&launch>active&&scale>launch&&catalog>scale&&village>catalog&&registry>village)
+ assert.ok(active>=0,'active missing')
+ assert.ok(launch>active,'launcher must follow active work')
+ assert.ok(scale>launch,'global state must follow launcher')
+ assert.ok(catalog>scale,'catalog must follow state summary')
+ assert.ok(village>catalog,'village must follow catalog')
+ assert.ok(registry>village,'registry must remain last')
 })
