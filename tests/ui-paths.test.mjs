@@ -81,7 +81,7 @@ test('Jarjar remains a real observed and controlled local stack',()=>{
   "jarjarObservedStatus",
   "'/jarjar/status'",
   "'/jarjar/stop'",
-  "scripts[\\\\/.]run_jarjar_live",
+  "jarjarModuleFile='scripts/run_jarjar_live.py'",
   "state='STARTING'",
   "'READY':'DEGRADED'",
  ]) assert.ok(bridge.includes(invariant),invariant)
@@ -187,8 +187,8 @@ test('Validated Obsidia service terminals remain wired individually',()=>{
   "'obsidure-dry'",
   "server.kernel.sealed.cjs",
   "apps.obsidia_api.main:app",
-  "connectors\\\\aviation_robo.py",
-  "connectors\\\\trading_live.py",
+  "connectors\\aviation_robo.py",
+  "connectors\\trading_live.py",
   "run_brody_terminal_enriched.ps1",
   "run_agent_obsidure.ps1 -DryRun",
  ]) assert.ok(bridge.includes(invariant),invariant)
