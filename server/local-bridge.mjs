@@ -7,8 +7,7 @@ import {execFileSync,spawn} from 'node:child_process'
 import {existsSync,realpathSync,readFileSync,readdirSync,statSync,appendFileSync,mkdirSync} from 'node:fs'
 import {resolve,relative,sep} from 'node:path'
 import {homedir} from 'node:os'
-import {createConnection} from 'node:net'
-import {repository,observer,pythonFor} from './paths.mjs'
+import {projectRoot,repository,observer,pythonFor} from './paths.mjs'
 export {repository} from './paths.mjs'
 export function contained(root,path){const r=realpathSync(root),p=realpathSync(resolve(r,path));const rel=relative(r,p);if(rel.startsWith('..'+sep)||rel==='..'||rel.startsWith(sep))throw Error('Chemin hors projet');return p}
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
@@ -28,28 +27,6 @@ const jarjarPythonCandidates=()=>[
 const jarjarPython=()=>jarjarPythonCandidates().find(p=>existsSync(p))||jarjarPythonCandidates()[0]
 const jarjarModule='scripts.run_jarjar_live'
 const jarjarModuleFile='scripts/run_jarjar_live.py'
-const waitPort=(port,timeout=120000)=>new Promise((resolveWait,rejectWait)=>{
- const deadline=Date.now()+timeout
- const probe=()=>{
-  const socket=createConnection({host:'127.0.0.1',port})
-  let settled=false
-  const done=ok=>{if(settled)return;settled=true;socket.destroy();if(ok)return resolveWait(true);if(Date.now()>=deadline)return rejectWait(Error('Port '+port+' non prêt'));setTimeout(probe,1000)}
-  socket.setTimeout(800);socket.once('connect',()=>done(true));socket.once('timeout',()=>done(false));socket.once('error',()=>done(false))
- }
- probe()
-})
-const portOpen=port=>new Promise(resolvePort=>{
- const socket=createConnection({host:'127.0.0.1',port})
- let settled=false
- const done=ok=>{if(settled)return;settled=true;socket.destroy();resolvePort(ok)}
- socket.setTimeout(500);socket.once('connect',()=>done(true));socket.once('timeout',()=>done(false));socket.once('error',()=>done(false))
-})
-async function startJarjarDependency(title,command,port,timeout){
- if(await portOpen(port))return {port,reused:true}
- const pid=await launchTerminal(command)
- await waitPort(port,timeout)
- return {port,pid,reused:false}
-}
 function emitJarjar(session,kind,fields={}){
  mkdirSync(liveDirectory,{recursive:true})
  const event={schema:'OBSIDIA_VISUAL_EVENT_V1',sessionId:session,agentId:'jarjar',name:'Jarjar',repository:jarjarRoot(),timestamp:new Date().toISOString(),kind,status:'thinking',phase:'STARTING',message:'Jarjar runtime',objective:null,...fields}
@@ -217,53 +194,17 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  const origin=req.headers.origin;if(origin!==`http://${req.headers.host}`)throw Error('Origine refusée');if(process.platform!=='win32')throw Error('Ouverture native disponible sur le fixe Windows');
  const id=url.pathname.split('/').pop();if(id==='jarjar'){
   if(launching.has(id))throw Error('Jarjar est déjà en cours de lancement');launchKey=id;launching.add(id)
-  const jr=jarjarRoot(),root=realpathSync(repository())
+  const jr=jarjarRoot()
   if(!existsSync(jr))throw Error('Repo Jarjar absent. Candidats : '+jarjarRootCandidates().join(' | '))
   if(!existsSync(resolve(jr,jarjarModuleFile)))throw Error('Launcher Jarjar absent : '+resolve(jr,jarjarModuleFile))
   if(!existsSync(jarjarPython()))throw Error('Python Jarjar validé absent. Candidats : '+jarjarPythonCandidates().join(' | '))
-
-  const kernelDir=resolve(root,'runtime_terrain_bank_trading_gps'),kernelFile=resolve(kernelDir,'server.kernel.sealed.cjs')
-  if(!existsSync(kernelFile))throw Error('Kernel X108 absent : '+kernelFile)
-  const kernelExpress=resolve(kernelDir,'node_modules','express')
-  if(!existsSync(kernelExpress)){
-   if(!existsSync(resolve(kernelDir,'package-lock.json')))throw Error('package-lock Kernel absent : '+resolve(kernelDir,'package-lock.json'))
-   const npmCmd=process.platform==='win32'?'npm.cmd':'npm'
-   execFileSync(npmCmd,['ci'],{cwd:kernelDir,stdio:'inherit',timeout:10*60*1000,windowsHide:false})
-   if(!existsSync(kernelExpress))throw Error('Installation Node Kernel incomplète : express absent après npm ci')
-  }
-  const obsidiaPython=pythonFor(root)
-
-  const dependencyResults=[]
-  dependencyResults.push(await startJarjarDependency(
-   'JARJAR · KERNEL X108 · 3001',
-   `$host.UI.RawUI.WindowTitle='JARJAR · KERNEL X108 · 3001'; Set-Location -LiteralPath '${kernelDir.replaceAll("'","''")}'; node .\\server.kernel.sealed.cjs; Write-Host 'Ce terminal reste ouvert.'`,
-   3001,60000
-  ))
-  dependencyResults.push(await startJarjarDependency(
-   'JARJAR · OBSIDIA API/BRODY · 8000',
-   `$host.UI.RawUI.WindowTitle='JARJAR · OBSIDIA API/BRODY · 8000'; Set-Location -LiteralPath '${root.replaceAll("'","''")}'; $env:PYTHONPATH='${root.replaceAll("'","''")}'; $env:OBSIDIA_KERNEL_URL='http://127.0.0.1:3001/kernel/ragnarok'; & '${obsidiaPython.replaceAll("'","''")}' -m uvicorn apps.obsidia_api.main:app --host 127.0.0.1 --port 8000; Write-Host 'Ce terminal reste ouvert.'`,
-   8000,120000
-  ))
-  const qwenText=resolve(jr,'scripts','start_qwen_text.ps1'),qwenVision=resolve(jr,'scripts','start_qwen_vl.ps1')
-  if(!existsSync(qwenText))throw Error('Launcher Qwen texte absent : '+qwenText)
-  if(!existsSync(qwenVision))throw Error('Launcher Qwen-VL absent : '+qwenVision)
-  dependencyResults.push(await startJarjarDependency(
-   'JARJAR · QWEN TEXT · 8080',
-   `$host.UI.RawUI.WindowTitle='JARJAR · QWEN TEXT · 8080'; Set-Location -LiteralPath '${jr.replaceAll("'","''")}'; & '${qwenText.replaceAll("'","''")}'; Write-Host 'Ce terminal reste ouvert.'`,
-   8080,600000
-  ))
-  dependencyResults.push(await startJarjarDependency(
-   'JARJAR · QWEN-VL · 8081',
-   `$host.UI.RawUI.WindowTitle='JARJAR · QWEN-VL · 8081'; Set-Location -LiteralPath '${jr.replaceAll("'","''")}'; & '${qwenVision.replaceAll("'","''")}'; Write-Host 'Ce terminal reste ouvert.'`,
-   8081,600000
-  ))
-
-  const session=randomUUID(),title='OBSIDIA · jarjar · '+session.slice(0,8)
-  const baseCommand=terminalCommand(jr,title,jarjarPython(),['-m',jarjarModule])
-  const command=`$env:JARJAR_BOUNDED_STRUCTURED_ROUTING_V0='1'; $env:JARJAR_LOCAL_BRODY='1'; $env:JARJAR_OBSIDIA_CHAT_URL='http://127.0.0.1:8000/api/brody/chat'; $env:JARJAR_QWEN_URL='http://127.0.0.1:8080/v1/chat/completions'; $env:JARJAR_VISION_URL='http://127.0.0.1:8081/v1/chat/completions'; $env:JARJAR_KERNEL_URL='http://127.0.0.1:8000'; ${baseCommand}`
+  const master=resolve(projectRoot,'scripts','start-jarjar-full.ps1')
+  if(!existsSync(master))throw Error('Launcher maître Jarjar absent : '+master)
+  const session=randomUUID(),title='OBSIDIA · JARJAR FULL · '+session.slice(0,8)
+  const command=`$host.UI.RawUI.WindowTitle='${title}'; & '${master.replaceAll("'","''")}'; Write-Host 'Ce terminal reste ouvert.'`
   const pid=await launchTerminal(command)
   const p={pid,active:true,output:'',exitCode:null,native:true,tool:id,title};processes.set(session,p)
-  res.end(JSON.stringify({opened:true,tool:id,sessionId:session,pid,repository:jr,module:jarjarModule,dependencies:dependencyResults}));return
+  res.end(JSON.stringify({opened:true,tool:id,sessionId:session,pid,repository:jr,launcher:master}));return
  }
  const file=launchers[id];if(!file)throw Error('Outil non raccordé');if(launching.has(id))throw Error('Cet outil est déjà en cours de lancement');launchKey=id;launching.add(id);const root=realpathSync(repository());contained(root,file);
  for(const [session,p] of processes){if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}if(p.active&&p.tool===id){if(!p.native)throw Error('Une session de cet outil est active dans la page. La sélectionner ou l’arrêter avant d’ouvrir un terminal.');const live=liveSnapshot().sessions.find(s=>s.sessionId===session);if(live?.presence==='ended')continue;await focusTerminal(p.title,p.pid);res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return}}
