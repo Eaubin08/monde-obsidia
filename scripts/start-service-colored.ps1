@@ -2,7 +2,7 @@ param(
   [Parameter(Mandatory=$true)][string]$Service,
   [Parameter(Mandatory=$true)][string]$Root
 )
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
 
 chcp 65001 | Out-Null
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -53,7 +53,7 @@ switch ($Service) {
     Write-Host ''
     $env:PYTHONPATH = $Root
     $env:OBSIDIA_KERNEL_URL = 'http://127.0.0.1:3001/kernel/ragnarok'
-    & python -m uvicorn apps.obsidia_api.main:app --host 127.0.0.1 --port 8000 2>&1 | ForEach-Object { Write-ServiceLine ([string]$_) 'api' }
+    & cmd.exe /d /s /c "python -m uvicorn apps.obsidia_api.main:app --host 127.0.0.1 --port 8000 2>&1" | ForEach-Object { Write-ServiceLine ([string]$_) 'api' }
   }
   'gps-defense' {
     [Console]::Title = 'GPS/AVIATION LIVE -> KERNEL BRIDGE'
