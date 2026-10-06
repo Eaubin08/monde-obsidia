@@ -9,6 +9,7 @@ import './App.css'
 import './Office.css'
 import './SourceOffice.css'
 import './Ecosystem.css'
+import './ui-v4.css'
 type Agent={id:number;name:string;family:string;role:string|null;output:string|null}
 type Layer={id:string;title:string;content:string;path:string;commit:string}
 type Proposal={id:string;path:string;receipt:string|null;observedAt:string;data:Record<string,unknown>}
