@@ -180,3 +180,21 @@ linear-gradient(90deg,rgba(69,104,77,.08) 1px,transparent 1px),
 
 .pokemon-launch-card.coming-soon{opacity:.78;border-style:dashed}
 .pokemon-launch-card.coming-soon>div:first-child span{color:#c7b780}
+
+/* Pokémon scalable population */
+.pokemon-scale-bar{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.pokemon-scale-bar button{min-height:76px;border:2px solid #34563f;background:#0d1b13;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:10px 12px}
+.pokemon-scale-bar button[aria-pressed="true"]{border-color:#9bc49b;background:#183122}
+.pokemon-scale-bar strong{font-size:1.45rem}
+.pokemon-scale-bar span{font-size:.72rem;letter-spacing:.08em;color:#9bbfa4}
+.pokemon-families{border:2px solid #34563f;background:#0d1b13;padding:16px}
+.pokemon-families-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.pokemon-families-head h2{margin:4px 0}
+.pokemon-families-head p{margin:4px 0;color:#9bbfa4}
+.pokemon-family-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+.pokemon-family-grid button{text-align:left;border:2px solid #34563f;background:#102219;padding:12px;display:flex;flex-direction:column;gap:4px}
+.pokemon-family-grid button.selected{border-color:#9bc49b;background:#183122}
+.pokemon-family-grid button>span{font-size:.68rem;letter-spacing:.08em;color:#9bbfa4;text-transform:uppercase}
+.pokemon-family-grid button>small{color:#9bbfa4}
+@media(max-width:1100px){.pokemon-scale-bar{grid-template-columns:repeat(3,minmax(0,1fr))}.pokemon-family-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.pokemon-scale-bar{grid-template-columns:repeat(2,minmax(0,1fr))}.pokemon-family-grid{grid-template-columns:1fr}.pokemon-families-head{flex-direction:column}}
