@@ -18,7 +18,6 @@ export default function ToolWorkspace({tool,sessions,onSelect}:{tool:Tool;sessio
  const [processes,setProcesses]=useState<Process[]>([]),[text,setText]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
  const current=[...sessions].reverse().find(s=>s.agentId===tool&&s.presence==='live')||[...sessions].reverse().find(s=>s.agentId===tool)
  const process=current?processes.find(p=>p.sessionId===current.sessionId):undefined
- const waiting=current?.presence==='live'&&current.phase==='WAITING_INPUT'
  useEffect(()=>{const c=new AbortController();const poll=async()=>{try{const r=await fetch('/obsidia-local/processes',{signal:c.signal});if(r.ok)setProcesses((await r.json()).processes)}catch{}}
   void poll();const id=setInterval(poll,1200);return()=>{c.abort();clearInterval(id)}},[])
  async function act(path:string,data:Record<string,unknown>={}){setBusy(true);setError('');try{const d=await sessionAction(path,data);if(d.sessionId)onSelect(d.sessionId);if(path.startsWith('input/'))setText('')}catch(e){setError(String(e).replace(/^Error:\s*/,''))}finally{setBusy(false)}}
