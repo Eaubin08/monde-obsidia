@@ -54,19 +54,20 @@ test('Pokémon visual order prioritizes work before population catalog',()=>{
 
 
 
-test('Jarjar stays a launcher in Pokemon and uses the proven live runtime',()=>{
+test('Jarjar is terminal-only in Pokemon and uses the proven live runtime',()=>{
  for(const invariant of [
   "['jarjar','Jarjar',true]",
-  "startSession(id,false)",
+  "id==='jarjar'?<button",
   "startSession(id,true)",
  ]) assert.ok(pokemon.includes(invariant),invariant)
  for(const invariant of [
   "scripts.run_jarjar_live",
   "C:\\Users\\User\\Desktop\\Jarvis-iron-obsidia-",
   "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
-  "JARJAR_BOUNDED_STRUCTURED_ROUTING_V0:'1'",
-  "JARJAR_LOCAL_BRODY:'1'",
+  "JARJAR_BOUNDED_STRUCTURED_ROUTING_V0='1'",
+  "JARJAR_LOCAL_BRODY='1'",
  ]) assert.ok(bridge.includes(invariant),invariant)
+ assert.ok(!bridge.includes("['obsidure','brody','cli','jarjar']"))
  assert.ok(!pokemon.includes('JarjarCockpit'))
  assert.ok(!bridge.includes('/jarjar/status'))
 })
