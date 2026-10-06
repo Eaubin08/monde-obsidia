@@ -105,6 +105,22 @@ test('Jarjar telemetry exposes input mode cognition and authority',()=>{
  ]) assert.ok(pokemon.includes(invariant),invariant)
 })
 
+test('Jarjar Pokemon exposes activity governance and last result',()=>{
+ for(const invariant of [
+  "confirmationPrompt:telemetry?.confirmation_prompt||''",
+  "lastUserInput:telemetry?.last_user_input||''",
+  "lastResult:telemetry?.last_result||''",
+ ]) assert.ok(bridge.includes(invariant),invariant)
+ for(const invariant of [
+  "Activité",
+  "Gouvernance",
+  "Source gouvernée",
+  "Confirmation",
+  "Dernier input",
+  "Dernier résultat",
+ ]) assert.ok(pokemon.includes(invariant),invariant)
+})
+
 test('Validated Obsidia service terminals remain wired individually',()=>{
  for(const invariant of [
   "['kernel-x108','Kernel X108',true]",
