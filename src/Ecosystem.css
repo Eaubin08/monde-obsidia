@@ -14,3 +14,12 @@
 .workspace-heading{margin-bottom:14px}
 @media(max-width:850px){.workspace-operating{grid-template-columns:1fr}.workspace-sidebar{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.workspace-sidebar{grid-template-columns:1fr}}
+
+.pokemon-workboard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0 26px}
+.pokemon-workboard>.eyebrow,.pokemon-workboard>h2,.pokemon-workboard>p{grid-column:1/-1}
+.work-card{border:2px solid #45684d;background:#13251c;padding:16px}
+.work-card>div:first-child{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.work-card small{display:block;color:#9bbfa4}
+.work-card p{margin:10px 0;white-space:pre-wrap}
+.work-card>button{width:100%;text-align:left;margin:6px 0}
+@media(max-width:800px){.pokemon-workboard{grid-template-columns:1fr}}
