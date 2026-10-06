@@ -4,13 +4,21 @@ import {liveSnapshot,liveDirectory} from './live-events.mjs'
 import {buildObsidiaState} from './obsidia-state.mjs'
 import {randomUUID} from 'node:crypto'
 import {execFileSync,spawn} from 'node:child_process'
-import {existsSync,realpathSync,readFileSync,readdirSync,statSync,appendFileSync} from 'node:fs'
+import {existsSync,realpathSync,readFileSync,readdirSync,statSync,appendFileSync,mkdirSync} from 'node:fs'
 import {resolve,relative,sep} from 'node:path'
 import {homedir} from 'node:os'
 import {repository,observer,pythonFor} from './paths.mjs'
 export {repository} from './paths.mjs'
 export function contained(root,path){const r=realpathSync(root),p=realpathSync(resolve(r,path));const rel=relative(r,p);if(rel.startsWith('..'+sep)||rel==='..'||rel.startsWith(sep))throw Error('Chemin hors projet');return p}
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
+const jarjarRoot=()=>resolve(process.env.OBSIDIA_JARJAR_ROOT||resolve(homedir(),'Desktop','Jarvis-iron-obsidia-'))
+const jarjarPython=()=>process.env.OBSIDIA_JARJAR_PYTHON||resolve(homedir(),'.cache','codex-runtimes','codex-primary-runtime','dependencies','python','python.exe')
+const jarjarModule='scripts.run_jarjar_live'
+function emitJarjar(session,kind,fields={}){
+ mkdirSync(liveDirectory,{recursive:true})
+ const event={schema:'OBSIDIA_VISUAL_EVENT_V1',sessionId:session,agentId:'jarjar',name:'Jarjar',repository:jarjarRoot(),timestamp:new Date().toISOString(),kind,status:'thinking',phase:'STARTING',message:'Jarjar runtime',objective:null,...fields}
+ appendFileSync(resolve(liveDirectory,session+'.jsonl'),JSON.stringify(event)+'\n')
+}
 const git=(root,...args)=>execFileSync('git',['-C',root,...args],{encoding:'utf8',maxBuffer:12*1024*1024,timeout:10000,windowsHide:true}).trim()
 function safeJsonFiles(dir,limit=100){
  if(!existsSync(dir))return []
@@ -109,7 +117,7 @@ function snapshot(root=repository()){
    try{const p=contained(root,`_PATCH_PROPOSALS/${item.name}/proposal.json`);if(statSync(p).size>1024*1024)continue;const data=JSON.parse(readFileSync(p,'utf8'));proposals.push({id:item.name,path:`_PATCH_PROPOSALS/${item.name}/proposal.json`,data,observedAt:statSync(p).mtime.toISOString(),receipt:existsSync(resolve(dir,item.name,'RECEIPT.md'))?`_PATCH_PROPOSALS/${item.name}/RECEIPT.md`:null})}catch{}
   }
  }
- return {available:true,repository:root,sha,branch,worktrees:gitWorktrees(root),observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),agentFamilies:agentFamilies(root),runtimeEvidence:canonicalRuntimeEvidence(),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null}))}
+ return {available:true,repository:root,sha,branch,worktrees:gitWorktrees(root),observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),agentFamilies:agentFamilies(root),runtimeEvidence:canonicalRuntimeEvidence(),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:[...Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null})),{id:'jarjar',path:jarjarModule,available:process.platform==='win32'&&existsSync(jarjarRoot())&&existsSync(jarjarPython()),reason:process.platform!=='win32'?'Windows requis':!existsSync(jarjarRoot())?'Repo Jarjar absent':!existsSync(jarjarPython())?'Python Jarjar absent':null}]}
 }
 const processes=new Map(),launching=new Set();
 function markEnd(id,message){try{const log=resolve(liveDirectory,id+'.jsonl'),last=JSON.parse(readFileSync(log,'utf8').trim().split('\n').at(-1));if(last.kind!=='session_end')appendFileSync(log,JSON.stringify({...last,timestamp:new Date().toISOString(),kind:'session_end',phase:'PROCESS_EXIT',status:'error',exitCode:null,message})+'\n')}catch{}}
@@ -144,7 +152,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  if(url.pathname.startsWith('/focus/')){if(!p.native)throw Error('Session intégrée : son terminal est dans la page');await focusTerminal(p.title,p.pid)}else if(url.pathname.startsWith('/stop/')){if(p.native){await stopTerminal(p.pid);p.active=false;markEnd(id,'Terminal fermé depuis la page')}else p.child.kill()}else{if(p.native)throw Error('Saisis ta demande dans le terminal Windows');if(liveSnapshot().sessions.find(s=>s.sessionId===id)?.phase!=='WAITING_INPUT')throw Error('Ce processus n’attend pas de saisie');if(typeof data.text!=='string'||data.text.length>4096||/[\r\n]/.test(data.text))throw Error('Saisie invalide');await new Promise((ok,no)=>p.child.stdin.write(data.text+'\n',e=>e?no(e):ok()))}
  res.end(JSON.stringify({ok:true}));return
  }
- const tool=data.tool||'obsidure';if(!['obsidure','brody','cli'].includes(tool))throw Error('Outil inconnu');const mode=data.mode;if(!['audit','audit-long','interactive'].includes(mode)|| (tool!=='obsidure'&&mode!=='interactive'))throw Error('Mission inconnue');
+ const tool=data.tool||'obsidure';if(!['obsidure','brody','cli','jarjar'].includes(tool))throw Error('Outil inconnu');const mode=data.mode;if(!['audit','audit-long','interactive'].includes(mode)|| (tool!=='obsidure'&&mode!=='interactive'))throw Error('Mission inconnue');
  if([...processes.entries()].some(([sid,p])=>p.active&&p.tool===tool&&liveSnapshot().sessions.find(s=>s.sessionId===sid)?.presence!=='ended'))throw Error('Une session est déjà en cours : arrête-la ou attends sa fin');
  if(launching.has(tool))throw Error('Cet outil est déjà en cours de lancement');launchKey=tool;launching.add(tool);
  const root=realpathSync(repository());contained(root,launchers[tool]);const session=randomUUID();
@@ -170,7 +178,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  }
  if(req.method==='POST'&&url.pathname.startsWith('/open/')){
  const origin=req.headers.origin;if(origin!==`http://${req.headers.host}`)throw Error('Origine refusée');if(process.platform!=='win32')throw Error('Ouverture native disponible sur le fixe Windows');
- const id=url.pathname.split('/').pop(),file=launchers[id];if(!file)throw Error('Outil non raccordé');if(launching.has(id))throw Error('Cet outil est déjà en cours de lancement');launchKey=id;launching.add(id);const root=realpathSync(repository());contained(root,file);
+ const id=url.pathname.split('/').pop();if(id==='jarjar')throw Error('Jarjar se lance depuis « Lancer ici » pour garder un PID et un statut réel dans le Monde');const file=launchers[id];if(!file)throw Error('Outil non raccordé');if(launching.has(id))throw Error('Cet outil est déjà en cours de lancement');launchKey=id;launching.add(id);const root=realpathSync(repository());contained(root,file);
  for(const [session,p] of processes){if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}if(p.active&&p.tool===id){if(!p.native)throw Error('Une session de cet outil est active dans la page. La sélectionner ou l’arrêter avant d’ouvrir un terminal.');const live=liveSnapshot().sessions.find(s=>s.sessionId===session);if(live?.presence==='ended')continue;await focusTerminal(p.title,p.pid);res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return}}
  if(id==='brody')await ensureBrodyApi(root);
  const wrapper=observer,session=randomUUID(),title='OBSIDIA · '+id+' · '+session.slice(0,8);
