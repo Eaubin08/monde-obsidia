@@ -27,32 +27,10 @@ const jarjarPythonCandidates=()=>[
 const jarjarPython=()=>jarjarPythonCandidates().find(p=>existsSync(p))||jarjarPythonCandidates()[0]
 const jarjarModule='scripts.run_jarjar_live'
 const jarjarModuleFile='scripts/run_jarjar_live.py'
-const jarjarCockpitUrl=()=>process.env.JARJAR_COCKPIT_URL||'http://127.0.0.1:47822'
 function emitJarjar(session,kind,fields={}){
  mkdirSync(liveDirectory,{recursive:true})
  const event={schema:'OBSIDIA_VISUAL_EVENT_V1',sessionId:session,agentId:'jarjar',name:'Jarjar',repository:jarjarRoot(),timestamp:new Date().toISOString(),kind,status:'thinking',phase:'STARTING',message:'Jarjar runtime',objective:null,...fields}
  appendFileSync(resolve(liveDirectory,session+'.jsonl'),JSON.stringify(event)+'\n')
-}
-async function jarjarRequest(path,{method='GET',data=null,timeout=120000}={}){
- const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout)
- try{
-  const response=await fetch(jarjarCockpitUrl()+path,{method,headers:data?{'Content-Type':'application/json'}:undefined,body:data?JSON.stringify(data):undefined,signal:controller.signal})
-  const packet=await response.json()
-  if(!response.ok)throw Error(packet?.error||('Jarjar cockpit HTTP '+response.status))
-  return packet
- }finally{clearTimeout(timer)}
-}
-function activeJarjarProcess(){return [...processes.entries()].find(([,p])=>p.active&&p.tool==='jarjar')}
-function latestEvidence(){
- const evidence=canonicalRuntimeEvidence()
- const sort=(rows)=>[...rows].sort((a,b)=>Date.parse(b.observedAt||b.created_at||0)-Date.parse(a.observedAt||a.created_at||0))
- const jarjarDecisions=sort(evidence.decisions.filter(x=>String(x.agent_id||'').toLowerCase()==='jarjar'))
- return {
-  scope:jarjarDecisions.length?'jarjar':'recent_global',
-  decisions:(jarjarDecisions.length?jarjarDecisions:sort(evidence.decisions)).slice(0,8),
-  receipts:sort(evidence.receipts).slice(0,8),
-  rollbacks:sort(evidence.rollbacks).slice(0,8)
- }
 }
 const git=(root,...args)=>execFileSync('git',['-C',root,...args],{encoding:'utf8',maxBuffer:12*1024*1024,timeout:10000,windowsHide:true}).trim()
 function safeJsonFiles(dir,limit=100){
@@ -178,23 +156,6 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  const url=new URL(req.url,'http://localhost');res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');
  try{
  if(req.method==='GET'&&url.pathname==='/services'){res.end(JSON.stringify({brody:await brodyServiceStatus()}));return}
- if(url.pathname.startsWith('/jarjar/')){
-  if(req.method!=='GET'&&req.headers.origin!==`http://${req.headers.host}`)throw Error('Origine refusée')
-  const active=activeJarjarProcess()
-  if(req.method==='GET'&&url.pathname==='/jarjar/status'){
-   let cockpit=null,error=null
-   try{cockpit=await jarjarRequest('/status',{timeout:1200})}catch(e){error=e.message}
-   res.end(JSON.stringify({runtime:cockpit?.runtime||(active?'STARTING':'STOPPED'),process:active?{sessionId:active[0],pid:active[1].child?.pid||active[1].pid||0,active:true,output:(active[1].output||'').slice(-12000)}:null,cockpit,error,evidence:latestEvidence(),authority:'NONE',decisionAuthority:'KX108_ONLY'}));return
-  }
-  if(req.method==='GET'&&url.pathname==='/jarjar/health'){
-   const health=await jarjarRequest('/health',{timeout:2500});res.end(JSON.stringify({...health,process:active?{sessionId:active[0],pid:active[1].child?.pid||active[1].pid||0}:null}));return
-  }
-  if(req.method==='GET'&&url.pathname==='/jarjar/capabilities'){res.end(JSON.stringify(await jarjarRequest('/capabilities',{timeout:2500})));return}
-  if(req.method==='POST'&&url.pathname==='/jarjar/text'){const data=await body(req);if(typeof data.text!=='string'||!data.text.trim()||data.text.length>8192)throw Error('Texte Jarjar invalide');res.end(JSON.stringify(await jarjarRequest('/text',{method:'POST',data:{text:data.text},timeout:120000})));return}
-  if(req.method==='POST'&&url.pathname==='/jarjar/voice/toggle'){res.end(JSON.stringify(await jarjarRequest('/voice/toggle',{method:'POST',data:{},timeout:5000})));return}
-  if(req.method==='POST'&&url.pathname==='/jarjar/voice/listen'){res.end(JSON.stringify(await jarjarRequest('/voice/listen',{method:'POST',data:{},timeout:130000})));return}
-  if(req.method==='POST'&&url.pathname==='/jarjar/observe'){res.end(JSON.stringify(await jarjarRequest('/observe',{method:'POST',data:{},timeout:130000})));return}
- }
  if(req.method==='GET'&&url.pathname==='/processes'){await Promise.all([...processes.entries()].filter(([,p])=>p.native&&p.active).map(async ([id,p])=>{p.active=await terminalAlive(p.pid);if(!p.active)markEnd(id,'Terminal Windows fermé')}));res.end(JSON.stringify({processes:[...processes.entries()].map(([id,p])=>({sessionId:id,active:p.active,runtimeActive:p.active&&liveSnapshot().sessions.find(s=>s.sessionId===id)?.presence!=='ended',exitCode:p.exitCode,native:!!p.native,tool:p.tool,title:p.title,output:p.native&&existsSync(resolve(liveDirectory,id+'.console.txt'))?readFileSync(resolve(liveDirectory,id+'.console.txt'),'utf8').slice(-32000):p.output}))}));return}
  if(req.method==='POST'&&(url.pathname==='/run'||url.pathname.startsWith('/input/')||url.pathname.startsWith('/stop/')||url.pathname.startsWith('/focus/'))){
  if(req.headers.origin!==`http://${req.headers.host}`)throw Error('Origine refusée');
