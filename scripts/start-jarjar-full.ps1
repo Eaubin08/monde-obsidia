@@ -71,6 +71,30 @@ function Start-Server([string]$Name, [string]$FilePath, [string[]]$Arguments, [s
 }
 
 
+function Wait-Service([int]$Port, [string]$Name, $Server, [int]$TimeoutSeconds = 120, [switch]$Optional) {
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        if (Port-Open $Port) {
+            Write-Host "[$Name] READY :$Port" -ForegroundColor Green
+            return $true
+        }
+        if ($Server -and $Server.HasExited) {
+            if ($Optional) {
+                Write-Host "[$Name] process exited before port $Port opened." -ForegroundColor Yellow
+                return $false
+            }
+            throw "$Name stopped before opening port $Port"
+        }
+        Start-Sleep -Seconds 1
+    }
+    if ($Optional) {
+        Write-Host "[$Name] timeout - continuing without this optional service." -ForegroundColor Yellow
+        return $false
+    }
+    throw "$Name not ready on port $Port after $TimeoutSeconds s"
+}
+
+
 $WorldRoot = Split-Path -Parent $PSScriptRoot
 $ObsidiaCandidates = @(
     $env:OBSIDIA_SOURCE_REPO,
@@ -114,9 +138,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $KernelDir 'node_modules\express')))
 
 if (-not (Port-Open 3001)) {
     Write-Host '[2/6] Demarrage Kernel X108 :3001...' -ForegroundColor Cyan
-    $null = Start-Server 'KERNEL X108' 'node.exe' @('.\server.kernel.sealed.cjs') $KernelDir
+    $kernelServer = Start-Server 'KERNEL X108' 'node.exe' @('.\server.kernel.sealed.cjs') $KernelDir
 } else { Write-Host '[2/6] Kernel X108 deja actif.' -ForegroundColor DarkGray }
-Wait-Port 3001 'KERNEL X108' 60
+$null = Wait-Service 3001 'KERNEL X108' $kernelServer 60
 
 $ObsidiaPython = @(
     (Join-Path $Obsidia '.venv\Scripts\python.exe'),
@@ -132,28 +156,34 @@ if (-not (Port-Open 8000)) {
     Write-Host '[3/6] Demarrage API Obsidia/Brody :8000...' -ForegroundColor Cyan
     $env:PYTHONPATH = $Obsidia
     $env:OBSIDIA_KERNEL_URL = 'http://127.0.0.1:3001/kernel/ragnarok'
-    $null = Start-Server 'OBSIDIA API/BRODY' $ObsidiaPython @('-m','uvicorn','apps.obsidia_api.main:app','--host','127.0.0.1','--port','8000') $Obsidia
+    $apiServer = Start-Server 'OBSIDIA API/BRODY' $ObsidiaPython @('-m','uvicorn','apps.obsidia_api.main:app','--host','127.0.0.1','--port','8000') $Obsidia
 } else { Write-Host '[3/6] API Obsidia/Brody deja active.' -ForegroundColor DarkGray }
-Wait-Port 8000 'OBSIDIA API/BRODY' 120
+$null = Wait-Service 8000 'OBSIDIA API/BRODY' $apiServer 120
 
+$qwenServer = $null
+$qwenReady = $true
 if (-not (Port-Open 8080)) {
     Write-Host '[4/6] Demarrage Qwen texte :8080...' -ForegroundColor Cyan
     $launcher = Join-Path $Jarjar 'scripts\start_qwen_text.ps1'
     if (-not (Test-Path $launcher)) { throw "Launcher Qwen texte absent: $launcher" }
-    $null = Start-Server 'QWEN TEXT' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher) $Jarjar
+    $qwenServer = Start-Server 'QWEN TEXT' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher) $Jarjar
 } else { Write-Host '[4/6] Qwen texte deja actif.' -ForegroundColor DarkGray }
-Wait-Port 8080 'QWEN TEXT' 600
+$qwenReady = Wait-Service 8080 'QWEN TEXT' $qwenServer 120 -Optional
 
+$visionServer = $null
+$visionReady = $true
 if (-not (Port-Open 8081)) {
     Write-Host '[5/6] Demarrage Qwen-VL :8081...' -ForegroundColor Cyan
     $launcher = Join-Path $Jarjar 'scripts\start_qwen_vl.ps1'
     if (-not (Test-Path $launcher)) { throw "Launcher Qwen-VL absent: $launcher" }
-    $null = Start-Server 'QWEN-VL' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher) $Jarjar
+    $visionServer = Start-Server 'QWEN-VL' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher) $Jarjar
 } else { Write-Host '[5/6] Qwen-VL deja actif.' -ForegroundColor DarkGray }
-Wait-Port 8081 'QWEN-VL' 600
+$visionReady = Wait-Service 8081 'QWEN-VL' $visionServer 120 -Optional
 
 Write-Host ''
 Write-Host '====================================================' -ForegroundColor Green
+if (-not $qwenReady) { Write-Host 'QWEN TEXT: OFFLINE - Jarjar continue sans route locale Qwen.' -ForegroundColor Yellow }
+if (-not $visionReady) { Write-Host 'QWEN-VL: OFFLINE - Jarjar continue sans vision locale.' -ForegroundColor Yellow }
 Write-Host '[6/6] SERVEURS READY -> INTERFACE JARJAR' -ForegroundColor Green
 Write-Host '====================================================' -ForegroundColor Green
 $env:JARJAR_BOUNDED_STRUCTURED_ROUTING_V0='1'
