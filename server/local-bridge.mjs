@@ -11,42 +11,63 @@ import {projectRoot,repository,observer,pythonFor} from './paths.mjs'
 export {repository} from './paths.mjs'
 export function contained(root,path){const r=realpathSync(root),p=realpathSync(resolve(r,path));const rel=relative(r,p);if(rel.startsWith('..'+sep)||rel==='..'||rel.startsWith(sep))throw Error('Chemin hors projet');return p}
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
-const nativeServiceIds=new Set(['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
+const nativeServiceIds=new Set(['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-main','obsidure-dry'])
 function nativeServiceSpec(id,root){
  const q=s=>"'" + String(s).replaceAll("'","''") + "'"
- const rt=resolve(root,'runtime_terrain_bank_trading_gps')
  const api='http://127.0.0.1:8000'
+ const kernelLauncher=resolve(root,'scripts','runtime','start_kernel.ps1')
+ const apiLauncher=resolve(root,'scripts','runtime','start_api.ps1')
+ const obsidureLauncher=resolve(root,'scripts','run_agent_obsidure.ps1')
+ const brodyEnrichedLauncher=resolve(root,'scripts','run_brody_terminal_enriched.ps1')
  const specs={
   'kernel-x108':{
-   title:'KERNEL X108 - 3001',
-   command:`Set-Location -LiteralPath ${q(rt)}; node .\\server.kernel.sealed.cjs`
+   title:'OBSIDIA / X108 — START KERNEL 3001',
+   tier:'primary',
+   launcher:'scripts/runtime/start_kernel.ps1',
+   command:`& ${q(kernelLauncher)} -Repo ${q(root)}`
   },
   'obsidia-api':{
    title:'OBSIDIA API + BRODY + NATIVE MEMORY - 8000',
-   command:`Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_KERNEL_URL='http://127.0.0.1:3001/kernel/ragnarok'; python -m uvicorn apps.obsidia_api.main:app --host 127.0.0.1 --port 8000`
+   tier:'primary',
+   launcher:'scripts/runtime/start_api.ps1',
+   command:`$env:OBSIDIA_KERNEL_URL='http://127.0.0.1:3001/kernel/ragnarok'; & ${q(apiLauncher)} -Repo ${q(root)} -Port 8000`
   },
   'gps-defense':{
-   title:'GPS DEFENSE AVIATION',
+   title:'GPS/AVIATION LIVE -> KERNEL BRIDGE',
+   tier:'primary',
+   launcher:'connectors/aviation_robo.py',
    command:`Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_API_BASE='${api}'; python .\\connectors\\aviation_robo.py`
   },
   'trading-x108':{
-   title:'TRADING -> X108',
+   title:'TRADING LIVE -> KERNEL BRIDGE',
+   tier:'primary',
+   launcher:'connectors/trading_live.py',
    command:`Set-Location -LiteralPath ${q(root)}; $env:PYTHONPATH=${q(root)}; $env:OBSIDIA_API_BASE='${api}'; python .\\connectors\\trading_live.py`
   },
   'brody-enriched':{
-   title:'BRODY ENRICHED',
-   command:`Set-Location -LiteralPath ${q(root)}; .\\scripts\\run_brody_terminal_enriched.ps1 -Base '${api}'`
+   title:'BRODY ENRICHED — DIAGNOSTIC',
+   tier:'diagnostic',
+   launcher:'scripts/run_brody_terminal_enriched.ps1',
+   command:`& ${q(brodyEnrichedLauncher)} -Base '${api}'`
+  },
+  'obsidure-main':{
+   title:'OBSIDURE',
+   tier:'primary',
+   launcher:'scripts/run_agent_obsidure.ps1',
+   command:`& ${q(obsidureLauncher)} -Api '${api}'`
   },
   'obsidure-dry':{
-   title:'OBSIDURE',
-   command:`Set-Location -LiteralPath ${q(root)}; .\\scripts\\run_agent_obsidure.ps1 -DryRun`
+   title:'OBSIDURE — DRY RUN',
+   tier:'diagnostic',
+   launcher:'scripts/run_agent_obsidure.ps1',
+   command:`& ${q(obsidureLauncher)} -Api '${api}' -DryRun`
   }
  }
  return specs[id]
 }
-function emitNativeService(session,id,title,root){
+function emitNativeService(session,id,spec,root){
  mkdirSync(liveDirectory,{recursive:true})
- const event={schema:'OBSIDIA_VISUAL_EVENT_V1',sessionId:session,agentId:id,name:title,repository:root,timestamp:new Date().toISOString(),kind:'session_start',status:'thinking',phase:'STARTING',message:'Terminal service natif',objective:null}
+ const event={schema:'OBSIDIA_VISUAL_EVENT_V1',sessionId:session,agentId:id,name:spec.title,repository:root,timestamp:new Date().toISOString(),kind:'session_start',status:'thinking',phase:'STARTING',message:'Terminal service natif',objective:null,tier:spec.tier||'primary',launcher:spec.launcher||null}
  appendFileSync(resolve(liveDirectory,session+'.jsonl'),JSON.stringify(event)+'\n')
 }
 const jarjarRootCandidates=()=>[
@@ -240,7 +261,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
    if(p.active&&p.tool===id){await focusTerminal(p.title,p.pid);res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return}
   }
   const session=randomUUID(),title='OBSIDIA · '+spec.title+' · '+session.slice(0,8)
-  emitNativeService(session,id,spec.title,root)
+  emitNativeService(session,id,spec,root)
   const command=`$host.UI.RawUI.WindowTitle='${title.replaceAll("'","''")}'; ${spec.command}`
   const pid=await launchTerminal(command)
   const p={pid,active:true,output:'',exitCode:null,native:true,tool:id,title};processes.set(session,p)
