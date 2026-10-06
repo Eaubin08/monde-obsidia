@@ -10,7 +10,9 @@ try {
     $beforeLock = (Get-FileHash -LiteralPath (Join-Path $projectRoot 'package-lock.json') -Algorithm SHA256).Hash
     if (-not $SkipPull) {
         $git = Get-RequiredCommand 'git.exe'
-        Invoke-CheckedCommand -Command $git -Arguments @('pull', '--ff-only')
+        Invoke-CheckedCommand -Command $git -Arguments @('fetch', 'origin', 'main')
+        Invoke-CheckedCommand -Command $git -Arguments @('switch', 'main')
+        Invoke-CheckedCommand -Command $git -Arguments @('pull', '--ff-only', 'origin', 'main')
     }
     # Load the newly pulled helper before checking/installing dependencies.
     . (Join-Path $PSScriptRoot 'windows-common.ps1')
