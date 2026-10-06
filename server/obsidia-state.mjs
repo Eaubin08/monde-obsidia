@@ -40,6 +40,24 @@ export function buildObsidiaState(snapshot,live){
    entities.push({id:objectiveId,kind:'objective',label:s.objective,source:'runtime_objective',sessionId:s.sessionId})
    relations.push({from:sessionId,type:'HAS_OBJECTIVE',to:objectiveId})
   }
+  for(let i=0;i<(s.events||[]).length;i++){
+   const event=s.events[i]
+   if(event.kind==='response'||event.kind==='audit_result'){
+    const resultId=stable('result',s.sessionId+':'+i)
+    entities.push({id:resultId,kind:'result',label:event.kind==='response'?'Réponse produite':'Résultat d’audit',source:'runtime_event',sessionId:s.sessionId,eventKind:event.kind,timestamp:event.timestamp,data:event.result||null})
+    relations.push({from:sessionId,type:'PRODUCES_RESULT',to:resultId})
+    if(event.result&&event.result.decision_authority==='KX108_ONLY'&&event.result.verdict){
+     const decisionId=stable('decision',s.sessionId+':'+i)
+     entities.push({id:decisionId,kind:'decision',label:String(event.result.verdict),source:'canonical_runtime_result',sessionId:s.sessionId,decisionAuthority:'KX108_ONLY',verdict:String(event.result.verdict),timestamp:event.timestamp})
+     relations.push({from:resultId,type:'CONTAINS_DECISION',to:decisionId})
+    }
+   }
+   if(event.kind==='report'&&event.reportFile){
+    const artifactId=stable('artifact',event.reportFile)
+    entities.push({id:artifactId,kind:'artifact',label:event.reportFile,source:'runtime_report',sessionId:s.sessionId,path:event.reportFile,timestamp:event.timestamp})
+    relations.push({from:sessionId,type:'PRODUCES_ARTIFACT',to:artifactId})
+   }
+  }
  }
  for(const p of snapshot?.proposals||[]){
   const proposalId=stable('proposal',p.id)
@@ -60,8 +78,8 @@ export function buildObsidiaState(snapshot,live){
   observedAt:live?.observedAt||snapshot?.observedAt||new Date().toISOString(),
   entities,relations,sessions,
   views:{
-   world:{question:'OÙ ?',entityRefs:entities.filter(e=>['ecosystem','repository','domain','agent','session','proposal','receipt','objective'].includes(e.kind)).map(e=>e.id)},
-   workspace:{question:'QUOI ?',entityRefs:entities.filter(e=>['repository','domain','proposal','receipt','session','objective'].includes(e.kind)).map(e=>e.id)},
+   world:{question:'OÙ ?',entityRefs:entities.filter(e=>['ecosystem','repository','domain','agent','session','proposal','receipt','objective','result','artifact','decision'].includes(e.kind)).map(e=>e.id)},
+   workspace:{question:'QUOI ?',entityRefs:entities.filter(e=>['repository','domain','proposal','receipt','session','objective','result','artifact','decision'].includes(e.kind)).map(e=>e.id)},
    pokemon:{question:'QUI ?',entityRefs:entities.filter(e=>['agent','session'].includes(e.kind)).map(e=>e.id)}
   }
  }
