@@ -25,7 +25,6 @@ export default function LivePokemon(){
  const currentMission=currentEntity?state?.missions.find(m=>m.sessionRefs.includes(currentEntity.id)):undefined
  const chooseAgent=(id:string)=>{setSelectedAgent(id);const raw=id.startsWith('agent:')?id.slice(6):id;const running=sessions.find(s=>s.agentId===raw&&s.presence==='live');setSelected(running?.sessionId||'')}
  const phaseLabel=(phase:string)=>({STARTING:'Démarrage',SESSION_CONFIG:'Configuration',WAITING_INPUT:'En attente',INPUT_RECEIVED:'Demande reçue',BRODY_REQUEST:'Réflexion en cours',BRODY_RESPONSE:'Réponse prête',A_AUDIT:'Audit en cours',V_VALIDATION:'Validation',D_DISRUPTION:'Construction',R_REINTEGRATION:'Préparation du résultat',LEAN_BUILD:'Tests',CYCLE_START:'Cycle en cours',AUDIT_ROUND:'Audit en cours',AUDIT_INTERVAL:'Pause',PROCESS_EXIT:'Terminé'} as Record<string,string>)[phase]||phase
- const worktreeSessions=(w:Worktree)=>sessions.filter(s=>s.repository===w.path&&s.presence==='live')
  const sessionResult=(s:Session)=>{const entity=state?.entities.find(e=>e.id==='session:'+s.sessionId);if(!entity)return undefined;const rel=state?.relations.find(r=>r.from===entity.id&&r.type==='PRODUCES_RESULT');return rel?state?.entities.find(e=>e.id===rel.to):undefined}
  const sessionMission=(s:Session)=>state?.missions.find(m=>m.sessionRefs.includes('session:'+s.sessionId))
  const openWorkspace=(s?:Session)=>{if(s)sessionStorage.setItem('obsidia-selected-session',s.sessionId);location.hash='workspace'}
