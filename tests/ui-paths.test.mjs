@@ -7,6 +7,7 @@ const pokemon=readFileSync(resolve(process.cwd(),'src/LivePokemon.tsx'),'utf8')
 const ecosystem=readFileSync(resolve(process.cwd(),'src/Ecosystem.tsx'),'utf8')
 const workspace=readFileSync(resolve(process.cwd(),'src/ToolWorkspace.tsx'),'utf8')
 const bridge=readFileSync(resolve(process.cwd(),'server/local-bridge.mjs'),'utf8')
+const stateProjection=readFileSync(resolve(process.cwd(),'server/obsidia-state.mjs'),'utf8')
 const jarjarLauncher=readFileSync(resolve(process.cwd(),'scripts/start-jarjar-full.ps1'),'utf8')
 
 test('Pokémon launcher and cross-view paths remain wired',()=>{
@@ -136,6 +137,26 @@ test('Jarjar is one shared object across World Workspace and Pokemon',()=>{
   "openWorkspace(jarjarShared)",
   "selectContext(jarjarContextId)",
  ]) assert.ok(pokemon.includes(invariant),invariant)
+})
+
+test('Validated native services share one observed state across views',()=>{
+ for(const invariant of [
+  "function nativeServicesObservedStatus()",
+  "PORT_3001",
+  "PORT_8000",
+  "PROCESS_AVIATION_ROBO",
+  "PROCESS_TRADING_LIVE",
+  "PROCESS_BRODY_ENRICHED",
+  "PROCESS_OBSIDURE_DRY",
+  "live.nativeServices=nativeServicesObservedStatus()",
+ ]) assert.ok(bridge.includes(invariant),invariant)
+ for(const invariant of [
+  "for(const service of live?.nativeServices||[])",
+  "source:'NATIVE_SERVICE_OBSERVATION_V1'",
+  "nativeService:true",
+  "existingLive.presence='ended'",
+  "observationEvidence:service.evidence",
+ ]) assert.ok(stateProjection.includes(invariant),invariant)
 })
 
 test('Validated Obsidia service terminals remain wired individually',()=>{
