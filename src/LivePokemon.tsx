@@ -8,7 +8,8 @@ type Session={sessionId:string;agentId:string;name:string;pid:number;repository:
 type Entity={id:string;kind:string;label:string;domainId?:string;agentId?:string;data?:unknown}
 type Relation={from:string;type:string;to:string}
 type Mission=MissionTimelineMission
-type SharedState={schema:string;entities:Entity[];relations:Relation[];sessions:Session[];missions:Mission[]}
+type AgentFamily={id:string;label:string;sourceRepo:string;sourcePath?:string;localPresent:boolean;kind:string;agents:string[]}
+type SharedState={schema:string;entities:Entity[];relations:Relation[];sessions:Session[];missions:Mission[];agentFamilies?:AgentFamily[]}
 
 const phaseLabel=(phase:string)=>({
  STARTING:'Démarrage',SESSION_CONFIG:'Configuration',WAITING_INPUT:'En attente',
@@ -29,6 +30,8 @@ export default function LivePokemon(){
  const [connected,setConnected]=useState(false)
  const [launching,setLaunching]=useState('')
  const [launchMessage,setLaunchMessage]=useState('')
+ const [statusFilter,setStatusFilter]=useState<'all'|'live'|'ready'|'planned'|'blocked'|'inactive'>('all')
+ const [familyFilter,setFamilyFilter]=useState('')
 
  useEffect(()=>{if(!container.current)return;const scene=new AgentTown({container:container.current,environment:'town',officeSize:'large',roomMode:'environment',onAgentClick:id=>{setSelected(id);setSelectedAgent('');sessionStorage.setItem('obsidia-selected-session',id);sessionStorage.setItem('obsidia-focus-entity','session:'+id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:'session:'+id}))}});town.current=scene;return()=>{scene.destroy();town.current=null}},[])
 
@@ -45,6 +48,16 @@ export default function LivePokemon(){
  const agentEntity=state?.entities.find(e=>e.id===selectedAgent)
  const launchable=[['brody','Brody',true],['obsidure','Obsidure',true],['cli','CLI Obsidia',true],['jarjar','Jarjar',false],['jarvis','Jarvis',false]] as const
  const lastSession=(agentId:string)=>sessions.filter(s=>s.agentId===agentId).sort((a,b)=>Date.parse(b.timestamp)-Date.parse(a.timestamp))[0]
+ const organFamily:AgentFamily={id:'organs',label:'Organes / outils',sourceRepo:'monde-obsidia',localPresent:true,kind:'launcher',agents:launchable.map(x=>x[0]) as string[]}
+ const families=[organFamily,...(state?.agentFamilies||[])]
+ const allCatalogIds=new Set(families.flatMap(f=>f.agents))
+ const liveIds=new Set(sessions.filter(s=>s.presence==='live'&&s.agentId!=='cli').map(s=>s.agentId))
+ const readyIds=new Set(launchable.filter(([, ,ready])=>ready).map(([id])=>id).filter(id=>!sessions.some(s=>s.agentId===id&&s.presence==='live')))
+ const plannedIds=new Set(launchable.filter(([, ,ready])=>!ready).map(([id])=>id))
+ const blockedSessions=sessions.filter(s=>s.presence==='live'&&(s.status==='blocked'||s.status==='error')&&s.agentId!=='cli')
+ const inactiveCount=[...allCatalogIds].filter(id=>!liveIds.has(id)&&!readyIds.has(id)&&!plannedIds.has(id)).length
+ const familyFor=(agentId:string)=>families.find(f=>f.agents.includes(agentId))
+ const visibleLive=live.filter(s=>(statusFilter==='all'||statusFilter==='live'||(statusFilter==='blocked'&&(s.status==='blocked'||s.status==='error')))&&(familyFilter===''||familyFor(s.agentId)?.id===familyFilter))
 
  const selectContext=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
  const openWorkspace=(s:Session)=>{sessionStorage.setItem('obsidia-selected-session',s.sessionId);selectContext('session:'+s.sessionId);const area=s.agentId==='brody'?'brody':s.agentId==='obsidure'?'obsidure':s.agentId==='cli'?'cli':'home';sessionStorage.setItem('obsidia-workspace-area',area);location.hash='workspace'}
@@ -73,12 +86,28 @@ export default function LivePokemon(){
 
   {error&&<p role="alert">{error}</p>}
 
+  <section className="pokemon-scale-bar" aria-label="État global des agents">
+   {[
+    ['all','TOTAL',allCatalogIds.size],
+    ['live','LIVE',liveIds.size],
+    ['ready','PRÊTS',readyIds.size],
+    ['planned','PLANIFIÉS',plannedIds.size],
+    ['blocked','BLOQUÉS',blockedSessions.length],
+    ['inactive','INACTIFS',inactiveCount],
+   ].map(([id,label,count])=><button key={String(id)} aria-pressed={statusFilter===id} onClick={()=>setStatusFilter(id as typeof statusFilter)}><strong>{count}</strong><span>{label}</span></button>)}
+  </section>
+
+  <section className="pokemon-families">
+   <div className="pokemon-families-head"><div><span className="eyebrow">FAMILLES</span><h2>Population Obsidia</h2><p>Regroupée par source réelle. Une famille peut exister sans être lancée.</p></div>{familyFilter&&<button onClick={()=>setFamilyFilter('')}>Toutes les familles</button>}</div>
+   <div className="pokemon-family-grid">{families.map(f=>{const active=f.agents.filter(id=>liveIds.has(id)).length;return <button key={f.id} className={familyFilter===f.id?'selected':''} onClick={()=>setFamilyFilter(familyFilter===f.id?'':f.id)}><span>{f.kind}</span><strong>{f.label}</strong><small>{active} actif(s) / {f.agents.length} agent(s){!f.localPresent?' · repo local absent':''}</small></button>})}</div>
+  </section>
+
   <div className="pokemon-v3-layout">
    <main className="pokemon-v3-active">
     <span className="eyebrow">EN CE MOMENT</span>
     <h2>Agents actifs</h2>
-    {!live.length&&<div className="pokemon-v3-empty"><strong>Aucun agent actif.</strong><p>Les agents apparaissent ici dès qu’une vraie session démarre.</p></div>}
-    <div className="pokemon-v3-grid">{live.map(s=>{
+    {!visibleLive.length&&<div className="pokemon-v3-empty"><strong>Aucun agent actif pour ce filtre.</strong><p>LIVE reste strict : seule une vraie session confirmée apparaît ici.</p></div>}
+    <div className="pokemon-v3-grid">{visibleLive.map(s=>{
       const mission=state?.missions.find(m=>m.sessionRefs.includes('session:'+s.sessionId))
       const entity=state?.entities.find(e=>e.id==='session:'+s.sessionId)
       const resultRefs=entity?state?.relations.filter(r=>r.from===entity.id&&['PRODUCES_RESULT','PRODUCES_ARTIFACT'].includes(r.type))||[]:[]
@@ -95,10 +124,10 @@ export default function LivePokemon(){
     })}</div>
    </main>
 
-   <section className="pokemon-launch-zone">
+   {(statusFilter==='all'||statusFilter==='ready'||statusFilter==='planned')&&<section className="pokemon-launch-zone">
     <div className="pokemon-launch-head"><div><span className="eyebrow">DISPONIBLES</span><h2>Lancer un agent</h2><p>Uniquement les launchers réellement disponibles dans Obsidia.</p></div>{launchMessage&&<small>{launchMessage}</small>}</div>
-    <div className="pokemon-launch-grid">{launchable.map(([id,label,ready])=>{const active=sessions.find(s=>s.agentId===id&&s.presence==='live');const previous=lastSession(id);return <article key={id} className={"pokemon-launch-card "+(active?'active ':'')+(ready?'':'coming-soon')}><div><strong>{label}</strong><span>{active?'LIVE':ready?'Disponible':'Bientôt'}</span></div><p>{active?.objective||previous?.objective||previous?.message||(ready?'Aucune activité récente observée.':'Point d’entrée préparé côté UI · raccordement backend à venir.')}</p><small>{previous?'Dernière activité · '+new Date(previous.timestamp).toLocaleString():ready?'Jamais observé dans ce runtime':'Préparé pour activation future'}</small><div className="workspace-v3-actions">{active?<><button onClick={()=>{setSelected(active.sessionId);selectContext('session:'+active.sessionId)}}>Continuer</button><button onClick={()=>openWorkspace(active)}>Workspace</button></>:ready?<><button disabled={launching.startsWith(id)} onClick={()=>startSession(id,false)}>{launching===id+':integrated'?'Lancement…':'Lancer ici'}</button><button disabled={launching.startsWith(id)} onClick={()=>startSession(id,true)}>{launching===id+':terminal'?'Ouverture…':'Ouvrir terminal'}</button></>:<button disabled>Activation à venir</button>}<button onClick={()=>{const target=active?'session:'+active.sessionId:'agent:'+id;selectContext(target);location.hash='world'}}>Monde</button></div></article>})}</div>
-   </section>
+    <div className="pokemon-launch-grid">{launchable.filter(([id,,ready])=>(statusFilter==='all'||(statusFilter==='ready'&&ready)||(statusFilter==='planned'&&!ready))&&(familyFilter===''||familyFor(id)?.id===familyFilter)).map(([id,label,ready])=>{const active=sessions.find(s=>s.agentId===id&&s.presence==='live');const previous=lastSession(id);return <article key={id} className={"pokemon-launch-card "+(active?'active ':'')+(ready?'':'coming-soon')}><div><strong>{label}</strong><span>{active?'LIVE':ready?'Disponible':'Bientôt'}</span></div><p>{active?.objective||previous?.objective||previous?.message||(ready?'Aucune activité récente observée.':'Point d’entrée préparé côté UI · raccordement backend à venir.')}</p><small>{previous?'Dernière activité · '+new Date(previous.timestamp).toLocaleString():ready?'Jamais observé dans ce runtime':'Préparé pour activation future'}</small><div className="workspace-v3-actions">{active?<><button onClick={()=>{setSelected(active.sessionId);selectContext('session:'+active.sessionId)}}>Continuer</button><button onClick={()=>openWorkspace(active)}>Workspace</button></>:ready?<><button disabled={launching.startsWith(id)} onClick={()=>startSession(id,false)}>{launching===id+':integrated'?'Lancement…':'Lancer ici'}</button><button disabled={launching.startsWith(id)} onClick={()=>startSession(id,true)}>{launching===id+':terminal'?'Ouverture…':'Ouvrir terminal'}</button></>:<button disabled>Activation à venir</button>}<button onClick={()=>{const target=active?'session:'+active.sessionId:'agent:'+id;selectContext(target);location.hash='world'}}>Monde</button></div></article>})}</div>
+   </section>}
 
    <aside className="pokemon-v3-inspector">
     {current?<><span className="eyebrow">AGENT SÉLECTIONNÉ</span><h2>{current.name}</h2><div className="pokemon-v3-state">{phaseLabel(current.phase)}</div><h3>Travail actuel</h3><p>{current.objective||'Aucun objectif observé.'}</p>{currentMission&&<><h3>Mission / preuve</h3><MissionTimeline compact mission={currentMission} entities={state?.entities||[]} onFocus={id=>{selectContext(id);location.hash='world'}}/></>}<h3>Résultat</h3>{produced.length?produced.map((e,i)=><div key={i} className="pokemon-v3-result"><strong>{e?.label}</strong></div>):<p>Aucun résultat observé pour cette session.</p>}<div className="pokemon-v3-actions"><button onClick={()=>openWorkspace(current)}>Ouvrir son Workspace</button><button onClick={()=>{selectContext(currentMission?.id||'session:'+current.sessionId);location.hash='world'}}>Voir dans le Monde</button></div><details><summary>Détails techniques</summary><p>Session : {current.sessionId}</p><p>Repo : {current.repository}</p><p>Dernier signal : {current.timestamp}</p>{current.events.map((e,i)=><div key={i}><small>{new Date(e.timestamp).toLocaleTimeString()} · {phaseLabel(e.phase)}</small><p>{e.message}</p></div>)}</details></>:agentEntity?<><span className="eyebrow">AGENT DÉCLARÉ</span><h2>{agentEntity.label}</h2><p>Aucune session live observée.</p><button onClick={()=>{selectContext(agentEntity.id);location.hash='world'}}>Voir dans le Monde</button></>:<><span className="eyebrow">SÉLECTION</span><h2>Choisis un agent</h2><p>Sa mission, son état et son résultat apparaîtront ici.</p></>}
@@ -112,7 +141,7 @@ export default function LivePokemon(){
   </details>
 
   <details className="pokemon-v3-secondary">
-   <summary>Population canonique Sigma · agents non lançables directement inclus</summary>
+   <summary>Registre détaillé · population canonique et familles sources</summary>
    {domains.map(d=>{const refs=state?.relations.filter(r=>r.from===d.id&&r.type==='HAS_AGENT')||[];return <section key={d.id}><h3>{d.label} · {refs.length}</h3><div className="office-toolbar">{refs.map(r=>{const a=state?.entities.find(e=>e.id===r.to);const active=sessions.some(s=>s.agentId===a?.agentId&&s.presence==='live');return <button key={r.to} onClick={()=>chooseAgent(r.to)}>{a?.label||r.to}<small>{active?'LIVE':'inactif'}</small></button>})}</div></section>})}
   </details>
  </section>
