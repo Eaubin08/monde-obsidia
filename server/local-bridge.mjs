@@ -70,6 +70,37 @@ function emitJarjar(session,kind,fields={}){
  const event={schema:'OBSIDIA_VISUAL_EVENT_V1',sessionId:session,agentId:'jarjar',name:'Jarjar',repository:jarjarRoot(),timestamp:new Date().toISOString(),kind,status:'thinking',phase:'STARTING',message:'Jarjar runtime',objective:null,...fields}
  appendFileSync(resolve(liveDirectory,session+'.jsonl'),JSON.stringify(event)+'\n')
 }
+let nativeObservationCache={at:0,value:null}
+function nativeServicesObservedStatus(){
+ const now=Date.now()
+ if(nativeObservationCache.value&&now-nativeObservationCache.at<1500)return nativeObservationCache.value
+ let listening=''
+ try{listening=execFileSync('netstat.exe',['-ano','-p','tcp'],{encoding:'utf8',timeout:4000,windowsHide:true})}catch{}
+ const portOpen=port=>new RegExp('127\\.0\\.0\\.1:'+port+'\\s+.*LISTENING','i').test(listening)||new RegExp('0\\.0\\.0\\.0:'+port+'\\s+.*LISTENING','i').test(listening)||new RegExp('\\[::\\]:'+port+'\\s+.*LISTENING','i').test(listening)
+ let commandLines=[]
+ try{
+  const raw=execFileSync('powershell.exe',['-NoProfile','-Command',"$p=Get-CimInstance Win32_Process | Where-Object {$_.CommandLine}; @($p | Select-Object ProcessId,CommandLine) | ConvertTo-Json -Compress"],{encoding:'utf8',timeout:7000,windowsHide:true}).trim()
+  const parsed=raw?JSON.parse(raw):[]
+  commandLines=Array.isArray(parsed)?parsed:[parsed]
+ }catch{}
+ const hasProcess=(pattern)=>commandLines.some(p=>pattern.test(String(p?.CommandLine||'')))
+ const managedFor=id=>[...processes.entries()].find(([,p])=>p.tool===id&&p.active)
+ const definitions=[
+  {id:'kernel-x108',label:'Kernel X108',ready:portOpen(3001),evidence:'PORT_3001'},
+  {id:'obsidia-api',label:'API Obsidia + Brody + Native Memory',ready:portOpen(8000),evidence:'PORT_8000'},
+  {id:'gps-defense',label:'GPS / Defense / Aviation',ready:hasProcess(/connectors[\\/]aviation_robo\.py/i),evidence:'PROCESS_AVIATION_ROBO'},
+  {id:'trading-x108',label:'Trading → X108',ready:hasProcess(/connectors[\\/]trading_live\.py/i),evidence:'PROCESS_TRADING_LIVE'},
+  {id:'brody-enriched',label:'Brody Enriched',ready:hasProcess(/run_brody_terminal_enriched\.ps1/i),evidence:'PROCESS_BRODY_ENRICHED'},
+  {id:'obsidure-dry',label:'Obsidure DryRun',ready:hasProcess(/run_agent_obsidure\.ps1/i),evidence:'PROCESS_OBSIDURE_DRY'}
+ ]
+ const value=definitions.map(s=>{
+  const managed=managedFor(s.id)
+  return {...s,state:s.ready?'READY':managed?'STARTING':'OFFLINE',managed:!!managed,sessionId:managed?.[0]||null,decisionAuthority:'KX108_ONLY',observedAt:new Date().toISOString()}
+ })
+ nativeObservationCache={at:now,value}
+ return value
+}
+
 function jarjarObservedStatus(){
  let listening=''
  try{listening=execFileSync('netstat.exe',['-ano','-p','tcp'],{encoding:'utf8',timeout:4000,windowsHide:true})}catch{}
@@ -279,7 +310,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  for(const [id,v] of processes)if(processes.size>50&&!v.active)processes.delete(id);
  await awaitObserver(session,p);res.end(JSON.stringify({sessionId:session,started:true}));return
  }
- if(req.method==='GET'&&url.pathname==='/state'){const snap=snapshot(),live=liveSnapshot();live.jarjar=jarjarObservedStatus();res.end(JSON.stringify(buildObsidiaState(snap,live)));return}
+ if(req.method==='GET'&&url.pathname==='/state'){const snap=snapshot(),live=liveSnapshot();live.jarjar=jarjarObservedStatus();live.nativeServices=nativeServicesObservedStatus();res.end(JSON.stringify(buildObsidiaState(snap,live)));return}
  if(req.method==='GET'&&url.pathname==='/live'){res.end(JSON.stringify(liveSnapshot()));return}
  if(req.method==='GET'&&url.pathname==='/reports'){
  const reports=existsSync(liveDirectory)?readdirSync(liveDirectory).filter(f=>/^[a-zA-Z0-9-]+\.report\.json$/.test(f)).slice(-100).flatMap(f=>{try{return [JSON.parse(readFileSync(resolve(liveDirectory,f),'utf8'))]}catch{return []}}):[];res.end(JSON.stringify({reports}));return
