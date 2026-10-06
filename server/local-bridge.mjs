@@ -16,8 +16,8 @@ function safeJsonFiles(dir,limit=100){
  if(!existsSync(dir))return []
  return readdirSync(dir).filter(x=>x.endsWith('.json')).slice(-limit).flatMap(name=>{try{const p=resolve(dir,name);if(statSync(p).size>2*1024*1024)return [];return [{name,data:JSON.parse(readFileSync(p,'utf8')),observedAt:statSync(p).mtime.toISOString()}]}catch{return []}})
 }
-function canonicalRuntimeEvidence(){
- const local=process.env.LOCALAPPDATA||resolve(homedir(),'AppData','Local'),base=resolve(local,'Obsidia')
+export function canonicalRuntimeEvidence(baseOverride=null){
+ const local=process.env.LOCALAPPDATA||resolve(homedir(),'AppData','Local'),base=baseOverride||resolve(local,'Obsidia')
  const decisions=safeJsonFiles(resolve(base,'kx108_decisions')).map(({name,data,observedAt})=>({
   file:name,observedAt,decision_record_id:data.decision_record_id,decision_record_hash:data.decision_record_hash,
   decision_phase:data.decision_phase||'POST_EXECUTION',decision_id:data.decision_id,trace_id:data.trace_id,domain:data.domain,
