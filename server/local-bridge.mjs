@@ -256,8 +256,9 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   if(!existsSync(resolve(jr,jarjarModuleFile)))throw Error('Launcher Jarjar absent : '+resolve(jr,jarjarModuleFile))
   if(!existsSync(jarjarPython()))throw Error('Python Jarjar validé absent. Candidats : '+jarjarPythonCandidates().join(' | '))
   const session=randomUUID(),title='OBSIDIA · jarjar · '+session.slice(0,8)
-  const args=['-NoExit','-ExecutionPolicy','Bypass','-Command',`$env:JARJAR_BOUNDED_STRUCTURED_ROUTING_V0='1'; $env:JARJAR_LOCAL_BRODY='1'; Set-Location -LiteralPath "${jr.replace(/"/g,'`"')}"; & "${jarjarPython().replace(/"/g,'`"')}" -m ${jarjarModule}`]
-  const pid=await launchTerminal(['powershell.exe',...args])
+  const baseCommand=terminalCommand(jr,title,jarjarPython(),['-m',jarjarModule])
+  const command=`$env:JARJAR_BOUNDED_STRUCTURED_ROUTING_V0='1'; $env:JARJAR_LOCAL_BRODY='1'; ${baseCommand}`
+  const pid=await launchTerminal(command)
   const p={pid,active:true,output:'',exitCode:null,native:true,tool:id,title};processes.set(session,p)
   emitJarjar(session,'session_start',{pid,status:'thinking',phase:'RUNNING',message:'Jarjar live ouvert en terminal'})
   res.end(JSON.stringify({opened:true,tool:id,sessionId:session,pid}));return
