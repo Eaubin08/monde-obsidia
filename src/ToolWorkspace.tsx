@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react'
+import {useEffect,useState,type FormEvent} from 'react'
 import {sessionAction} from './SessionControls'
 
 type RuntimeEvent={kind:string;phase:string;message:string;timestamp:string;objective?:string;result?:Record<string,unknown>}
@@ -26,7 +26,7 @@ export default function ToolWorkspace({tool,sessions,onSelect}:{tool:Tool;sessio
   if(current?.presence==='live')return current.sessionId
   const d=await sessionAction('run',{mode:'interactive',tool});if(d.sessionId)onSelect(d.sessionId);return d.sessionId as string
  }
- async function submit(e:React.FormEvent){e.preventDefault();if(!text.trim()||busy)return;setBusy(true);setError('');try{const id=await ensureSession();let ready=current?.presence==='live'&&current.phase==='WAITING_INPUT';if(!ready){for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,150));const r=await fetch('/obsidia-local/live');const d=await r.json();const s=d.sessions?.find((x:Session)=>x.sessionId===id);if(s?.phase==='WAITING_INPUT'){ready=true;break}}}if(!ready)throw Error('Le processus est démarré mais n’est pas encore prêt à recevoir la demande.');await sessionAction('input/'+id,{text:text.trim()});setText('')}catch(e){setError(String(e).replace(/^Error:\s*/,''))}finally{setBusy(false)}}
+ async function submit(e:FormEvent){e.preventDefault();if(!text.trim()||busy)return;setBusy(true);setError('');try{const id=await ensureSession();let ready=current?.presence==='live'&&current.phase==='WAITING_INPUT';if(!ready){for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,150));const r=await fetch('/obsidia-local/live');const d=await r.json();const s=d.sessions?.find((x:Session)=>x.sessionId===id);if(s?.phase==='WAITING_INPUT'){ready=true;break}}}if(!ready)throw Error('Le processus est démarré mais n’est pas encore prêt à recevoir la demande.');await sessionAction('input/'+id,{text:text.trim()});setText('')}catch(e){setError(String(e).replace(/^Error:\s*/,''))}finally{setBusy(false)}}
  const conversation=(current?.events||[]).flatMap((e,i)=>{
   if(e.phase==='INPUT_RECEIVED'&&e.objective)return [{id:'u'+i,who:'Vous',text:e.objective}]
   if(tool==='brody'&&e.kind==='response'){const text=answerText(e.result);return text?[{id:'a'+i,who:'Brody',text}]:[]}
