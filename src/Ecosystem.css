@@ -162,3 +162,18 @@ linear-gradient(90deg,rgba(69,104,77,.08) 1px,transparent 1px),
 .world-layer-reader pre{max-height:520px;overflow:auto}
 @media(max-width:950px){.world-map-v2{min-height:780px}.world-zone{width:165px}.zone-agents,.zone-knowledge{left:3%}.zone-governance,.zone-domains{right:3%}.world-object-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:650px){.world-v2-header{flex-direction:column}.world-map-v2{min-height:auto;display:grid;grid-template-columns:1fr;gap:8px;padding:12px}.world-core,.world-zone,.world-live-token{position:static;transform:none!important;width:auto;max-width:none;height:auto;min-height:0;border-radius:0}.world-core{padding:18px}.world-map-v2:before,.world-map-v2:after{display:none}.world-object-grid{grid-template-columns:1fr}.world-zone-title,.world-focus-head{flex-direction:column}}
+
+/* Pokémon Launch & Presence V1 */
+.pokemon-launch-zone{grid-column:1/-1;border:2px solid #34563f;background:#0d1b13;padding:16px;margin-top:12px}
+.pokemon-launch-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.pokemon-launch-head h2{margin:4px 0}
+.pokemon-launch-head p{margin:4px 0;color:#9bbfa4}
+.pokemon-launch-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+.pokemon-launch-card{border:2px solid #34563f;background:#102219;padding:12px;display:flex;flex-direction:column;gap:8px}
+.pokemon-launch-card.active{border-color:#6c9b73;background:#14271c}
+.pokemon-launch-card>div:first-child{display:flex;justify-content:space-between;gap:10px}
+.pokemon-launch-card>div:first-child span{font-size:.72rem;color:#9bbfa4}
+.pokemon-launch-card p{margin:0;min-height:42px}
+.pokemon-launch-card>small{color:#9bbfa4}
+@media(max-width:1100px){.pokemon-launch-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.pokemon-launch-grid{grid-template-columns:1fr}.pokemon-launch-head{flex-direction:column}}
