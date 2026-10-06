@@ -122,6 +122,23 @@ function Wait-Service([int]$Port, [string]$Name, $Server, [int]$TimeoutSeconds =
 }
 
 
+function Start-OptionalService([int]$Port, [string]$Name, $Server, [int]$ProbeSeconds = 4) {
+    $deadline = (Get-Date).AddSeconds($ProbeSeconds)
+    while ((Get-Date) -lt $deadline) {
+        if (Port-Open $Port) {
+            Write-Host "[$Name] READY :$Port" -ForegroundColor Green
+            return 'READY'
+        }
+        if ($Server -and $Server.HasExited) {
+            Write-Host "[$Name] OFFLINE - process exited before port $Port opened." -ForegroundColor Yellow
+            return 'OFFLINE'
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    Write-Host "[$Name] STARTING :$Port - Jarjar continue pendant le chargement." -ForegroundColor Cyan
+    return 'STARTING'
+}
+
 $WorldRoot = Split-Path -Parent $PSScriptRoot
 $ObsidiaCandidates = @(
     $env:OBSIDIA_SOURCE_REPO,
@@ -209,7 +226,8 @@ if (-not (Port-Open 8080)) {
     if (-not (Test-Path $launcher)) { throw "Launcher Qwen texte absent: $launcher" }
     $qwenServer = Start-Server 'QWEN TEXT' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher) $Jarjar
 } else { Write-Host '[4/6] Qwen texte deja actif.' -ForegroundColor DarkGray }
-$qwenReady = Wait-Service 8080 'QWEN TEXT' $qwenServer 120 -Optional
+$qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 4
+$qwenReady = ($qwenState -eq 'READY')
 
 $visionServer = $null
 $visionReady = $true
@@ -219,12 +237,15 @@ if (-not (Port-Open 8081)) {
     if (-not (Test-Path $launcher)) { throw "Launcher Qwen-VL absent: $launcher" }
     $visionServer = Start-Server 'QWEN-VL' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher) $Jarjar
 } else { Write-Host '[5/6] Qwen-VL deja actif.' -ForegroundColor DarkGray }
-$visionReady = Wait-Service 8081 'QWEN-VL' $visionServer 120 -Optional
+$visionState = Start-OptionalService 8081 'QWEN-VL' $visionServer 4
+$visionReady = ($visionState -eq 'READY')
 
 Write-Host ''
 Write-Host '====================================================' -ForegroundColor Green
-if (-not $qwenReady) { Write-Host 'QWEN TEXT: OFFLINE - Jarjar continue sans route locale Qwen.' -ForegroundColor Yellow }
-if (-not $visionReady) { Write-Host 'QWEN-VL: OFFLINE - Jarjar continue sans vision locale.' -ForegroundColor Yellow }
+if ($qwenState -eq 'STARTING') { Write-Host 'QWEN TEXT: STARTING - chargement en arriere-plan.' -ForegroundColor Cyan }
+elseif (-not $qwenReady) { Write-Host 'QWEN TEXT: OFFLINE - Jarjar continue sans route locale Qwen.' -ForegroundColor Yellow }
+if ($visionState -eq 'STARTING') { Write-Host 'QWEN-VL: STARTING - chargement en arriere-plan.' -ForegroundColor Cyan }
+elseif (-not $visionReady) { Write-Host 'QWEN-VL: OFFLINE - Jarjar continue sans vision locale.' -ForegroundColor Yellow }
 Write-Host '[6/6] SERVEURS READY -> INTERFACE JARJAR' -ForegroundColor Green
 Write-Host '====================================================' -ForegroundColor Green
 $env:JARJAR_BOUNDED_STRUCTURED_ROUTING_V0='1'
