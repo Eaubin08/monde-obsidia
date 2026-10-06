@@ -25,3 +25,50 @@
 @media(max-width:800px){.pokemon-workboard{grid-template-columns:1fr}}
 
 .workspace-overview{display:grid;gap:18px}.workspace-current{display:grid;gap:12px}.current-work-card{border:2px solid #45684d;background:#13251c;padding:16px}.current-work-card>div:first-child{display:flex;justify-content:space-between;gap:12px}.current-work-card small{color:#9bbfa4}.current-work-card p{white-space:pre-wrap}.workspace-home{margin-top:4px}
+
+/* Workspace V3 — actual work first */
+.workspace-v3{display:grid;gap:18px}
+.workspace-v3-header,.pokemon-v3-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding:22px 24px;border:3px solid #45684d;background:#102219}
+.workspace-v3-header h1,.pokemon-v3-header h1{margin:4px 0 8px;font-size:32px}
+.workspace-v3-status,.pokemon-v3-status{min-width:120px;text-align:center;border:2px solid #45684d;background:#0a1710;padding:12px}
+.workspace-v3-status strong,.pokemon-v3-status strong{display:block;font-size:30px}
+.workspace-v3-status span,.pokemon-v3-status span,.pokemon-v3-status small{display:block;color:#9bbfa4}
+.workspace-v3-tabs{display:flex;gap:8px;overflow-x:auto;padding:8px;border-bottom:2px solid #34563f}
+.workspace-v3-tabs button{white-space:nowrap;padding:12px 16px;background:#12241a;border:1px solid #34563f}
+.workspace-v3-tabs button[aria-current="true"]{background:#2a4f35;border-color:#9bc49b}
+.workspace-v3-main{min-width:0}
+.workspace-v3-dashboard{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(260px,.8fr);gap:18px}
+.workspace-v3-focus,.workspace-v3-rail,.workspace-v3-files{border:2px solid #34563f;background:#0d1b13;padding:18px}
+.workspace-v3-focus{display:grid;gap:12px}
+.workspace-v3-session{border:2px solid #45684d;background:#13251c;padding:16px}
+.workspace-v3-session-head{display:flex;justify-content:space-between;gap:12px}
+.workspace-v3-session-head span{color:#9bbfa4}
+.workspace-v3-actions{display:flex;gap:8px;flex-wrap:wrap}
+.workspace-v3-rail{display:flex;flex-direction:column;gap:10px}
+.workspace-v3-rail button{min-height:78px;text-align:left;padding:14px;background:#13251c;border:2px solid #34563f}
+.workspace-v3-rail button strong,.workspace-v3-rail button small{display:block}
+.workspace-v3-rail button small{color:#9bbfa4;margin-top:4px}
+.workspace-v3-empty,.pokemon-v3-empty{border:1px dashed #45684d;padding:18px;color:#9bbfa4}
+.workspace-v3-files-head{display:flex;justify-content:space-between;gap:16px;align-items:end}
+.workspace-v3-files-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:16px;margin-top:16px}
+.workspace-v3-files-grid>section,.workspace-v3-focus-object{border:1px solid #34563f;background:#102219;padding:14px}
+.workspace-v3-result{display:flex;gap:8px;margin:8px 0}
+
+/* Pokémon V3 — agents first */
+.pokemon-v3{display:grid;gap:18px}
+.pokemon-v3-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,.8fr);gap:18px;align-items:start}
+.pokemon-v3-active{min-width:0}
+.pokemon-v3-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.pokemon-v3-card{border:2px solid #34563f;background:#13251c;padding:16px;cursor:pointer}
+.pokemon-v3-card:hover,.pokemon-v3-card.selected{border-color:#9bc49b;background:#183122}
+.pokemon-v3-card-head{display:flex;justify-content:space-between;gap:12px}
+.pokemon-v3-card-head span,.pokemon-v3-card small{color:#9bbfa4}
+.pokemon-v3-objective{min-height:44px}
+.pokemon-v3-blocker{border-left:3px solid currentColor;padding-left:10px}
+.pokemon-v3-inspector{position:sticky;top:12px;border:3px solid #45684d;background:#0d1b13;padding:18px}
+.pokemon-v3-state{display:inline-block;padding:6px 10px;border:1px solid #45684d;background:#13251c}
+.pokemon-v3-result{border:1px solid #34563f;padding:10px;background:#102219}
+.pokemon-v3-actions{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.pokemon-v3-secondary{border:2px solid #34563f;background:#0d1b13;padding:12px 14px}
+.pokemon-v3-secondary>summary{cursor:pointer;font-weight:700;padding:8px 0}
+@media(max-width:900px){.workspace-v3-dashboard,.pokemon-v3-layout,.workspace-v3-files-grid{grid-template-columns:1fr}.pokemon-v3-inspector{position:static}.pokemon-v3-grid{grid-template-columns:1fr}.workspace-v3-files-head{align-items:stretch;flex-direction:column}}
