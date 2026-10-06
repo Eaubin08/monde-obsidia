@@ -57,8 +57,8 @@ export default function JarjarCockpit(){
  const receipts=status?.evidence?.receipts||[]
 
  return <section className="jarjar-cockpit">
-  <header className="jarjar-cockpit-head">
-   <div><span className="eyebrow">JARJAR · COCKPIT RÉEL</span><h2>Assistant local gouverné</h2><p>Monde pilote Jarjar. Jarjar propose/exécute seulement via ses routes gouvernées. Autorité Jarjar = NONE.</p></div>
+  <header className="jarjar-cockpit-head compact">
+   <div><span className="eyebrow">JARJAR</span><h2>Cockpit</h2></div>
    <div className={"jarjar-runtime "+(live?'live':'stopped')}><strong>{status?.runtime||'UNKNOWN'}</strong><span>PID {status?.process?.pid||cockpit?.pid||'—'}</span></div>
   </header>
 
