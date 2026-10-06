@@ -21,16 +21,25 @@ function New-Fixture {
 }
 function Start-FixtureVite {
     param([string]$Directory)
-    $arguments = @(('"' + (Join-Path $Directory 'node_modules\vite\bin\vite.js') + '"'), '--host', '127.0.0.1', '--port', '0')
+    $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
+    $listener.Start()
+    $fixturePort = $listener.LocalEndpoint.Port
+    $listener.Stop()
+    $arguments = @(('"' + (Join-Path $Directory 'node_modules\vite\bin\vite.js') + '"'), '--host', '127.0.0.1', '--port', [string]$fixturePort, '--strictPort')
     $child = Start-Process -FilePath $node -ArgumentList $arguments -WorkingDirectory $Directory -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $Directory 'vite.stdout.txt') -RedirectStandardError (Join-Path $Directory 'vite.stderr.txt')
     $null = $child.Handle
     $deadline = (Get-Date).AddSeconds(20)
     do {
         if ($child.HasExited) { throw ('Vite fixture a echoue : ' + (Get-Content (Join-Path $Directory 'vite.stderr.txt') -Raw)) }
-        if ((Get-Content (Join-Path $Directory 'vite.stdout.txt') -Raw -ErrorAction SilentlyContinue) -match 'Local:') { return $child }
+        try {
+            $reply = Invoke-WebRequest -Uri ('http://127.0.0.1:' + $fixturePort) -UseBasicParsing -TimeoutSec 1
+            if ($reply.StatusCode -eq 200 -and $reply.Content -match 'UPDATER TEST FIXTURE ONLY') { return $child }
+        } catch {}
         Start-Sleep -Milliseconds 100
     } while ((Get-Date) -lt $deadline)
-    throw 'Vite fixture non pret.'
+    $stdout = Get-Content (Join-Path $Directory 'vite.stdout.txt') -Raw
+    $stderr = Get-Content (Join-Path $Directory 'vite.stderr.txt') -Raw
+    throw ('Vite fixture non pret. STDOUT: ' + $stdout + ' STDERR: ' + $stderr)
 }
 try {
     New-Fixture -Directory $first -Installed
