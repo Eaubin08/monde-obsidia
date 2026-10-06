@@ -115,6 +115,14 @@ export function buildObsidiaState(snapshot,live){
     }
    }
   }
+  const gaps=[]
+  if(!mission.agentId)gaps.push('AGENT_UNLINKED')
+  if(!mission.sessionRefs.length)gaps.push('SESSION_UNLINKED')
+  if(!mission.decisionRecordRefs.length)gaps.push('DECISION_MISSING')
+  if(mission.decisionRecordRefs.length&&!mission.receiptRefs.length)gaps.push('RECEIPT_MISSING')
+  if(mission.receiptRefs.length&&!mission.impactRefs.length)gaps.push('IMPACT_UNPROVED')
+  mission.traceabilityGaps=gaps
+  mission.traceabilityStatus=gaps.length?'INCOMPLETE':'COMPLETE'
   mission.status=mission.impactRefs.length?'IMPACT_PROVED':mission.receiptRefs.length?'RECEIPT_OBSERVED':mission.decisionRecordRefs.length?'DECISION_OBSERVED':'OBSERVED'
  }
  for(const p of snapshot?.proposals||[]){
