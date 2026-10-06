@@ -21,6 +21,11 @@ export function buildObsidiaState(snapshot,live){
   const session={id:sessionId,kind:'session',label:`${s.name||s.agentId} · ${s.sessionId.slice(0,8)}`,sessionId:s.sessionId,agentId:s.agentId,status:s.status,phase:s.phase,presence:s.presence,objective:s.objective||null,timestamp:s.timestamp,repository:s.repository||snapshot?.repository||null,source:'OBSIDIA_VISUAL_EVENT_V1',events:s.events||[]}
   sessions.push(session);entities.push(session)
   relations.push({from:agentId,type:'RUNS',to:sessionId},{from:sessionId,type:'OPERATES_IN',to:repositoryId})
+  if(s.objective){
+   const objectiveId=stable('objective',s.sessionId)
+   entities.push({id:objectiveId,kind:'objective',label:s.objective,source:'runtime_objective',sessionId:s.sessionId})
+   relations.push({from:sessionId,type:'HAS_OBJECTIVE',to:objectiveId})
+  }
  }
  for(const p of snapshot?.proposals||[]){
   const proposalId=stable('proposal',p.id)
@@ -42,7 +47,7 @@ export function buildObsidiaState(snapshot,live){
   entities,relations,sessions,
   views:{
    world:{question:'OÙ ?',entityRefs:entities.map(e=>e.id)},
-   workspace:{question:'QUOI ?',entityRefs:entities.filter(e=>['repository','proposal','receipt','session'].includes(e.kind)).map(e=>e.id)},
+   workspace:{question:'QUOI ?',entityRefs:entities.filter(e=>['repository','proposal','receipt','session','objective'].includes(e.kind)).map(e=>e.id)},
    pokemon:{question:'QUI ?',entityRefs:entities.filter(e=>['agent','session'].includes(e.kind)).map(e=>e.id)}
   }
  }
