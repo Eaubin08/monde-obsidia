@@ -70,6 +70,31 @@ function emitJarjar(session,kind,fields={}){
  const event={schema:'OBSIDIA_VISUAL_EVENT_V1',sessionId:session,agentId:'jarjar',name:'Jarjar',repository:jarjarRoot(),timestamp:new Date().toISOString(),kind,status:'thinking',phase:'STARTING',message:'Jarjar runtime',objective:null,...fields}
  appendFileSync(resolve(liveDirectory,session+'.jsonl'),JSON.stringify(event)+'\n')
 }
+function jarjarObservedStatus(){
+ let listening=''
+ try{listening=execFileSync('netstat.exe',['-ano','-p','tcp'],{encoding:'utf8',timeout:4000,windowsHide:true})}catch{}
+ const portOpen=port=>new RegExp('127\\.0\\.0\\.1:'+port+'\\s+.*LISTENING','i').test(listening)||new RegExp('0\\.0\\.0\\.0:'+port+'\\s+.*LISTENING','i').test(listening)||new RegExp('\\[::\\]:'+port+'\\s+.*LISTENING','i').test(listening)
+ let jarjarProcess=false
+ try{
+  const ps=execFileSync('powershell.exe',['-NoProfile','-Command',"$p=Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'scripts[\\\\/.]run_jarjar_live' }; if($p){'1'}else{'0'}"],{encoding:'utf8',timeout:5000,windowsHide:true}).trim()
+  jarjarProcess=ps.endsWith('1')
+ }catch{}
+ const managed=[...processes.entries()].find(([,p])=>p.tool==='jarjar'&&p.active)
+ const components={
+  kernel:{port:3001,ready:portOpen(3001)},
+  brodyApi:{port:8000,ready:portOpen(8000)},
+  qwenText:{port:8080,ready:portOpen(8080)},
+  qwenVL:{port:8081,ready:portOpen(8081)},
+  hud:{port:null,ready:jarjarProcess}
+ }
+ let state='OFFLINE'
+ if(jarjarProcess){
+  state=(components.kernel.ready&&components.brodyApi.ready&&components.qwenText.ready&&components.qwenVL.ready)?'READY':'DEGRADED'
+ }else if(managed){
+  state='STARTING'
+ }
+ return {state,components,managed:!!managed,sessionId:managed?.[0]||null,decisionAuthority:'KX108_ONLY',observedAt:new Date().toISOString()}
+}
 const git=(root,...args)=>execFileSync('git',['-C',root,...args],{encoding:'utf8',maxBuffer:12*1024*1024,timeout:10000,windowsHide:true}).trim()
 function safeJsonFiles(dir,limit=100){
  if(!existsSync(dir))return []
@@ -194,6 +219,15 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  const url=new URL(req.url,'http://localhost');res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');
  try{
  if(req.method==='GET'&&url.pathname==='/services'){res.end(JSON.stringify({brody:await brodyServiceStatus()}));return}
+ if(req.method==='GET'&&url.pathname==='/jarjar/status'){res.end(JSON.stringify(jarjarObservedStatus()));return}
+ if(req.method==='POST'&&url.pathname==='/jarjar/stop'){
+  if(req.headers.origin!==`http://${req.headers.host}`)throw Error('Origine refusée')
+  const managed=[...processes.entries()].find(([,p])=>p.tool==='jarjar'&&p.active)
+  if(!managed)throw Error('Aucun Jarjar lancé par Monde à arrêter')
+  const [session,p]=managed
+  if(p.native){await stopTerminal(p.pid);p.active=false;markEnd(session,'Jarjar arrêté depuis Monde')}else p.child.kill()
+  res.end(JSON.stringify({ok:true,sessionId:session,state:'OFFLINE'}));return
+ }
  if(req.method==='GET'&&url.pathname==='/processes'){await Promise.all([...processes.entries()].filter(([,p])=>p.native&&p.active).map(async ([id,p])=>{p.active=await terminalAlive(p.pid);if(!p.active)markEnd(id,'Terminal Windows fermé')}));res.end(JSON.stringify({processes:[...processes.entries()].map(([id,p])=>({sessionId:id,active:p.active,runtimeActive:p.active&&liveSnapshot().sessions.find(s=>s.sessionId===id)?.presence!=='ended',exitCode:p.exitCode,native:!!p.native,tool:p.tool,title:p.title,output:p.native&&existsSync(resolve(liveDirectory,id+'.console.txt'))?readFileSync(resolve(liveDirectory,id+'.console.txt'),'utf8').slice(-32000):p.output}))}));return}
  if(req.method==='POST'&&(url.pathname==='/run'||url.pathname.startsWith('/input/')||url.pathname.startsWith('/stop/')||url.pathname.startsWith('/focus/'))){
  if(req.headers.origin!==`http://${req.headers.host}`)throw Error('Origine refusée');
