@@ -30,11 +30,11 @@ export default function LivePokemon(){
  const [launching,setLaunching]=useState('')
  const [launchMessage,setLaunchMessage]=useState('')
 
- useEffect(()=>{if(!container.current)return;const scene=new AgentTown({container:container.current,environment:'town',officeSize:'large',roomMode:'environment',onAgentClick:setSelected});town.current=scene;return()=>{scene.destroy();town.current=null}},[])
+ useEffect(()=>{if(!container.current)return;const scene=new AgentTown({container:container.current,environment:'town',officeSize:'large',roomMode:'environment',onAgentClick:id=>{setSelected(id);setSelectedAgent('');sessionStorage.setItem('obsidia-selected-session',id);sessionStorage.setItem('obsidia-focus-entity','session:'+id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:'session:'+id}))}});town.current=scene;return()=>{scene.destroy();town.current=null}},[])
 
  useEffect(()=>{const c=new AbortController();let pending=false;const poll=async()=>{if(pending)return;pending=true;try{const r=await fetch('/obsidia-local/state',{signal:c.signal});if(!r.ok)throw Error('État Obsidia indisponible');const d=await r.json();if(d.schema!=='OBSIDIA_WORLD_PROJECTION_V0'||!Array.isArray(d.sessions))throw Error('Projection Obsidia invalide');setState(d);setSessions(d.sessions);setConnected(true);setError('')}catch(e){if(!c.signal.aborted){setConnected(false);setError(String(e));setState(null);setSessions([])}}finally{pending=false}};void poll();const id=setInterval(poll,1000);return()=>{c.abort();clearInterval(id)}},[])
 
- useEffect(()=>{const scene=town.current;if(!scene)return;const visible=sessions.filter(s=>s.agentId!=='cli'&&(s.presence!=='ended'||Date.now()-Date.parse(s.timestamp)<30000));const ids=new Set(visible.map(s=>s.sessionId));for(const a of scene.getAgents())if(!ids.has(a.id))scene.removeAgent(a.id);for(const s of visible){const status=s.presence==='unknown'?'paused':s.status;const message=s.presence==='unknown'?'Activité inconnue':s.presence==='ended'?'Terminé':s.message;const old=scene.getAgent(s.sessionId);if(!old)scene.addAgent({id:s.sessionId,name:s.name,status,message,role:'Organe Obsidia'});else if(old.userStatus!==status||old.message!==message)scene.updateAgent(s.sessionId,{status,message})}},[sessions])
+ useEffect(()=>{const scene=town.current;if(!scene)return;const visible=sessions.filter(s=>s.agentId!=='cli'&&(s.presence!=='ended'||Date.now()-Date.parse(s.timestamp)<30000));const ids=new Set(visible.map(s=>s.sessionId));for(const a of scene.getAgents())if(!ids.has(a.id))scene.removeAgent(a.id);for(const s of visible){const status=s.presence==='unknown'?'paused':s.status;const base=s.presence==='unknown'?'Activité inconnue':s.presence==='ended'?'Terminé':phaseLabel(s.phase);const message=s.objective?base+' · '+s.objective:base+' · '+s.message;const old=scene.getAgent(s.sessionId);if(!old)scene.addAgent({id:s.sessionId,name:s.name,status,message,role:'Organe Obsidia'});else if(old.userStatus!==status||old.message!==message)scene.updateAgent(s.sessionId,{status,message,name:s.name})}},[sessions])
 
  const live=sessions.filter(s=>s.presence==='live'&&s.agentId!=='cli')
  const current=sessions.find(s=>s.sessionId===selected)
@@ -108,7 +108,7 @@ export default function LivePokemon(){
   <details className="pokemon-v3-secondary">
    <summary>Village visuel</summary>
    <div ref={container} className="live-town" aria-label="Village des agents lancés"/>
-   <p className="muted">Le village représente uniquement les vraies sessions observées.</p>
+   <p className="muted">Le village représente uniquement les vraies sessions observées. Clique un personnage pour synchroniser Pokémon, le Context Bridge, Workspace et Monde sur cette session.</p>
   </details>
 
   <details className="pokemon-v3-secondary">
