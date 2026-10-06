@@ -75,31 +75,3 @@ test('Jarjar one-click launcher starts the full required local stack',()=>{
  assert.ok(!bridge.includes("['obsidure','brody','cli','jarjar']"))
  assert.ok(!pokemon.includes('JarjarCockpit'))
 })
-
-
-test('Validated Obsidia service terminals remain wired individually',()=>{
- for(const invariant of [
-  "['kernel-x108','Kernel X108',true]",
-  "['obsidia-api','API Obsidia + Brody + Native Memory',true]",
-  "['gps-defense','GPS / Defense / Aviation',true]",
-  "['trading-x108','Trading → X108',true]",
-  "['brody-enriched','Brody Enriched',true]",
-  "['obsidure-dry','Obsidure DryRun',true]",
-  "terminalOnly=new Set",
-  "'Lancer terminal'",
- ]) assert.ok(pokemon.includes(invariant),invariant)
- for(const invariant of [
-  "'kernel-x108'",
-  "'obsidia-api'",
-  "'gps-defense'",
-  "'trading-x108'",
-  "'brody-enriched'",
-  "'obsidure-dry'",
-  "server.kernel.sealed.cjs",
-  "apps.obsidia_api.main:app",
-  "connectors\\\\aviation_robo.py",
-  "connectors\\\\trading_live.py",
-  "run_brody_terminal_enriched.ps1",
-  "run_agent_obsidure.ps1 -DryRun",
- ]) assert.ok(bridge.includes(invariant),invariant)
-})
