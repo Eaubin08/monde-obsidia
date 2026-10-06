@@ -50,11 +50,15 @@ export default function Ecosystem(){
   {view==='agents'&&<><button onClick={()=>openSearch('agent')}>Rechercher un agent</button><button onClick={()=>{setWorldZone('agents');switchView('world')}}>Voir les agents dans Monde</button><button onClick={()=>switchView('workspace')}>Ouvrir la sélection dans Workspace</button></>}
   {view==='search'&&<><button onClick={()=>openSearch('agent')}>Agents</button><button onClick={()=>openSearch('mission')}>Missions</button><button onClick={()=>openSearch('domain')}>Domaines</button><button onClick={()=>openSearch('file')}>Fichiers</button><button onClick={()=>openSearch('proof')}>Preuves / résultats</button><button onClick={()=>openSearch('layer')}>Couches</button></>}
  </nav><small>Contexte : {contextWhat}</small></section>
- return <div className="observatory">
- <header className="obs-header obs-header-minimal"><a className="brand" href="#world">◈ OBSIDIA</a><div className="obs-header-runtime"><span className={snap?.available?'runtime-dot live':'runtime-dot'}/><strong>{snap?.available?'runtime connecté':'runtime indisponible'}</strong><small>{shared?.decisionAuthority||'KX108_ONLY'}</small></div></header>
- <nav className="view-nav view-nav-main">{[['world','Monde'],['workspace','Workspace'],['agents','Pokémon'],['search','Recherche']].map(([id,label])=><a key={id} href={'#'+id} aria-current={view===id?'page':undefined}>{label}</a>)}</nav>
- {message&&<p role="status">{message}</p>}
- {contextBridge}
+ return <div className="observatory v4-shell">
+ <header className="v4-topbar">
+  <a className="v4-brand" href="#world"><span>◈</span><strong>OBSIDIA</strong></a>
+  <nav className="v4-primary-nav" aria-label="Navigation principale">{[['world','Monde'],['workspace','Workspace'],['agents','Pokémon'],['search','Recherche']].map(([id,label])=><a key={id} href={'#'+id} aria-current={view===id?'page':undefined}>{label}</a>)}</nav>
+  <div className="v4-runtime"><span className={snap?.available?'runtime-dot live':'runtime-dot'}/><div><strong>{snap?.available?'Connecté':'Indisponible'}</strong><small>{shared?.decisionAuthority||'KX108_ONLY'}</small></div></div>
+ </header>
+ <section className="v4-context">{contextBridge}</section>
+ {message&&<p className="v4-status-message" role="status">{message}</p>}
+ <main className="v4-content">
  {view==='world'?<section className="world-v2">
 <header className="world-v2-header"><div><span className="eyebrow">OBSIDIA MONDE</span><h1>Le monde vivant d’Obsidia</h1><p>Une représentation spatiale des objets réellement observés. Clique une zone pour entrer dedans.</p></div><div className="world-v2-pulse"><strong>{shared?.sessions.filter(s=>s.presence==='live').length||0}</strong><span>activité(s) live</span><small>{shared?.entities.length||0} objets projetés</small></div></header>
 
@@ -148,6 +152,7 @@ export default function Ecosystem(){
  <section className="recent-activity"><div className="recent-activity-head"><span className="eyebrow">ACTIVITÉ RÉCENTE</span><strong>{recentActivity.length} événement(s)</strong></div><div className="recent-activity-strip">{recentActivity.length?recentActivity.map((e,i)=><button key={e.sessionId+':'+e.timestamp+':'+i} onClick={()=>{focusEntity('session:'+e.sessionId);location.hash='world';setWorldZone('activity')}}><span className="object-icon">{objectIcon('session')}</span><div><strong>{e.name||e.agentId}</strong><small>{e.phase} · {new Date(e.timestamp).toLocaleTimeString()}</small><p>{e.message}</p></div></button>):<p className="muted">Aucun événement runtime récent.</p>}</div></section>
  {breadcrumb}{colorLegend}{doors}
  </section>:<><LivePokemon/><details className="inventory-panel"><summary>Registre historique — 52 agents / neuf familles</summary><h1>Registre R&D</h1><p>52 noms, neuf familles, retrouvés dans l’audit du 12 septembre. Les contrats complets et les affectations actuelles restent à vérifier.</p><main className="office-main"><section className="spatial-map"><div className="rooms">{families.map(f=><section className="room" key={f}><div className="room-sign"><h2>{f}</h2></div><div className="room-floor">{agents.filter(a=>a.family===f).map(a=><button className={`agent-token ${agentId===a.id?'focused':''}`} key={a.id} onClick={()=>setAgentId(a.id)}><span className="pixel-sprite" aria-hidden="true"/><strong>{a.name}</strong><small>Activité non observée</small></button>)}</div></section>)}</div></section><aside className="agent-inspector"><span className="eyebrow">AGENT OBSIDIA / #{current?.id}</span><h2>{current?.name}</h2><p>{current?.family}</p><h3>Fonction source</h3><p>{current?.role||'Le relevé historique fournit le nom, sans contrat détaillé.'}</p><h3>Sortie</h3><p>{current?.output||'Non établie par la source retrouvée'}</p><p>Mission, machine, état, échanges : non observés.</p><p>Autorité : NONE · moteur interchangeable.</p><p className="declared">Source : audit historique du 12 septembre 2026. Rôles des cinq fondateurs : agents/registry.json, commit 13964f05.</p><a href="#workspace">Ouvrir le Workspace</a><details><summary>Méthode de construction</summary><p>Domaine → fonction → contrats d’entrée/sortie → frontières → evidence → choix du moteur → tests → gouvernance X-108.</p></details></aside></main></details><details className="inventory-panel"><summary>Organes / fonctions / sources historiques</summary><ResearchOffice/></details></>}
+ </main>
  {quickLinks}
  <footer className="office-footer">Un même écosystème · plusieurs vues<span>Population historique / fichiers locaux observés / sessions observées dans Pokémon View</span></footer></div>
 }
