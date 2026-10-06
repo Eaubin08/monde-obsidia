@@ -11,6 +11,7 @@ type Mission=MissionTimelineMission
 type AgentFamily={id:string;label:string;sourceRepo:string;sourcePath?:string;localPresent:boolean;kind:string;agents:string[]}
 type SharedState={schema:string;entities:Entity[];relations:Relation[];sessions:Session[];missions:Mission[];agentFamilies?:AgentFamily[]}
 type StatusFilter='all'|'live'|'ready'|'planned'|'blocked'|'inactive'
+type JarjarStatus={state:'OFFLINE'|'STARTING'|'READY'|'DEGRADED';managed:boolean;sessionId:string|null;decisionAuthority:string;observedAt:string;components:{kernel:{port:number;ready:boolean};brodyApi:{port:number;ready:boolean};qwenText:{port:number;ready:boolean};qwenVL:{port:number;ready:boolean};hud:{port:null;ready:boolean}}}
 
 const phaseLabel=(phase:string)=>({
  STARTING:'Démarrage',SESSION_CONFIG:'Configuration',WAITING_INPUT:'En attente',
@@ -33,10 +34,13 @@ export default function LivePokemon(){
  const [launchMessage,setLaunchMessage]=useState('')
  const [statusFilter,setStatusFilter]=useState<StatusFilter>('all')
  const [familyFilter,setFamilyFilter]=useState('')
+ const [jarjarStatus,setJarjarStatus]=useState<JarjarStatus|null>(null)
 
  useEffect(()=>{if(!container.current)return;const scene=new AgentTown({container:container.current,environment:'town',officeSize:'large',roomMode:'environment',onAgentClick:id=>{setSelected(id);setSelectedAgent('');sessionStorage.setItem('obsidia-selected-session',id);sessionStorage.setItem('obsidia-focus-entity','session:'+id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:'session:'+id}))}});town.current=scene;return()=>{scene.destroy();town.current=null}},[])
 
  useEffect(()=>{const c=new AbortController();let pending=false;const poll=async()=>{if(pending)return;pending=true;try{const r=await fetch('/obsidia-local/state',{signal:c.signal});if(!r.ok)throw Error('État Obsidia indisponible');const d=await r.json();if(d.schema!=='OBSIDIA_WORLD_PROJECTION_V0'||!Array.isArray(d.sessions))throw Error('Projection Obsidia invalide');setState(d);setSessions(d.sessions);setConnected(true);setError('')}catch(e){if(!c.signal.aborted){setConnected(false);setError(String(e));setState(null);setSessions([])}}finally{pending=false}};void poll();const id=setInterval(poll,1000);return()=>{c.abort();clearInterval(id)}},[])
+
+ useEffect(()=>{const c=new AbortController();const poll=async()=>{try{const r=await fetch('/obsidia-local/jarjar/status',{signal:c.signal});if(r.ok)setJarjarStatus(await r.json())}catch{}};void poll();const id=setInterval(poll,1500);return()=>{c.abort();clearInterval(id)}},[])
 
  useEffect(()=>{const scene=town.current;if(!scene)return;const latestByAgent=new Map<string,Session>();for(const s of sessions){if(s.agentId==='cli'||s.presence!=='live')continue;const previous=latestByAgent.get(s.agentId);if(!previous||Date.parse(s.timestamp)>Date.parse(previous.timestamp))latestByAgent.set(s.agentId,s)}const visible=[...latestByAgent.values()];const ids=new Set(visible.map(s=>s.sessionId));for(const a of scene.getAgents())if(!ids.has(a.id))scene.removeAgent(a.id);for(const s of visible){const status=s.status;const base=phaseLabel(s.phase);const message=s.objective?base+' · '+s.objective:base+' · '+s.message;const old=scene.getAgent(s.sessionId);if(!old)scene.addAgent({id:s.sessionId,name:s.name,status,message,role:'Organe Obsidia'});else if(old.userStatus!==status||old.message!==message)scene.updateAgent(s.sessionId,{status,message,name:s.name})}},[sessions])
 
@@ -57,7 +61,6 @@ export default function LivePokemon(){
   ['trading-x108','Trading → X108',true],
   ['brody-enriched','Brody Enriched',true],
   ['obsidure-dry','Obsidure DryRun',true],
-  ['jarjar','Jarjar',true],
   ['jarvis','Jarvis',false]
  ] as const
  const terminalOnly=new Set(['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
@@ -89,6 +92,16 @@ export default function LivePokemon(){
  const selectContext=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
  const openWorkspace=(s:Session)=>{sessionStorage.setItem('obsidia-selected-session',s.sessionId);selectContext('session:'+s.sessionId);const area=s.agentId==='brody'?'brody':s.agentId==='obsidure'?'obsidure':s.agentId==='cli'?'cli':'home';sessionStorage.setItem('obsidia-workspace-area',area);location.hash='workspace'}
  const chooseAgent=(id:string)=>{setSelectedAgent(id);selectContext(id);const raw=id.startsWith('agent:')?id.slice(6):id;const running=sessions.find(s=>s.agentId===raw&&s.presence==='live');setSelected(running?.sessionId||'')}
+ const stopJarjar=async()=>{
+  setLaunching('jarjar:stop');setLaunchMessage('Arrêt de Jarjar…')
+  try{
+   const r=await fetch('/obsidia-local/jarjar/stop',{method:'POST'}),d=await r.json()
+   if(!r.ok)throw Error(d.error||('HTTP '+r.status))
+   setLaunchMessage('Jarjar arrêté')
+  }catch(e){setLaunchMessage(String(e))}
+  finally{setLaunching('')}
+ }
+
  const startSession=async(agentId:string,terminal=false)=>{
   setLaunching(agentId+(terminal?':terminal':':integrated'));setLaunchMessage((terminal?'Ouverture terminal ':'Lancement intégré ')+agentId+'…')
   try{
@@ -137,6 +150,21 @@ export default function LivePokemon(){
 
    <section className="pokemon-launch-zone">
     <div className="pokemon-launch-head"><div><span className="eyebrow">DISPONIBLES</span><h2>Lancer un agent</h2><p>Uniquement les launchers réellement disponibles dans Obsidia.</p></div>{launchMessage&&<small>{launchMessage}</small>}</div>
+    <article className={"pokemon-launch-card "+(jarjarStatus?.state==='READY'?'active ':'')+(jarjarStatus?.state==='DEGRADED'?'blocked ':'')}>
+     <div><strong>Jarjar</strong><span>{jarjarStatus?.state||'OFFLINE'}</span></div>
+     <p>État runtime réel · autorité {jarjarStatus?.decisionAuthority||'KX108_ONLY'}</p>
+     <div className="pokemon-context-row">
+      <span><small>Kernel 3001</small><strong>{jarjarStatus?.components.kernel.ready?'READY':'OFFLINE'}</strong></span>
+      <span><small>Brody/API 8000</small><strong>{jarjarStatus?.components.brodyApi.ready?'READY':'OFFLINE'}</strong></span>
+      <span><small>Qwen texte 8080</small><strong>{jarjarStatus?.components.qwenText.ready?'READY':'OFFLINE'}</strong></span>
+      <span><small>Qwen-VL 8081</small><strong>{jarjarStatus?.components.qwenVL.ready?'READY':'OFFLINE'}</strong></span>
+      <span><small>HUD Jarjar</small><strong>{jarjarStatus?.components.hud.ready?'READY':'OFFLINE'}</strong></span>
+     </div>
+     <div className="workspace-v3-actions">
+      {jarjarStatus?.state==='OFFLINE'?<button disabled={launching.startsWith('jarjar')} onClick={()=>startSession('jarjar',true)}>{launching==='jarjar:terminal'?'Démarrage…':'Lancer Jarjar'}</button>:jarjarStatus?.managed?<button disabled={launching.startsWith('jarjar')} onClick={stopJarjar}>{launching==='jarjar:stop'?'Arrêt…':'Arrêter Jarjar'}</button>:<button disabled>Jarjar lancé hors Monde</button>}
+      <button onClick={()=>{selectContext('agent:jarjar');location.hash='world'}}>Monde</button>
+     </div>
+    </article>
     <div className="pokemon-launch-grid">{launchable.map(([id,label,ready])=>{const active=sessions.find(s=>s.agentId===id&&s.presence==='live');const previous=lastSession(id);return <article key={id} className={"pokemon-launch-card "+(active?'active ':'')+(ready?'':'coming-soon')}><div><strong>{label}</strong><span>{active?'LIVE':ready?'Disponible':'Bientôt'}</span></div><p>{active?.objective||previous?.objective||previous?.message||(ready?'Aucune activité récente observée.':'Point d’entrée préparé côté UI · raccordement backend à venir.')}</p><small>{previous?'Dernière activité · '+new Date(previous.timestamp).toLocaleString():ready?'Jamais observé dans ce runtime':'Préparé pour activation future'}</small><div className="workspace-v3-actions">{active?<><button onClick={()=>{setSelected(active.sessionId);selectContext('session:'+active.sessionId)}}>Continuer</button><button onClick={()=>openWorkspace(active)}>Workspace</button></>:ready?(id==='jarjar'?<button disabled={launching.startsWith(id)} onClick={()=>startSession(id,true)}>{launching===id+':terminal'?'Démarrage complet…':'Lancer Jarjar'}</button>:terminalOnly.has(id)?<button disabled={launching.startsWith(id)} onClick={()=>startSession(id,true)}>{launching===id+':terminal'?'Ouverture…':'Lancer terminal'}</button>:<><button disabled={launching.startsWith(id)} onClick={()=>startSession(id,false)}>{launching===id+':integrated'?'Lancement…':'Lancer ici'}</button><button disabled={launching.startsWith(id)} onClick={()=>startSession(id,true)}>{launching===id+':terminal'?'Ouverture…':'Ouvrir terminal'}</button></>):<button disabled>Activation à venir</button>}<button onClick={()=>{const target=active?'session:'+active.sessionId:'agent:'+id;selectContext(target);location.hash='world'}}>Monde</button></div></article>})}</div>
    </section>
 
