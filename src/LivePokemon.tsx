@@ -60,6 +60,18 @@ export default function LivePokemon(){
  const familyFor=(agentId:string)=>families.find(f=>f.agents.includes(agentId))
  const visibleLive=live.filter(s=>(statusFilter==='all'||statusFilter==='live'||(statusFilter==='blocked'&&(s.status==='blocked'||s.status==='error')))&&(familyFilter===''||familyFor(s.agentId)?.id===familyFilter))
  const statusCards:{id:StatusFilter;label:string;count:number}[]=[{id:'all',label:'TOTAL',count:allCatalogIds.size},{id:'live',label:'LIVE',count:liveIds.size},{id:'ready',label:'PRÊTS',count:readyIds.size},{id:'planned',label:'FUTURS',count:plannedIds.size},{id:'blocked',label:'BLOQUÉS',count:blockedSessions.length},{id:'inactive',label:'INACTIFS',count:inactiveCount}]
+ const stageFor=(s:Session)=>{
+  if(s.status==='blocked'||s.status==='error')return 'Bloqué'
+  if(['STARTING','SESSION_CONFIG'].includes(s.phase))return 'Préparation'
+  if(['WAITING_INPUT'].includes(s.phase))return 'Disponible'
+  if(['V_VALIDATION','LEAN_BUILD'].includes(s.phase))return 'Validation'
+  if(['R_REINTEGRATION','BRODY_RESPONSE'].includes(s.phase))return 'Review / preuve'
+  return 'Travail'
+ }
+ const stageOrder=['Disponible','Préparation','Travail','Validation','Review / preuve','Bloqué']
+ const stageSessions=stageOrder.map(stage=>({stage,sessions:live.filter(s=>stageFor(s)===stage)}))
+ const missionTeams=(state?.missions||[]).map(m=>({mission:m,sessions:sessions.filter(s=>m.sessionRefs.includes('session:'+s.sessionId)&&s.presence==='live')})).filter(x=>x.sessions.length)
+ const ungroupedLive=live.filter(s=>!missionTeams.some(t=>t.sessions.some(x=>x.sessionId===s.sessionId)))
 
  const selectContext=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
  const openWorkspace=(s:Session)=>{sessionStorage.setItem('obsidia-selected-session',s.sessionId);selectContext('session:'+s.sessionId);const area=s.agentId==='brody'?'brody':s.agentId==='obsidure'?'obsidure':s.agentId==='cli'?'cli':'home';sessionStorage.setItem('obsidia-workspace-area',area);location.hash='workspace'}
@@ -127,6 +139,20 @@ export default function LivePokemon(){
   <section className="pokemon-families">
    <div className="pokemon-families-head"><div><span className="eyebrow">CATALOGUE</span><h2>Population connue</h2><p>Ce bloc recense ce qui existe dans les différentes stacks. Il ne veut pas dire que tous ces agents sont lançables depuis cette page.</p></div>{familyFilter&&<button onClick={()=>setFamilyFilter('')}>Toutes les familles</button>}</div>
    <div className="pokemon-family-grid">{families.map(f=>{const active=f.agents.filter(id=>liveIds.has(id)).length;return <button key={f.id} className={familyFilter===f.id?'selected':''} onClick={()=>setFamilyFilter(familyFilter===f.id?'':f.id)}><span>{f.kind}</span><strong>{f.label}</strong><small>{active} LIVE · {f.agents.length} catalogué(s){!f.localPresent?' · repo local absent':''}</small></button>})}</div>
+  </section>
+
+  <section className="pokemon-circuit">
+   <div className="pokemon-families-head"><div><span className="eyebrow">PARCOURS VIVANT</span><h2>Où en sont les agents</h2><p>Leur place vient de leur phase runtime réelle.</p></div></div>
+   <div className="pokemon-circuit-track">{stageSessions.map(({stage,sessions:stageItems},i)=><section key={stage} className={"pokemon-stage "+(stage==='Bloqué'?'blocked':'')}><div><span>{i+1}</span><strong>{stage}</strong><small>{stageItems.length}</small></div><div className="pokemon-stage-agents">{stageItems.length?stageItems.map(s=><button key={s.sessionId} onClick={()=>{setSelected(s.sessionId);setSelectedAgent('');selectContext('session:'+s.sessionId)}}><strong>{s.name}</strong><small>{s.objective||phaseLabel(s.phase)}</small></button>):<span className="pokemon-stage-empty">—</span>}</div></section>)}</div>
+  </section>
+
+  <section className="pokemon-teams">
+   <div className="pokemon-families-head"><div><span className="eyebrow">MISSIONS / ÉQUIPES</span><h2>Agents qui travaillent ensemble</h2><p>Regroupement automatique par mission réellement reliée.</p></div></div>
+   <div className="pokemon-team-grid">
+    {missionTeams.map(({mission,sessions:teamSessions})=><article key={mission.id}><span className="world-object-kind">MISSION</span><strong>{mission.actionId}</strong><small>{mission.status} · {mission.traceabilityStatus}</small><div>{teamSessions.map(s=><button key={s.sessionId} onClick={()=>{setSelected(s.sessionId);selectContext('session:'+s.sessionId)}}>{s.name}<small>{phaseLabel(s.phase)}</small></button>)}</div><button onClick={()=>{selectContext(mission.id);location.hash='world'}}>Voir la mission</button></article>)}
+    {ungroupedLive.length>0&&<article><span className="world-object-kind">LIVE SANS MISSION RELIÉE</span><strong>{ungroupedLive.length} agent(s)</strong><small>Activité réelle, relation de mission absente.</small><div>{ungroupedLive.map(s=><button key={s.sessionId} onClick={()=>{setSelected(s.sessionId);selectContext('session:'+s.sessionId)}}>{s.name}<small>{phaseLabel(s.phase)}</small></button>)}</div></article>}
+    {!missionTeams.length&&!ungroupedLive.length&&<p className="muted">Aucune équipe active observée.</p>}
+   </div>
   </section>
 
   <details className="pokemon-v3-secondary">
