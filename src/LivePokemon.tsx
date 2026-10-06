@@ -138,7 +138,7 @@ export default function LivePokemon(){
 
   <section className="pokemon-families">
    <div className="pokemon-families-head"><div><span className="eyebrow">CATALOGUE</span><h2>Population connue</h2><p>Ce bloc recense ce qui existe dans les différentes stacks. Il ne veut pas dire que tous ces agents sont lançables depuis cette page.</p></div>{familyFilter&&<button onClick={()=>setFamilyFilter('')}>Toutes les familles</button>}</div>
-   <div className="pokemon-family-grid">{families.map(f=>{const active=f.agents.filter(id=>liveIds.has(id)).length;return <button key={f.id} className={familyFilter===f.id?'selected':''} onClick={()=>setFamilyFilter(familyFilter===f.id?'':f.id)}><span>{f.kind}</span><strong>{f.label}</strong><small>{active} LIVE · {f.agents.length} catalogué(s){!f.localPresent?' · repo local absent':''}</small></button>})}</div>
+   <div className="pokemon-family-grid">{families.map(f=>{const active=f.agents.filter(id=>liveIds.has(id)).length;return <button key={f.id} data-kind={f.kind==='physical-workstream'?'physical-workstream':f.kind==='sigma'?'sigma-domain':f.kind} className={familyFilter===f.id?'selected':''} onClick={()=>setFamilyFilter(familyFilter===f.id?'':f.id)}><span>{f.kind}</span><strong>{f.label}</strong><small>{active} LIVE · {f.agents.length} catalogué(s){!f.localPresent?' · repo local absent':''}</small></button>})}</div>
   </section>
 
   <section className="pokemon-circuit">
