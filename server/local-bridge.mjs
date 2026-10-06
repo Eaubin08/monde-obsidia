@@ -60,6 +60,35 @@ function sigmaDomains(root){
   })
  }catch{return []}
 }
+function peripheryAgents(root){
+ try{
+  const registry=resolve(root,'periphery','agent_registry.py');if(!existsSync(registry))return []
+  const text=readFileSync(registry,'utf8')
+  const block=text.match(/from \.agents import \(([\s\S]*?)\)/)?.[1]||''
+  const modules=block.split(',').map(x=>x.trim()).filter(x=>/^[a-zA-Z0-9_]+$/.test(x))
+  return modules.flatMap(module=>{try{const source=readFileSync(resolve(root,'periphery','agents',module+'.py'),'utf8');const id=source.match(/agent_id\s*=\s*["']([^"']+)["']/)?.[1];return id?[id]:[]}catch{return []}})
+ }catch{return []}
+}
+function externalFamily(root,name,relativeRepo,agentFile,kind='agents'){
+ try{
+  const repo=resolve(root,'..',relativeRepo)
+  if(!existsSync(repo))return {id:name,label:name,sourceRepo:relativeRepo,localPresent:false,kind,agents:[]}
+  const file=resolve(repo,agentFile)
+  const agents=existsSync(file)?[...readFileSync(file,'utf8').matchAll(/agent_id\s*=\s*["']([^"']+)["']/g)].map(m=>m[1]):[]
+  return {id:name,label:name,sourceRepo:relativeRepo,localPresent:true,kind,agents}
+ }catch{return {id:name,label:name,sourceRepo:relativeRepo,localPresent:false,kind,agents:[]}}
+}
+function agentFamilies(root){
+ const sigma=sigmaDomains(root).map(d=>({id:'sigma:'+d.id,label:d.displayName,sourceRepo:'obsidia-x108-proofs',sourcePath:d.sourcePath,localPresent:d.runtimeFilePresent,kind:'sigma',agents:d.agents}))
+ const periphery=peripheryAgents(root)
+ const families=[...sigma,{id:'periphery',label:'Périphérie non souveraine',sourceRepo:'obsidia-x108-proofs',sourcePath:'periphery/agent_registry.py',localPresent:periphery.length>0,kind:'periphery',agents:periphery}]
+ const trading=externalFamily(root,'trading-native','OBSIDIA_TRADING','native/agents/domains/trading_agents.py','external-runtime')
+ trading.label='Trading native reference'
+ families.push(trading)
+ const gpsRoot=resolve(root,'..','obsidia-gps-defense-')
+ families.push({id:'gps-physical',label:'GPS / Defense / Physical Signal',sourceRepo:'obsidia-gps-defense-',sourcePath:'evidence-pipeline/',localPresent:existsSync(gpsRoot),kind:'physical-workstream',agents:[]})
+ return families
+}
 export function gitWorktrees(root){
  try{
   const raw=git(root,'worktree','list','--porcelain'),blocks=raw.split(/\n\s*\n/).filter(Boolean)
@@ -80,7 +109,7 @@ function snapshot(root=repository()){
    try{const p=contained(root,`_PATCH_PROPOSALS/${item.name}/proposal.json`);if(statSync(p).size>1024*1024)continue;const data=JSON.parse(readFileSync(p,'utf8'));proposals.push({id:item.name,path:`_PATCH_PROPOSALS/${item.name}/proposal.json`,data,observedAt:statSync(p).mtime.toISOString(),receipt:existsSync(resolve(dir,item.name,'RECEIPT.md'))?`_PATCH_PROPOSALS/${item.name}/RECEIPT.md`:null})}catch{}
   }
  }
- return {available:true,repository:root,sha,branch,worktrees:gitWorktrees(root),observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),runtimeEvidence:canonicalRuntimeEvidence(),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null}))}
+ return {available:true,repository:root,sha,branch,worktrees:gitWorktrees(root),observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),agentFamilies:agentFamilies(root),runtimeEvidence:canonicalRuntimeEvidence(),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null}))}
 }
 const processes=new Map(),launching=new Set();
 function markEnd(id,message){try{const log=resolve(liveDirectory,id+'.jsonl'),last=JSON.parse(readFileSync(log,'utf8').trim().split('\n').at(-1));if(last.kind!=='session_end')appendFileSync(log,JSON.stringify({...last,timestamp:new Date().toISOString(),kind:'session_end',phase:'PROCESS_EXIT',status:'error',exitCode:null,message})+'\n')}catch{}}
