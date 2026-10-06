@@ -7,6 +7,7 @@ const pokemon=readFileSync(resolve(process.cwd(),'src/LivePokemon.tsx'),'utf8')
 const ecosystem=readFileSync(resolve(process.cwd(),'src/Ecosystem.tsx'),'utf8')
 const workspace=readFileSync(resolve(process.cwd(),'src/ToolWorkspace.tsx'),'utf8')
 const bridge=readFileSync(resolve(process.cwd(),'server/local-bridge.mjs'),'utf8')
+const jarjarLauncher=readFileSync(resolve(process.cwd(),'scripts/start-jarjar-full.ps1'),'utf8')
 
 test('Pokémon launcher and cross-view paths remain wired',()=>{
  for(const invariant of [
@@ -56,26 +57,37 @@ test('Pokémon visual order prioritizes work before population catalog',()=>{
 
 
 
-test('Jarjar one-click launcher starts the full required local stack',()=>{
+test('Jarjar remains a real observed and controlled local stack',()=>{
  for(const invariant of [
-  "['jarjar','Jarjar',true]",
+  "fetch('/obsidia-local/jarjar/status'",
   "Lancer Jarjar",
-  "startSession(id,true)",
+  "Arrêter Jarjar",
+  "Kernel 3001",
+  "Brody/API 8000",
+  "Qwen texte 8080",
+  "Qwen-VL 8081",
+  "HUD Jarjar",
  ]) assert.ok(pokemon.includes(invariant),invariant)
  for(const invariant of [
-  "scripts.run_jarjar_live",
-  "start_qwen_text.ps1",
-  "start_qwen_vl.ps1",
+  "jarjarObservedStatus",
+  "'/jarjar/status'",
+  "'/jarjar/stop'",
+  "scripts[\\\\/.]run_jarjar_live",
+  "state='STARTING'",
+  "'READY':'DEGRADED'",
+ ]) assert.ok(bridge.includes(invariant),invariant)
+ for(const invariant of [
   "server.kernel.sealed.cjs",
   "apps.obsidia_api.main:app",
+  "start_qwen_text.ps1",
+  "start_qwen_vl.ps1",
+  "scripts.run_jarjar_live",
   "JARJAR_OBSIDIA_CHAT_URL='http://127.0.0.1:8000/api/brody/chat'",
   "JARJAR_QWEN_URL='http://127.0.0.1:8080/v1/chat/completions'",
   "JARJAR_VISION_URL='http://127.0.0.1:8081/v1/chat/completions'",
- ]) assert.ok(bridge.includes(invariant),invariant)
- assert.ok(!bridge.includes("['obsidure','brody','cli','jarjar']"))
+ ]) assert.ok(jarjarLauncher.includes(invariant),invariant)
  assert.ok(!pokemon.includes('JarjarCockpit'))
 })
-
 
 test('Validated Obsidia service terminals remain wired individually',()=>{
  for(const invariant of [
