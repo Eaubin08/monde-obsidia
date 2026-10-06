@@ -364,3 +364,34 @@ linear-gradient(90deg,rgba(69,104,77,.08) 1px,transparent 1px),
 .world-object-card.focus-related{opacity:1;box-shadow:0 0 0 2px rgba(255,255,255,.14) inset}
 .world-object-card.focus-dim:hover{opacity:.72;filter:none}
 @media(max-width:650px){.obs-breadcrumb{align-items:flex-start;flex-direction:column}.obs-breadcrumb>div>strong{max-width:220px}}
+
+/* Object icon language */
+.object-icon{font-size:1rem;line-height:1;color:#c4d0c7;opacity:.95}
+.world-object-card>.object-icon{font-size:1.15rem;margin-bottom:3px}
+.world-object-card.live>.object-icon{color:var(--obs-green)}
+.world-object-card.domain-card>.object-icon{color:var(--obs-orange)}
+.world-object-card[data-kind="repository"]>.object-icon,
+.world-object-card[data-kind="artifact"]>.object-icon,
+.world-object-card[data-kind="objective"]>.object-icon,
+.world-object-card[data-kind="result"]>.object-icon{color:var(--obs-cyan)}
+
+/* Recent real activity */
+.recent-activity{border:1px solid #34563f;background:#0b1710;padding:10px 12px;margin:10px 0}
+.recent-activity-head{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.recent-activity-head>strong{font-size:.76rem;color:#9bbfa4}
+.recent-activity-strip{display:flex;gap:8px;overflow-x:auto;padding-top:8px}
+.recent-activity-strip>button{min-width:230px;max-width:300px;display:flex;gap:8px;align-items:flex-start;text-align:left;border:1px solid #34563f;background:#102219;padding:8px}
+.recent-activity-strip>button>div{min-width:0}
+.recent-activity-strip strong,.recent-activity-strip small,.recent-activity-strip p{display:block}
+.recent-activity-strip small{color:#9bbfa4}
+.recent-activity-strip p{margin:4px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recent-activity-strip>button:hover{border-color:var(--obs-green);background:var(--obs-green-bg)}
+
+/* LIVE motion: subtle, status-only */
+@keyframes obsidia-live-pulse{0%,100%{box-shadow:0 0 0 0 rgba(118,201,138,.05)}50%{box-shadow:0 0 0 3px rgba(118,201,138,.14)}}
+.world-live-token,.world-object-card.live,.pokemon-launch-card.active,.pokemon-v3-card.selected{
+ animation:obsidia-live-pulse 2.8s ease-in-out infinite;
+}
+@media(prefers-reduced-motion:reduce){
+ .world-live-token,.world-object-card.live,.pokemon-launch-card.active,.pokemon-v3-card.selected{animation:none}
+}
