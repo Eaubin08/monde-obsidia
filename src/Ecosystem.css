@@ -23,3 +23,5 @@
 .work-card p{margin:10px 0;white-space:pre-wrap}
 .work-card>button{width:100%;text-align:left;margin:6px 0}
 @media(max-width:800px){.pokemon-workboard{grid-template-columns:1fr}}
+
+.workspace-overview{display:grid;gap:18px}.workspace-current{display:grid;gap:12px}.current-work-card{border:2px solid #45684d;background:#13251c;padding:16px}.current-work-card>div:first-child{display:flex;justify-content:space-between;gap:12px}.current-work-card small{color:#9bbfa4}.current-work-card p{white-space:pre-wrap}.workspace-home{margin-top:4px}
