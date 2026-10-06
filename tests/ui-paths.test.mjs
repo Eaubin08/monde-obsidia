@@ -9,6 +9,7 @@ const workspace=readFileSync(resolve(process.cwd(),'src/ToolWorkspace.tsx'),'utf
 const bridge=readFileSync(resolve(process.cwd(),'server/local-bridge.mjs'),'utf8')
 const stateProjection=readFileSync(resolve(process.cwd(),'server/obsidia-state.mjs'),'utf8')
 const jarjarLauncher=readFileSync(resolve(process.cwd(),'scripts/start-jarjar-full.ps1'),'utf8')
+const serviceLauncher=readFileSync(resolve(process.cwd(),'scripts/start-service-colored.ps1'),'utf8')
 
 test('Pokémon launcher and cross-view paths remain wired',()=>{
  for(const invariant of [
@@ -192,5 +193,5 @@ test('Validated Obsidia service terminals remain wired individually',()=>{
   "connectors\\trading_live.py",
   "run_brody_terminal_enriched.ps1",
   "run_agent_obsidure.ps1 -DryRun",
- ]) assert.ok(bridge.includes(invariant),invariant)
+ ]) assert.ok((bridge+'\n'+serviceLauncher).includes(invariant),invariant)
 })
