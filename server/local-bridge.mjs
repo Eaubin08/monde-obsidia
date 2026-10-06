@@ -19,7 +19,14 @@ function sigmaDomains(root){
   const ids=[...tuple.matchAll(/["']([^"']+)["']/g)].map(m=>m[1])
   const displayBlock=text.match(/_DOMAIN_DISPLAY_NAMES[^=]*=\s*\{([\s\S]*?)\n\}/)?.[1]||''
   const displays=Object.fromEntries([...displayBlock.matchAll(/["']([^"']+)["']\s*:\s*["']([^"']+)["']/g)].map(m=>[m[1],m[2]]))
-  return ids.map(id=>({id,displayName:displays[id]||id,source:'sigma/registry.py',sourcePath:`sigma/domains/${id}_agents.py`,runtimeFilePresent:existsSync(resolve(root,'sigma','domains',id+'_agents.py'))}))
+  return ids.map(id=>{
+   const sourcePath=`sigma/domains/${id}_agents.py`,agentPath=resolve(root,'sigma','domains',id+'_agents.py'),runtimeFilePresent=existsSync(agentPath)
+   let agents=[]
+   if(runtimeFilePresent){
+    try{const source=readFileSync(agentPath,'utf8');agents=[...source.matchAll(/agent_id\s*=\s*["']([^"']+)["']/g)].map(m=>m[1])}catch{}
+   }
+   return {id,displayName:displays[id]||id,source:'sigma/registry.py',sourcePath,runtimeFilePresent,agents}
+  })
  }catch{return []}
 }
 export function snapshot(root=repository()){
