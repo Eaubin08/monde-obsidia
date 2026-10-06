@@ -1,6 +1,7 @@
 import {brodyServiceStatus,ensureBrodyApi,closeOwnedBrodyApi} from './brody-service.mjs'
 import {terminalCommand,launchTerminal,focusTerminal,stopTerminal,terminalAlive} from './native-terminal.mjs'
 import {liveSnapshot,liveDirectory} from './live-events.mjs'
+import {buildObsidiaState} from './obsidia-state.mjs'
 import {randomUUID} from 'node:crypto'
 import {execFileSync,spawn} from 'node:child_process'
 import {existsSync,realpathSync,readFileSync,readdirSync,statSync,appendFileSync} from 'node:fs'
@@ -69,6 +70,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  for(const [id,v] of processes)if(processes.size>50&&!v.active)processes.delete(id);
  await awaitObserver(session,p);res.end(JSON.stringify({sessionId:session,started:true}));return
  }
+ if(req.method==='GET'&&url.pathname==='/state'){const snap=snapshot(),live=liveSnapshot();res.end(JSON.stringify(buildObsidiaState(snap,live)));return}
  if(req.method==='GET'&&url.pathname==='/live'){res.end(JSON.stringify(liveSnapshot()));return}
  if(req.method==='GET'&&url.pathname==='/reports'){
  const reports=existsSync(liveDirectory)?readdirSync(liveDirectory).filter(f=>/^[a-zA-Z0-9-]+\.report\.json$/.test(f)).slice(-100).flatMap(f=>{try{return [JSON.parse(readFileSync(resolve(liveDirectory,f),'utf8'))]}catch{return []}}):[];res.end(JSON.stringify({reports}));return
