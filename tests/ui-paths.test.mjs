@@ -54,20 +54,24 @@ test('Pokémon visual order prioritizes work before population catalog',()=>{
 
 
 
-test('Jarjar is terminal-only in Pokemon and uses the proven live runtime',()=>{
+
+
+test('Jarjar one-click launcher starts the full required local stack',()=>{
  for(const invariant of [
   "['jarjar','Jarjar',true]",
-  "id==='jarjar'?<button",
+  "Lancer Jarjar",
   "startSession(id,true)",
  ]) assert.ok(pokemon.includes(invariant),invariant)
  for(const invariant of [
   "scripts.run_jarjar_live",
-  "C:\\Users\\User\\Desktop\\Jarvis-iron-obsidia-",
-  "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
-  "JARJAR_BOUNDED_STRUCTURED_ROUTING_V0='1'",
-  "JARJAR_LOCAL_BRODY='1'",
+  "start_qwen_text.ps1",
+  "start_qwen_vl.ps1",
+  "server.kernel.sealed.cjs",
+  "apps.obsidia_api.main:app",
+  "JARJAR_OBSIDIA_CHAT_URL='http://127.0.0.1:8000/api/brody/chat'",
+  "JARJAR_QWEN_URL='http://127.0.0.1:8080/v1/chat/completions'",
+  "JARJAR_VISION_URL='http://127.0.0.1:8081/v1/chat/completions'",
  ]) assert.ok(bridge.includes(invariant),invariant)
  assert.ok(!bridge.includes("['obsidure','brody','cli','jarjar']"))
  assert.ok(!pokemon.includes('JarjarCockpit'))
- assert.ok(!bridge.includes('/jarjar/status'))
 })
