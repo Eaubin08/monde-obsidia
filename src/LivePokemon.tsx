@@ -63,6 +63,7 @@ export default function LivePokemon(){
   ['trading-x108','Trading → X108',true],
   ['brody-enriched','Brody Enriched',true],
   ['obsidure-dry','Obsidure DryRun',true],
+  ['jarjar','Jarjar',true],
   ['jarvis','Jarvis',false]
  ] as const
  const terminalOnly=new Set(['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
