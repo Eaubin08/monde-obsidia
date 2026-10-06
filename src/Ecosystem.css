@@ -436,3 +436,37 @@ linear-gradient(90deg,rgba(69,104,77,.08) 1px,transparent 1px),
 #pokemon-active,#pokemon-launch,#pokemon-circuit,#pokemon-missions,#pokemon-population,#pokemon-village,#pokemon-registry{scroll-margin-top:16px}
 @media(max-width:1150px){.pokemon-cockpit{grid-template-columns:120px minmax(0,1fr)}.pokemon-cockpit>.pokemon-v3-inspector{grid-column:2;position:static}.pokemon-cockpit-nav{grid-row:1 / span 2}}
 @media(max-width:760px){.pokemon-cockpit{grid-template-columns:1fr}.pokemon-cockpit-nav{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.pokemon-cockpit-main,.pokemon-cockpit>.pokemon-v3-inspector{grid-column:1}.pokemon-cockpit>.pokemon-v3-inspector{position:static}}
+
+
+/* Shared top navigation + Search page */
+.obs-header-minimal{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 0}
+.obs-header-minimal .brand{display:block;font-weight:800;letter-spacing:.06em}
+.obs-header-runtime{display:flex;align-items:center;gap:8px;font-size:.78rem}
+.obs-header-runtime small{color:#9bbfa4}
+.runtime-dot{width:9px;height:9px;border-radius:50%;background:var(--obs-red);display:inline-block}
+.runtime-dot.live{background:var(--obs-green);box-shadow:0 0 10px rgba(118,201,138,.35)}
+.view-nav-main{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:6px 0 10px}
+.view-nav-main a{text-align:center;padding:9px 10px;border:1px solid #34563f;background:#0d1b13}
+.view-nav-main a[aria-current="page"]{border-color:var(--obs-green);background:var(--obs-green-bg)}
+.search-page{display:grid;gap:12px}
+.search-page-head{border:1px solid #34563f;background:#0d1b13;padding:14px}
+.search-page-head h1{margin:4px 0}
+.global-search-filters{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.global-search-filters button{border:1px solid #34563f;background:#102219;padding:6px 9px}
+.global-search-filters button[aria-pressed="true"]{border-color:var(--obs-cyan);background:var(--obs-cyan-bg)}
+.obs-quick-links{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;border-top:2px solid #34563f;border-bottom:1px solid #34563f;background:#0b1710;padding:12px;margin-top:16px}
+.obs-quick-links>div{display:flex;flex-direction:column}
+.obs-quick-links nav{display:flex;flex-wrap:wrap;gap:8px}
+.obs-quick-links button{border:1px solid #45684d;background:#102219;padding:8px 10px;text-align:left}
+.obs-quick-links small{color:#9bbfa4;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Legacy cockpit rules neutralized: Pokemon remains one page with all blocks visible */
+.pokemon-cockpit,.pokemon-cockpit-main{display:contents}
+.pokemon-cockpit-nav{display:none!important}
+
+@media(max-width:760px){
+ .view-nav-main{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .obs-header-minimal{align-items:flex-start;flex-direction:column}
+ .obs-quick-links{grid-template-columns:1fr}
+ .obs-quick-links small{max-width:none}
+}
