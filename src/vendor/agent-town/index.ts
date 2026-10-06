@@ -1,0 +1,47 @@
+// @ts-nocheck — upstream pinned at 78e8e91; checked by upstream settings
+export { AgentTown } from './AgentTown';
+export type {
+  AgentConfig,
+  AgentUpdate,
+  AgentStatus,
+  AgentActivity,
+  WorkPhase,
+  ParticleEventType,
+  TownConfig,
+  TownEventMap,
+  CharacterPalette,
+  ThemeId,
+  OfficeSize,
+  EnvironmentId,
+  ZoneType,
+  ActivityZone,
+  Room,
+  Workstation,
+  ActivityEvent,
+  Task,
+  TaskStage,
+  ReviewItem,
+  // Hierarchy types (v0.2.0)
+  Priority,
+  Objective,
+  ObjectiveStatus,
+  Story,
+  StoryStatus,
+  Sprint,
+  SprintStatus,
+  Milestone,
+  // Stage & room mode (v0.3.0)
+  StageConfig,
+  BuildingStyle,
+  ActivityProp,
+  RoomMode,
+  // Task visualization (v0.4.0)
+  TaskItemRenderData,
+  CompletionBagRenderData,
+  TaskVisualizationData,
+  FlyingTask,
+  TownSettings,
+  Workspace,
+} from './types';
+export { DEFAULT_STAGES } from './types';
+

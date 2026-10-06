@@ -1,0 +1,106 @@
+# =============================================================================
+# OBSIDIA TERMINAL REGISTRY V1 — LIVE_ALIGNMENT (observation locale 2026-07-02)
+# Non souverain. Le terminal ne decide rien. decision_authority = KX108_ONLY.
+# Ce fichier est un lexique de routage : couche -> triggers -> commandes.
+# Il n'accorde AUCUNE permission d'execution au-dela de doctor/status (HTTP GET).
+# Format : sous-ensemble YAML simple (dicts indentes 2 espaces, listes inline).
+# Source de verite endpoints : observation PowerShell locale utilisateur
+# (LIVE_STACK_OBSERVATION_STATUS: PARTIAL_PASS).
+# =============================================================================
+
+version: 1
+scope: OBSIDIA_TERMINAL_REGISTRY_LIVE_ALIGNMENT_V1
+authority: NONE
+sovereign: false
+default_output: COMMANDS
+receipt_path: .local_obsidia/receipts/obsidia_terminal_receipts.jsonl
+
+ports:
+  api: 8000
+  kernel: 3001
+  ui: 5173
+  graphiti: 8011
+  neo4j_browser: 7475
+  neo4j_bolt: 7688
+
+# Endpoints doctor — GET readonly confirmes par observation locale.
+# live_kernel_adapters (/api/live/kernel/adapters/{bank,trading,gps}) sont
+# POST-only : verifies via OpenAPI/documentation de routes, PAS via doctor GET.
+health_endpoints:
+  sigma_domains: http://127.0.0.1:8000/api/periphery/monitoring/sigma/domains
+  sigma_evaluate: http://127.0.0.1:8000/api/periphery/monitoring/sigma/evaluate
+  graphiti_frozen_status: http://127.0.0.1:8011/graph/v20/frozen/status
+  ui: http://127.0.0.1:5173/
+  kernel_unconfirmed: http://127.0.0.1:3001/health
+
+layers:
+  brody:
+    mode: readonly
+    triggers: [brody, chat, contexte, monitoring, cockpit, reponse, synthese]
+    commands: ["powershell -File scripts/OBSIDIA_LAUNCHERS/01_START_BRODY_STACK.ps1", "powershell -File scripts/run_brody_terminal_enriched.ps1"]
+    note: Brody vit dans l'API 8000 via /api/brody/* (pas de serveur Brody separe). Pas d'autorite Brody distincte. Brody explique, ne decide pas.
+  obsidure:
+    mode: gated
+    triggers: [obsidure, patch, proposal, forge, genere, generation, diff, forbidden-token]
+    commands: ["powershell -File scripts/run_agent_obsidure.ps1"]
+    note: Obsidure v2 gele. Proposals uniquement, apply confirmation-gated hors terminal. launch_status=KNOWN_COMMANDS_ONLY.
+  obsidienne:
+    mode: readonly
+    triggers: [lean, preuve, preuves, theoreme, invariant, lake, proof, obsidienne]
+    commands: ["python proofs/verify_all.py", "lake build Obsidia.GeneratedPeripheral  # GATED: uniquement sur demande explicite"]
+    note: Surface Lean V2 officialisee (232 entrees). Attestation, pas autorite.
+  kernel:
+    mode: kernel_check
+    triggers: [kernel, x108, admissibilite, decision, gate, souverain]
+    commands: ["powershell -File scripts/OBSIDIA_LAUNCHERS/02_START_KERNEL_AND_DOMAINS.ps1", "curl http://127.0.0.1:3001/health  # NOT_CONFIRMED en observation locale"]
+    note: Seule autorite. Le terminal consulte le status, n'emet jamais ALLOW/HOLD/BLOCK. Kernel 3001 /health non confirme lors de l'observation V0.
+  domains:
+    mode: bridge_only
+    triggers: [bank, banque, trading, gps, aviation, defense, domaine, domains]
+    commands: ["curl http://127.0.0.1:8000/api/periphery/monitoring/sigma/domains", "curl http://127.0.0.1:8000/api/periphery/monitoring/sigma/evaluate"]
+    note: Domains observed - bank, trading, ecom, gps_defense_aviation. Bridge-only. decision_authority=KX108_ONLY. readonly=true. advisory_only=true. allowed_to_decide=false. emits_act=false. memory_write=false. Les live kernel adapters /api/live/kernel/adapters/{bank,trading,gps} existent mais sont POST_ONLY_ADAPTERS - jamais utilises comme health GET par doctor.
+  audit:
+    mode: readonly
+    triggers: [audit, merkle, sha256, manifest, freeze, seal, verifie, verification, rfc3161]
+    commands: ["python proofs/verify_all.py", "python proofs/verify_merkle.py", "git status --short"]
+    note: Verifiers readonly. Ne pas regenerer les seals.
+  memory:
+    mode: readonly
+    triggers: [memoire, memory, graphiti, session, sources, projection]
+    commands: ["curl http://127.0.0.1:8011/graph/v20/frozen/status"]
+    note: Graphiti frozen readonly status, pas une autorite. live_neo4j_dependency=false peut apparaitre dans la reponse. memory_write=false, toujours.
+  live:
+    mode: status
+    triggers: [status, statut, health, sante, port, ports, serveur, serveurs, live, endpoint, doctor, tourne, allume]
+    commands: ["powershell -File scripts/OBSIDIA_LAUNCHERS/01_START_BRODY_STACK.ps1"]
+    note: Seule couche EXECUTE directe du terminal (HTTP GET readonly sur health_endpoints ci-dessus).
+  sigma:
+    mode: guidance
+    triggers: [sigma, coherence, contradiction, guidance, introspection, incoherence]
+    commands: ["curl http://127.0.0.1:8000/api/periphery/monitoring/sigma/domains", "curl http://127.0.0.1:8000/api/periphery/monitoring/sigma/evaluate"]
+    note: Sigma guide et explique. HOLD_RECOMMENDED est une recommandation, jamais une decision X108.
+  terminal_self:
+    mode: readonly
+    triggers: [qui es tu, tu es quoi, que peux tu faire, quelles sont tes capacites, quelles sont tes capacites, capaciter, comment fonctionne terminal, comment fonctionne le terminal, terminal comment il fonctionne, probleme actuel terminal, problemes actuels terminal, ameliorer le terminal, organes disponibles, branche, terminal self, terminal routing, terminal capabilities]
+    commands: []
+    note: Couche reflexive du terminal. Repond aux questions d identite, de capacite et de diagnostic. Aucune autorite. Non souverain. decision_authority=KX108_ONLY.
+  gates:
+    mode: readonly
+    triggers: [gates, gate, garde-fous, commit_scope_guard, kernel_boundary, sigma_non_sovereignty, lean_manifest_guard, forbidden_write, build safety, checks securite, protection build]
+    commands: ["python scripts/gates/obsidia_commit_scope_guard.py --allow <fichiers>", "python scripts/gates/obsidia_kernel_boundary_check.py --staged-only", "python scripts/gates/obsidia_sigma_non_sovereignty_check.py", "python scripts/gates/obsidia_lean_manifest_guard.py", "python -m pytest tests/gates/ -q"]
+    note: Gates de build safety Obsidia. Protegent le repo sans remplacer X108. Lecture status uniquement depuis le terminal. output=GUIDE ou COMMANDS. Non souverain. decision_authority=KX108_ONLY. no_auto_execution=true.
+  oie:
+    mode: readonly
+    triggers: [oie, inference economy, economie inference, modele evite, benchmark, latency avoided, token cost, cout token, token avoided, receipts oie, oie benchmark, inference benchmark]
+    commands: ["python scripts/performance/run_oie_external_claude_benchmark_v0.py --dry-run", "cat scripts/performance/oie_external_claude_benchmark_v0_receipts.json"]
+    note: OIE mesure l economie d inference Obsidia. COST_REAL=NOT_CLAIMED sauf preuve. Pas de lancement benchmark auto depuis le terminal. output=GUIDE ou READONLY. Non souverain. decision_authority=KX108_ONLY.
+  thermo:
+    mode: readonly
+    triggers: [thermo, energy, energie, thermo debt, dette thermo, friction energie, energy thermo, sigma truth mismatch, dissipation, cout energetique, energy_thermo]
+    commands: []
+    note: Thermo mesure la friction energie/stabilite et la dette sigma (vérité vs coherence). Aucune decision. output=GUIDE. Non souverain. decision_authority=KX108_ONLY. no_decision=true.
+
+policy:
+  deny_keywords: [commit, push, deploy, deploie, apply, applique, act, ecris, ecrire, write, delete, supprime, supprimer, efface, mutate, mute, install, installe, "rm -", force, reset, rebase, amend]
+  deny_message: Mutation ou action critique detectee. Le terminal V0 est readonly et sans chemin d'application. Utilise le workflow gated approprie (Obsidure proposals / approbation humaine).
+

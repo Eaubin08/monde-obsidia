@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "source_file": "OBSIDIA_TOUS_LES_AGENTS.docx",
+  "source_location": "external local source, not committed",
+  "source_note": "extracted from C:\\Users\\User\\Desktop\\obsidia-engine-proof-core\\agent_sources\\OBSIDIA_TOUS_LES_AGENTS.docx",
+  "total_agents_in_source": 52,
+  "total_families_in_source": 9,
+  "extracted_this_file": 5,
+  "known_families": [
+    "À créer en premier / Top 5 founders",
+    "Code / Repo / CI",
+    "Documentation / Théorie / Freeze",
+    "Données / Logs / Audit",
+    "Sécurité / Pare-feu",
+    "Terrain / Produit / Communication",
+    "Frise / Arbres / Monde humain",
+    "Atlas Obsidia",
+    "Pour Étienne directement"
+  ],
+  "agents": [
+    {
+      "id": 1,
+      "name": "OBSIDIA_ATLAS_INGESTOR",
+      "family": "Fondateurs — À créer en premier (top 5)",
+      "role": "Analyste-cartographe profond. Transforme toute matière brute en cartes mémoire structurées pour Obsidia.",
+      "output": "Analyse multi-couches + cartes mémoire JSON",
+      "deployment": "Vertex AI — premier agent",
+      "claude_code_skill_mapping": "read-only-inspector (reduced)",
+      "prompt_file": "agents/prompts/OBSIDIA_ATLAS_INGESTOR.md",
+      "status": "EXTRACTED"
+    },
+    {
+      "id": 2,
+      "name": "CANON_GUARDIAN",
+      "family": "Fondateurs — À créer en premier (top 5)",
+      "role": "Gardien du canon Obsidia. Vérifie si une carte peut toucher au canon. Émet des statuts. Ne décide pas seul.",
+      "output": "Verdict statut canonique + alertes contradictions",
+      "deployment": "Vertex AI ou local",
+      "claude_code_skill_mapping": "freeze-guardian (reduced)",
+      "prompt_file": "agents/prompts/CANON_GUARDIAN.md",
+      "status": "EXTRACTED"
+    },
+    {
+      "id": 3,
+      "name": "GRAPH_BUILDER",
+      "family": "Fondateurs — À créer en premier (top 5)",
+      "role": "Construit le graphe Obsidia. Produit les liens entre cartes mémoire validées.",
+      "output": "Graphe nœuds/liens avec force et type de relation",
+      "deployment": "Vertex AI puis local",
+      "claude_code_skill_mapping": "graph-calibrator-obsidia (composite)",
+      "prompt_file": "agents/prompts/GRAPH_BUILDER.md",
+      "status": "EXTRACTED"
+    },
+    {
+      "id": 4,
+      "name": "TERMINAL_BUILDER",
+      "family": "Fondateurs — À créer en premier (top 5)",
+      "role": "Exécute la méthode terminal-first. Produit des commandes PowerShell/Bash propres, prêtes à coller.",
+      "output": "Blocs commandes + preuves d'exécution attendues",
+      "deployment": "Local prioritaire",
+      "claude_code_skill_mapping": "terminal-builder (direct)",
+      "prompt_file": "agents/prompts/TERMINAL_BUILDER.md",
+      "status": "EXTRACTED"
+    },
+    {
+      "id": 5,
+      "name": "PROOF_SENTINEL",
+      "family": "Fondateurs — À créer en premier (top 5)",
+      "role": "Surveille ProofKit / Lean / TLA / root/seal. Distingue vraie rupture de preuve vs simple erreur CI.",
+      "output": "Rapport preuve : invariant touché, cause, niveau de rupture",
+      "deployment": "Local + CI",
+      "claude_code_skill_mapping": "proof-sentinel (direct)",
+      "prompt_file": "agents/prompts/PROOF_SENTINEL.md",
+      "status": "EXTRACTED"
+    }
+  ]
+}
+

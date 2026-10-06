@@ -1,0 +1,424 @@
+{
+  "source": "Fichier markdown(20260912-153956).md collé",
+  "sourceDate": "2026-09-12",
+  "sourceStatus": "AUDIT_HISTORIQUE",
+  "agents": [
+    {
+      "id": 1,
+      "name": "OBSIDIA_ATLAS_INGESTOR",
+      "family": "Fondateurs (top 5)",
+      "source": "Audit du 12 septembre 2026",
+      "role": "Analyste-cartographe profond. Transforme toute matière brute en cartes mémoire structurées pour Obsidia.",
+      "output": "Analyse multi-couches + cartes mémoire JSON"
+    },
+    {
+      "id": 2,
+      "name": "CANON_GUARDIAN",
+      "family": "Fondateurs (top 5)",
+      "source": "Audit du 12 septembre 2026",
+      "role": "Gardien du canon Obsidia. Vérifie si une carte peut toucher au canon. Émet des statuts. Ne décide pas seul.",
+      "output": "Verdict statut canonique + alertes contradictions"
+    },
+    {
+      "id": 3,
+      "name": "GRAPH_BUILDER",
+      "family": "Fondateurs (top 5)",
+      "source": "Audit du 12 septembre 2026",
+      "role": "Construit le graphe Obsidia. Produit les liens entre cartes mémoire validées.",
+      "output": "Graphe nœuds/liens avec force et type de relation"
+    },
+    {
+      "id": 4,
+      "name": "TERMINAL_BUILDER",
+      "family": "Fondateurs (top 5)",
+      "source": "Audit du 12 septembre 2026",
+      "role": "Exécute la méthode terminal-first. Produit des commandes PowerShell/Bash propres, prêtes à coller.",
+      "output": "Blocs commandes + preuves d'exécution attendues"
+    },
+    {
+      "id": 5,
+      "name": "PROOF_SENTINEL",
+      "family": "Fondateurs (top 5)",
+      "source": "Audit du 12 septembre 2026",
+      "role": "Surveille ProofKit / Lean / TLA / root/seal. Distingue vraie rupture de preuve vs simple erreur CI.",
+      "output": "Rapport preuve : invariant touché, cause, niveau de rupture"
+    },
+    {
+      "id": 6,
+      "name": "CO_PILOTE_CODE",
+      "family": "Code / Repo / CI",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 7,
+      "name": "CI_REPO_SURGEON",
+      "family": "Code / Repo / CI",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 8,
+      "name": "REPO_HISTORIAN",
+      "family": "Code / Repo / CI",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 9,
+      "name": "VERSION_COMPARATOR",
+      "family": "Code / Repo / CI",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 10,
+      "name": "CARTOGRAPHE_PREUVES",
+      "family": "Code / Repo / CI",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 11,
+      "name": "FORMAL_BRIDGE",
+      "family": "Code / Repo / CI",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 12,
+      "name": "GENERATEUR_TESTS_ADVERSARIAUX",
+      "family": "Code / Repo / CI",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 13,
+      "name": "ADVERSARIAL_RED_TEAM",
+      "family": "Code / Repo / CI",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 14,
+      "name": "ASSISTANT_THEORIQUE_DOCUMENTAIRE",
+      "family": "Documentation / Théorie / Freeze",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 15,
+      "name": "MEMOIRE_PERSONNELLE_OBSIDIA",
+      "family": "Documentation / Théorie / Freeze",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 16,
+      "name": "FREEZE_MASTER",
+      "family": "Documentation / Théorie / Freeze",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 17,
+      "name": "PRE_FREEZE",
+      "family": "Documentation / Théorie / Freeze",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 18,
+      "name": "HISTORIEN_DECISIONS",
+      "family": "Documentation / Théorie / Freeze",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 19,
+      "name": "VOCABULAIRE_CANONIQUE",
+      "family": "Documentation / Théorie / Freeze",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 20,
+      "name": "CONTRADICTION_HUNTER",
+      "family": "Documentation / Théorie / Freeze",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 21,
+      "name": "THEORIE_VIVANTE",
+      "family": "Documentation / Théorie / Freeze",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 22,
+      "name": "RECHERCHE_EXTERNE",
+      "family": "Documentation / Théorie / Freeze",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 23,
+      "name": "ANALYSTE_LOGS_EXPERIMENTAUX",
+      "family": "Données / Logs / Audit",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 24,
+      "name": "EVIDENCE_BOARD_BUILDER",
+      "family": "Données / Logs / Audit",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 25,
+      "name": "AUDIT_LOCAL_AGENT",
+      "family": "Données / Logs / Audit",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 26,
+      "name": "DATA_SOVEREIGNTY_GUARD",
+      "family": "Données / Logs / Audit",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 27,
+      "name": "SECURITY_FIREWALL_ARCHITECT",
+      "family": "Sécurité / Pare-feu",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 28,
+      "name": "POLICY_FIREWALL_AGENT",
+      "family": "Sécurité / Pare-feu",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 29,
+      "name": "RUNTIME_ATTESTATION_AGENT",
+      "family": "Sécurité / Pare-feu",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 30,
+      "name": "SUPPLY_CHAIN_GUARD",
+      "family": "Sécurité / Pare-feu",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 31,
+      "name": "SECRET_GUARD",
+      "family": "Sécurité / Pare-feu",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 32,
+      "name": "FIELD_POC_MAPPER",
+      "family": "Terrain / Produit / Communication",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 33,
+      "name": "PITCH_AGENT",
+      "family": "Terrain / Produit / Communication",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 34,
+      "name": "EXPLIQUE_A_UN_HUMAIN",
+      "family": "Terrain / Produit / Communication",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 35,
+      "name": "SIMULATEUR_REUNION",
+      "family": "Terrain / Produit / Communication",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 36,
+      "name": "MONETISATION_PACKAGING",
+      "family": "Terrain / Produit / Communication",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 37,
+      "name": "FRISE_HUMAINE",
+      "family": "Frise / Arbres / Monde humain",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 38,
+      "name": "CARTOGRAPHE_34_ARBRES",
+      "family": "Frise / Arbres / Monde humain",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 39,
+      "name": "HUMAN_HISTORY_MAPPER",
+      "family": "Frise / Arbres / Monde humain",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 40,
+      "name": "CALIBRATION_PROCEDURALE",
+      "family": "Frise / Arbres / Monde humain",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 41,
+      "name": "NUAGE_POINTS",
+      "family": "Frise / Arbres / Monde humain",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 42,
+      "name": "GRAND_CARTOGRAPHE_OBSIDIA",
+      "family": "Atlas Obsidia",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 43,
+      "name": "ONTOLOGUE_OBSIDIA",
+      "family": "Atlas Obsidia",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 44,
+      "name": "CARTOGRAPHE_COUCHES",
+      "family": "Atlas Obsidia",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 45,
+      "name": "CARTOGRAPHE_LOIS_PROTOCOLES",
+      "family": "Atlas Obsidia",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 46,
+      "name": "CARTOGRAPHE_FORMULES",
+      "family": "Atlas Obsidia",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 47,
+      "name": "CARTOGRAPHE_DOMAINES_TERRAIN",
+      "family": "Atlas Obsidia",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 48,
+      "name": "CARTOGRAPHE_AGI_VISION_HAUTE",
+      "family": "Atlas Obsidia",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 49,
+      "name": "COLLISION_DETECTOR",
+      "family": "Atlas Obsidia",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 50,
+      "name": "ANTI_DISPERSION",
+      "family": "Pour Étienne directement",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 51,
+      "name": "ENERGIE_PRIORITE",
+      "family": "Pour Étienne directement",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    },
+    {
+      "id": 52,
+      "name": "EXTRACTEUR_MATIERE_BRUTE",
+      "family": "Pour Étienne directement",
+      "source": "Audit du 12 septembre 2026",
+      "role": null,
+      "output": null
+    }
+  ],
+  "top5Commit": "13964f05f33cdba3fe02b36e3d7baeaa37e37c31"
+}
