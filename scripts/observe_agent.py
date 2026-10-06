@@ -37,7 +37,10 @@ def main():
    if objective is not None:state['objective']=objective[:1000]
    emit('activity')
  def beat():
-  while not stop.wait(1):emit('heartbeat')
+  while not stop.wait(1):
+   with lock:
+    if stop.is_set():return
+    emit('heartbeat')
  old_input=builtins.input;brody_configured=False
  def observed_input(prompt=''):
   nonlocal brody_configured
@@ -69,7 +72,7 @@ def main():
   if key in phases:change(*phases[key],objective=frame.f_locals.get('objective'))
   elif key=='run_lake_build':change('testing','LEAN_BUILD','Vérification Lean en cours')
   elif key=='run_cycle':change('planning','CYCLE_START','Cycle Obsidure commencé',objective=frame.f_locals.get('objective'))
- emit('session_start');threading.Thread(target=beat,daemon=True).start();builtins.input=observed_input;sys.setprofile(profile);sys.path.insert(0,str(root));sys.argv=[str(target)];
+ emit('session_start');heartbeat=threading.Thread(target=beat,daemon=True);heartbeat.start();builtins.input=observed_input;sys.setprofile(profile);sys.path.insert(0,str(root));sys.argv=[str(target)];
  if a.audit:sys.argv.extend(['--dry-run','--objective','Auditer les points d’entrée CLI, Brody et Obsidure sans modification','--max-cycles','1'])
  os.chdir(root)
  code=0
@@ -90,7 +93,7 @@ def main():
   import traceback
   code=1;emit('runtime_error',message=str(error));traceback.print_exc();raise
  finally:
-  sys.setprofile(None);builtins.input=old_input;stop.set();sys.stdout=old_stdout;sys.stderr=old_stderr;
+  sys.setprofile(None);builtins.input=old_input;stop.set();heartbeat.join(timeout=2);sys.stdout=old_stdout;sys.stderr=old_stderr;
   if a.audit:
    report={'schema':'OBSIDIA_LOCAL_ENTRYPOINT_AUDIT_V1','sessionId':sid,'agentExecution':'Obsidure phase A dry-run','processExitCode':code,'requestedCycles':a.audit_cycles,'intervalSeconds':a.audit_interval,'fileInventoryProducer':'Observateur local déterministe — séparé du raisonnement Obsidure','entries':[]}
    for rel in ['scripts/obsidia_cli.py','scripts/brody_terminal_chat.py','scripts/obsidure_cli.py','scripts/run_agent_obsidure.ps1','periphery/agents/agent_obsidure.py']:
