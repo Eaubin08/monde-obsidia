@@ -2,7 +2,8 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $projectRoot 'scripts\windows-common.ps1')
 $node = Get-RequiredCommand 'node.exe'
-$scratch = Join-Path $env:TEMP ('obsidia-updater-' + [guid]::NewGuid().ToString())
+# Keep the fixture on a canonical project path, not Windows TEMP's 8.3 alias.
+$scratch = Join-Path $projectRoot ('.obsidia-live\updater-test-' + [guid]::NewGuid().ToString())
 $first = Join-Path $scratch "monde l'agent"
 $other = Join-Path $scratch 'autre monde'
 $broken = Join-Path $scratch 'installation incomplete'
@@ -68,6 +69,18 @@ try {
         Assert-True ($invocations.Count -eq 1 -and $invocations[0].Trim() -eq 'ci') 'npm run dev a ete appele apres un echec.'
     }
     Write-Host 'PASS: npm echoue / faux succes sans dependances => arret, aucun lancement Vite.'
+
+    # Model npm ci having removed .bin while importable package directories remain.
+    $null = New-Item -ItemType Directory -Path (Join-Path $broken 'node_modules')
+    foreach ($package in @('vite','@vitejs','react','react-dom','typescript','rolldown')) {
+        $null = New-Item -ItemType Junction -Path (Join-Path $broken ('node_modules\' + $package)) -Target (Join-Path $projectRoot ('node_modules\' + $package))
+    }
+    Remove-Item -LiteralPath $calls -ErrorAction SilentlyContinue
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $broken 'scripts\start-windows.ps1')
+    Assert-True ($LASTEXITCODE -ne 0) 'Installation sans shim Vite acceptee.'
+    $invocations = @(Get-Content -LiteralPath $calls)
+    Assert-True ($invocations.Count -eq 1 -and $invocations[0].Trim() -eq 'ci') 'Vite lance malgre les shims manquants.'
+    Write-Host 'PASS: packages importables mais .bin manquant => reparation demandee, aucun lancement.'
 } finally {
     $env:PATH = $priorPath
     foreach ($directory in @($first,$other)) { if (Test-Path $directory) { Stop-ProjectVite -Root $directory } }
