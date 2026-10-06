@@ -10,6 +10,7 @@ type Relation={from:string;type:string;to:string}
 type Mission=MissionTimelineMission
 type AgentFamily={id:string;label:string;sourceRepo:string;sourcePath?:string;localPresent:boolean;kind:string;agents:string[]}
 type SharedState={schema:string;entities:Entity[];relations:Relation[];sessions:Session[];missions:Mission[];agentFamilies?:AgentFamily[]}
+type StatusFilter='all'|'live'|'ready'|'planned'|'blocked'|'inactive'
 
 const phaseLabel=(phase:string)=>({
  STARTING:'Démarrage',SESSION_CONFIG:'Configuration',WAITING_INPUT:'En attente',
@@ -30,7 +31,7 @@ export default function LivePokemon(){
  const [connected,setConnected]=useState(false)
  const [launching,setLaunching]=useState('')
  const [launchMessage,setLaunchMessage]=useState('')
- const [statusFilter,setStatusFilter]=useState<'all'|'live'|'ready'|'planned'|'blocked'|'inactive'>('all')
+ const [statusFilter,setStatusFilter]=useState<StatusFilter>('all')
  const [familyFilter,setFamilyFilter]=useState('')
 
  useEffect(()=>{if(!container.current)return;const scene=new AgentTown({container:container.current,environment:'town',officeSize:'large',roomMode:'environment',onAgentClick:id=>{setSelected(id);setSelectedAgent('');sessionStorage.setItem('obsidia-selected-session',id);sessionStorage.setItem('obsidia-focus-entity','session:'+id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:'session:'+id}))}});town.current=scene;return()=>{scene.destroy();town.current=null}},[])
@@ -50,14 +51,15 @@ export default function LivePokemon(){
  const lastSession=(agentId:string)=>sessions.filter(s=>s.agentId===agentId).sort((a,b)=>Date.parse(b.timestamp)-Date.parse(a.timestamp))[0]
  const organFamily:AgentFamily={id:'organs',label:'Organes / outils',sourceRepo:'monde-obsidia',localPresent:true,kind:'launcher',agents:launchable.map(x=>x[0]) as string[]}
  const families=[organFamily,...(state?.agentFamilies||[])]
- const allCatalogIds=new Set(families.flatMap(f=>f.agents))
- const liveIds=new Set(sessions.filter(s=>s.presence==='live'&&s.agentId!=='cli').map(s=>s.agentId))
- const readyIds=new Set(launchable.filter(([, ,ready])=>ready).map(([id])=>id).filter(id=>!sessions.some(s=>s.agentId===id&&s.presence==='live')))
- const plannedIds=new Set(launchable.filter(([, ,ready])=>!ready).map(([id])=>id))
+ const allCatalogIds=new Set<string>(families.flatMap(f=>f.agents))
+ const liveIds=new Set<string>(sessions.filter(s=>s.presence==='live'&&s.agentId!=='cli').map(s=>s.agentId))
+ const readyIds=new Set<string>(launchable.filter(([, ,ready])=>ready).map(([id])=>id).filter(id=>!sessions.some(s=>s.agentId===id&&s.presence==='live')))
+ const plannedIds=new Set<string>(launchable.filter(([, ,ready])=>!ready).map(([id])=>id))
  const blockedSessions=sessions.filter(s=>s.presence==='live'&&(s.status==='blocked'||s.status==='error')&&s.agentId!=='cli')
  const inactiveCount=[...allCatalogIds].filter(id=>!liveIds.has(id)&&!readyIds.has(id)&&!plannedIds.has(id)).length
  const familyFor=(agentId:string)=>families.find(f=>f.agents.includes(agentId))
  const visibleLive=live.filter(s=>(statusFilter==='all'||statusFilter==='live'||(statusFilter==='blocked'&&(s.status==='blocked'||s.status==='error')))&&(familyFilter===''||familyFor(s.agentId)?.id===familyFilter))
+ const statusCards:{id:StatusFilter;label:string;count:number}[]=[{id:'all',label:'TOTAL',count:allCatalogIds.size},{id:'live',label:'LIVE',count:liveIds.size},{id:'ready',label:'PRÊTS',count:readyIds.size},{id:'planned',label:'PLANIFIÉS',count:plannedIds.size},{id:'blocked',label:'BLOQUÉS',count:blockedSessions.length},{id:'inactive',label:'INACTIFS',count:inactiveCount}]
 
  const selectContext=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
  const openWorkspace=(s:Session)=>{sessionStorage.setItem('obsidia-selected-session',s.sessionId);selectContext('session:'+s.sessionId);const area=s.agentId==='brody'?'brody':s.agentId==='obsidure'?'obsidure':s.agentId==='cli'?'cli':'home';sessionStorage.setItem('obsidia-workspace-area',area);location.hash='workspace'}
@@ -87,14 +89,7 @@ export default function LivePokemon(){
   {error&&<p role="alert">{error}</p>}
 
   <section className="pokemon-scale-bar" aria-label="État global des agents">
-   {[
-    ['all','TOTAL',allCatalogIds.size],
-    ['live','LIVE',liveIds.size],
-    ['ready','PRÊTS',readyIds.size],
-    ['planned','PLANIFIÉS',plannedIds.size],
-    ['blocked','BLOQUÉS',blockedSessions.length],
-    ['inactive','INACTIFS',inactiveCount],
-   ].map(([id,label,count])=><button key={String(id)} aria-pressed={statusFilter===id} onClick={()=>setStatusFilter(id as typeof statusFilter)}><strong>{count}</strong><span>{label}</span></button>)}
+   {statusCards.map(({id,label,count})=><button key={id} aria-pressed={statusFilter===id} onClick={()=>setStatusFilter(id)}><strong>{count}</strong><span>{label}</span></button>)}
   </section>
 
   <section className="pokemon-families">
