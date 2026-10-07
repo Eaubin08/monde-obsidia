@@ -90,6 +90,8 @@ test('Kernel and API READY require canonical process identity',()=>{
   "PORT_8000_FOREIGN_PROCESS",
   "canonicalPortOwner('kernel-x108'",
   "canonicalPortOwner('obsidia-api'",
+  "canonicalPortOwner('qwen-text'",
+  "canonicalPortOwner('qwen-vl'",
   "Pré-requis Jarjar refusé",
  ]) assert.ok(bridge.includes(invariant),invariant)
  assert.ok(!bridge.includes("ready:portOpen(3001)"))
