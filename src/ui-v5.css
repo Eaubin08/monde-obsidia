@@ -1,0 +1,43 @@
+:root{
+ --v5-bg:#07100b;--v5-panel:#0d1811;--v5-panel2:#132119;--v5-line:#294435;--v5-text:#eef5f0;--v5-muted:#8fa398;
+ --v5-green:#79ce8e;--v5-cyan:#6ec7d9;--v5-amber:#d8b95e;--v5-red:#d87676;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--v5-bg);color:var(--v5-text)}
+.v5{min-height:100vh;padding:0 18px 18px}
+.v5-top{position:sticky;top:0;z-index:50;display:grid;grid-template-columns:auto minmax(420px,700px) auto;align-items:center;gap:18px;min-height:62px;border-bottom:1px solid var(--v5-line);background:rgba(7,16,11,.97);backdrop-filter:blur(12px)}
+.v5-logo{font-weight:900;letter-spacing:.08em;text-decoration:none;color:var(--v5-text)}
+.v5-top nav{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.v5-top nav a{display:grid;place-items:center;min-height:38px;border:1px solid transparent;border-radius:8px;text-decoration:none;color:var(--v5-muted);font-weight:700}
+.v5-top nav a[aria-current="page"]{background:var(--v5-panel2);border-color:#406650;color:var(--v5-text)}
+.v5-runtime{display:flex;align-items:center;gap:8px;justify-self:end}.v5-runtime>span{width:9px;height:9px;border-radius:50%;background:var(--v5-red)}.v5-runtime>span.on{background:var(--v5-green)}.v5-runtime small{display:block;color:var(--v5-muted);font-size:.68rem}
+.v5-context{max-width:1580px;margin:10px auto 0;display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--v5-line);background:var(--v5-panel);border-radius:8px}.v5-context span,.v5-context small{color:var(--v5-muted)}.v5-context small{margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v5-message{max-width:1580px;margin:8px auto;padding:8px 10px;border:1px solid var(--v5-line)}
+.v5-main{max-width:1580px;margin:14px auto 0}
+.v5-page{display:grid;gap:14px}
+.v5-page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:2px 0 12px;border-bottom:1px solid var(--v5-line)}.v5-page-head h1{margin:2px 0;font-size:2rem}.v5-page-head p{margin:0;color:var(--v5-muted)}.v5-page-head small{color:var(--v5-muted);letter-spacing:.12em}
+.v5-zonebar,.v5-subnav{display:flex;gap:8px;flex-wrap:wrap}.v5-zonebar button,.v5-subnav button{border:1px solid var(--v5-line);background:var(--v5-panel);padding:9px 12px;border-radius:8px}.v5-zonebar button[aria-pressed="true"],.v5-subnav button[aria-pressed="true"]{border-color:#4c785f;background:var(--v5-panel2)}
+.v5-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.v5-object{min-height:120px;text-align:left;border:1px solid var(--v5-line);background:var(--v5-panel);padding:12px;border-radius:10px;display:flex;flex-direction:column;gap:7px}.v5-object:hover{border-color:#4a725a;background:var(--v5-panel2)}.v5-object small{color:var(--v5-cyan);letter-spacing:.08em}.v5-object span{color:var(--v5-muted)}
+.v5-focus{border:1px solid var(--v5-line);background:var(--v5-panel);padding:14px;border-radius:10px}.v5-focus h2{margin:4px 0}.v5-focus>div{display:flex;gap:8px}.v5-focus details{margin-top:12px}
+.v5-work-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.v5-work-list article{border:1px solid var(--v5-line);background:var(--v5-panel);padding:14px;border-radius:10px}.v5-work-list article>small{color:var(--v5-cyan)}.v5-work-list article>span{color:var(--v5-muted)}.v5-work-list article>div{display:flex;gap:8px;margin-top:12px}
+.v5-files{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,.8fr);gap:12px}.v5-files>div{border:1px solid var(--v5-line);background:var(--v5-panel);padding:12px;border-radius:10px}.v5-file-list{max-height:60vh;overflow:auto;display:flex;flex-direction:column;gap:5px}.v5-file-list button{text-align:left}.v5-files pre{max-height:50vh;overflow:auto;white-space:pre-wrap}
+.v5-recent{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.v5-recent h2{grid-column:1/-1}.v5-recent button{text-align:left;border:1px solid var(--v5-line);background:var(--v5-panel);padding:10px;border-radius:8px;display:flex;flex-direction:column;gap:3px}.v5-recent span,.v5-recent small{color:var(--v5-muted)}
+.v5-archive{border:1px solid var(--v5-line);background:var(--v5-panel);padding:10px 12px;border-radius:8px}.v5-archive summary{cursor:pointer;font-weight:700}
+.v5-empty{color:var(--v5-muted)}
+
+/* Existing functional blocks embedded in V5 */
+.v5-pokemon .pokemon-v3{display:grid;gap:12px}
+.v5-pokemon .pokemon-v3-header{display:flex;justify-content:space-between;gap:20px;padding:0 0 12px;border-bottom:1px solid var(--v5-line)}
+.v5-pokemon .pokemon-scale-bar{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.v5-pokemon .pokemon-scale-bar button{min-height:48px;padding:6px 9px;border-width:1px}
+.v5-pokemon .pokemon-v3-layout{grid-template-columns:minmax(0,1fr) minmax(300px,360px);gap:10px}
+.v5-pokemon .pokemon-v3-card,.v5-pokemon .pokemon-v3-inspector,.v5-pokemon .pokemon-launch-zone,.v5-pokemon .pokemon-circuit,.v5-pokemon .pokemon-teams,.v5-pokemon .pokemon-families,.v5-pokemon .pokemon-v3-secondary{border-width:1px;background:var(--v5-panel)}
+.v5-pokemon .pokemon-launch-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.v5-pokemon .pokemon-lower-grid{grid-template-columns:1fr 1fr;gap:10px}
+.v5-pokemon .pokemon-v3-inspector{position:sticky;top:74px}
+.global-search,.workspace-shell,.tool-workspace{border-color:var(--v5-line)!important}
+
+@media(max-width:1150px){.v5-grid{grid-template-columns:repeat(3,1fr)}.v5-work-list{grid-template-columns:repeat(2,1fr)}.v5-pokemon .pokemon-launch-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.v5{padding:0 10px 12px}.v5-top{position:static;grid-template-columns:1fr}.v5-runtime{justify-self:start}.v5-grid,.v5-work-list{grid-template-columns:repeat(2,1fr)}.v5-files{grid-template-columns:1fr}.v5-pokemon .pokemon-v3-layout,.v5-pokemon .pokemon-lower-grid{grid-template-columns:1fr}.v5-pokemon .pokemon-v3-inspector{position:static}}
+@media(max-width:620px){.v5-top nav{grid-template-columns:repeat(2,1fr)}.v5-context{align-items:flex-start;flex-direction:column}.v5-context small{margin-left:0}.v5-grid,.v5-work-list,.v5-recent,.v5-pokemon .pokemon-scale-bar,.v5-pokemon .pokemon-launch-grid{grid-template-columns:1fr}}
