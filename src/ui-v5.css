@@ -186,3 +186,227 @@ select:focus-visible {
   outline: 2px solid #6aaeff;
   outline-offset: 2px;
 }
+
+
+/* Functional contrast fixes: override legacy white button/panel styles inside V5 */
+.v5-main button,
+.v5-main select,
+.v5-main input,
+.v5-main textarea {
+  background-color:#0d1a29;
+  color:#edf5ff;
+  border-color:#29435c;
+}
+.v5-main button:hover:not(:disabled) {
+  background-color:#14283e;
+  border-color:#446887;
+}
+.v5-work-list article {
+  background:#0d1a29 !important;
+  color:#edf5ff !important;
+}
+.v5-work-list article button,
+.v5-files button,
+.v5-tool button,
+.v5-search button,
+.v5-recent button,
+.v5pk-team button,
+.v5pk-actions button,
+.v5pk-family-grid button,
+.v5pk-registry button {
+  background:#102033 !important;
+  color:#edf5ff !important;
+  border:1px solid #29435c !important;
+}
+.v5-work-list article button:hover,
+.v5-files button:hover,
+.v5-tool button:hover,
+.v5-search button:hover,
+.v5-recent button:hover,
+.v5pk-team button:hover,
+.v5pk-actions button:hover,
+.v5pk-family-grid button:hover,
+.v5pk-registry button:hover {
+  background:#18314a !important;
+}
+.v5-files,
+.v5-files>div,
+.v5-files article,
+.v5-tool,
+.v5-tool-output,
+.v5-chat,
+.v5pk-team,
+.v5pk-catalog-detail {
+  color:#edf5ff !important;
+}
+.v5-files article {
+  background:#091625;
+  border:1px solid #21364b;
+  border-radius:8px;
+  padding:8px;
+  margin:6px 0;
+}
+.v5-files h2,.v5-files h3,.v5-files strong,
+.v5pk-team strong,.v5pk-team small {
+  color:#edf5ff;
+}
+.v5-file-list button {
+  width:100%;
+  padding:8px 9px;
+  border-radius:7px;
+}
+.v5-detail-actions,
+.v5-search-detail>header {
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:space-between;
+}
+.v5-search-detail {
+  margin-top:12px;
+  border:1px solid #35526f;
+  background:linear-gradient(180deg,#102136,#0b1827);
+  border-radius:10px;
+  padding:14px;
+  color:#edf5ff;
+}
+.v5-search-detail h2{margin:2px 0}
+.v5-search-detail p{color:#a4b6c8}
+.v5-search-detail button{
+  background:#172b42 !important;
+  color:#f1f7ff !important;
+}
+.v5-layer-reader {
+  border:1px solid #29435c;
+  background:#0d1a29;
+  border-radius:10px;
+  padding:12px;
+}
+.v5-layer-reader header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.v5-layer-reader pre {
+  max-height:60vh;
+  overflow:auto;
+  white-space:pre-wrap;
+  background:#07121d;
+  color:#dbe8f4;
+  border-radius:8px;
+  padding:12px;
+}
+
+/* Pokemon readability + real village */
+.v5pk-team {
+  background:#0a1725;
+  border:1px solid #20364b;
+  border-radius:8px;
+  padding:10px;
+  margin-top:8px;
+}
+.v5pk-team>div {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:8px;
+}
+.v5pk-pipeline .stage-number {
+  width:22px;height:22px;border-radius:50%;
+  display:grid;place-items:center;
+  background:#17314b;color:#9dcbf3;
+  font-size:.7rem;
+}
+.v5pk-pipeline article header {
+  display:grid;
+  grid-template-columns:24px 1fr auto;
+  align-items:center;
+  gap:6px;
+}
+.v5pk-pipeline .stage-help {
+  min-height:48px;
+  color:#8fa5bb;
+  font-size:.72rem;
+}
+.v5pk-pipeline article.blocked-stage {
+  border-color:#65313a;
+  background:#24131a;
+}
+.v5pk-family-grid button.selected,
+.v5pk-registry button.selected {
+  border-color:#6b8cff !important;
+  background:#17294a !important;
+}
+.v5pk-village-scene {
+  min-height:260px;
+  display:grid;
+  grid-template-columns:1.5fr 1fr .8fr;
+  gap:10px;
+  padding:12px;
+  border-radius:10px;
+  background:
+    linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px),
+    #081522;
+  background-size:28px 28px;
+}
+.village-zone {
+  border:1px dashed #31516d;
+  border-radius:10px;
+  padding:10px;
+  min-height:210px;
+  display:flex;
+  align-content:flex-start;
+  align-items:flex-start;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.village-zone>strong {
+  width:100%;
+  color:#9db2c6;
+  font-size:.75rem;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.village-zone button {
+  width:92px;
+  min-height:86px;
+  border:1px solid #29435c !important;
+  background:#102033 !important;
+  border-radius:10px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+}
+.village-zone button>span{color:#47dc88;font-size:1.35rem}
+.village-zone button small{color:#92a8bb}
+.zone-work{border-color:#315f82}
+.zone-ready{border-color:#2f684f}
+.zone-blocked{border-color:#6b333d}
+.zone-blocked button>span{color:#ef6672}
+.v5pk-registry-layout {
+  display:grid;
+  grid-template-columns:minmax(0,1.4fr) minmax(280px,.6fr);
+  gap:12px;
+  margin-top:10px;
+}
+.v5pk-catalog-detail {
+  height:max-content;
+  position:sticky;
+  top:88px;
+  border:1px solid #29435c;
+  background:#0a1725;
+  border-radius:9px;
+  padding:12px;
+}
+.v5pk-catalog-detail h2{margin:3px 0 10px}
+.v5pk-catalog-detail p{color:#9fb2c4}
+
+@media(max-width:900px){
+ .v5pk-village-scene,
+ .v5pk-registry-layout{grid-template-columns:1fr}
+ .v5pk-catalog-detail{position:static}
+}
