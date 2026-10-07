@@ -24,7 +24,7 @@ test('V5 reuses canonical data endpoints',()=>{
 })
 
 test('V5 preserves functional capabilities without legacy renderers',()=>{
- for(const x of ['<V5Pokemon/>','<V5Launchers/>',"workspaceArea==='launchers'","workspaceArea==='brody'","workspaceArea==='obsidure'","workspaceArea==='cli'","workspaceArea==='files'","view==='search'","worldZone==='layers'"])assert.ok(root.includes(x),x)
+ for(const x of ['<V5Pokemon/>','<V5Launchers/>',"workspaceArea==='launchers'","(['brody','obsidure','cli'] as const).includes(workspaceArea","workspaceArea==='files'","view==='search'","worldZone==='layers'"])assert.ok(root.includes(x),x)
  for(const x of ['sessionAction(\'run\'','sessionAction(\'input/\'','sessionAction(\'stop/\''])assert.ok(root.includes(x),x)
 })
 
