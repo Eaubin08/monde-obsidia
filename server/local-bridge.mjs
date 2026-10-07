@@ -224,24 +224,34 @@ function peripheryAgents(root){
   return modules.flatMap(module=>{try{const source=readFileSync(resolve(root,'periphery','agents',module+'.py'),'utf8');const id=source.match(/agent_id\s*=\s*["']([^"']+)["']/)?.[1];return id?[id]:[]}catch{return []}})
  }catch{return []}
 }
-function externalFamily(root,name,relativeRepo,agentFile,kind='agents'){
+function externalRepoCandidates(root,repoName,envPath){
+ return [
+  envPath,
+  resolve(root,'..',repoName),
+  resolve(homedir(),'Desktop',repoName),
+  resolve(homedir(),'Desktop','OBSIDIA_WORLDS','sources',repoName)
+ ].filter(Boolean)
+}
+function externalFamily(root,name,relativeRepo,agentFile,kind='agents',envPath=null){
  try{
-  const repo=resolve(root,'..',relativeRepo)
-  if(!existsSync(repo))return {id:name,label:name,sourceRepo:relativeRepo,localPresent:false,kind,agents:[]}
+  const candidates=externalRepoCandidates(root,relativeRepo,envPath)
+  const repo=candidates.find(p=>existsSync(p))
+  if(!repo)return {id:name,label:name,sourceRepo:relativeRepo,localPresent:false,kind,agents:[],sourceCandidates:candidates}
   const file=resolve(repo,agentFile)
   const agents=existsSync(file)?[...readFileSync(file,'utf8').matchAll(/agent_id\s*=\s*["']([^"']+)["']/g)].map(m=>m[1]):[]
-  return {id:name,label:name,sourceRepo:relativeRepo,localPresent:true,kind,agents}
+  return {id:name,label:name,sourceRepo:relativeRepo,sourceRoot:repo,localPresent:true,kind,agents}
  }catch{return {id:name,label:name,sourceRepo:relativeRepo,localPresent:false,kind,agents:[]}}
 }
 function agentFamilies(root){
  const sigma=sigmaDomains(root).map(d=>({id:'sigma:'+d.id,label:d.displayName,sourceRepo:'obsidia-x108-proofs',sourcePath:d.sourcePath,localPresent:d.runtimeFilePresent,kind:'sigma',agents:d.agents}))
  const periphery=peripheryAgents(root)
  const families=[...sigma,{id:'periphery',label:'Périphérie non souveraine',sourceRepo:'obsidia-x108-proofs',sourcePath:'periphery/agent_registry.py',localPresent:periphery.length>0,kind:'periphery',agents:periphery}]
- const trading=externalFamily(root,'trading-native','OBSIDIA_TRADING','native/agents/domains/trading_agents.py','external-runtime')
+ const trading=externalFamily(root,'trading-native','OBSIDIA_TRADING','native/agents/domains/trading_agents.py','external-runtime',process.env.OBSIDIA_TRADING_ROOT)
  trading.label='Trading native reference'
  families.push(trading)
- const gpsRoot=resolve(root,'..','obsidia-gps-defense-')
- families.push({id:'gps-physical',label:'GPS / Defense / Physical Signal',sourceRepo:'obsidia-gps-defense-',sourcePath:'evidence-pipeline/',localPresent:existsSync(gpsRoot),kind:'physical-workstream',agents:[]})
+ const gpsCandidates=externalRepoCandidates(root,'obsidia-gps-defense-',process.env.OBSIDIA_GPS_ROOT)
+ const gpsRoot=gpsCandidates.find(p=>existsSync(p))
+ families.push({id:'gps-physical',label:'GPS / Defense / Physical Signal',sourceRepo:'obsidia-gps-defense-',sourceRoot:gpsRoot||null,sourceCandidates:gpsRoot?undefined:gpsCandidates,sourcePath:'evidence-pipeline/',localPresent:!!gpsRoot,kind:'physical-workstream',agents:[]})
  return families
 }
 export function gitWorktrees(root){
