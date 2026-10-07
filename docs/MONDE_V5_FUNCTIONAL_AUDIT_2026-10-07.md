@@ -468,3 +468,34 @@ Checks source de ce passage : `16/16`.
 `tsconfig.app.json` inclut tout `src`.
 Les anciennes vues non actives restent donc compilées par TypeScript même si `main.tsx` charge uniquement `V5Root.tsx`.
 Aucune erreur source évidente n'a été identifiée dans les fichiers legacy inspectés, mais seule l'exécution de `npm run build` sur le fixe ferme définitivement ce risque.
+
+
+## Validation live P4 — 2026-10-07
+
+Etat observe sur le PC fixe apres chargement du GGUF local :
+
+- Kernel X108 : READY sur :3001.
+- API Obsidia/Brody : READY sur :8000.
+- Qwen texte local : READY sur :8080.
+- Qwen-VL : READY sur :8081.
+- Jarjar HUD : demarre.
+- mode clavier : observe via `JARJAR_INPUT_MODE: KEYBOARD`.
+- modele Qwen texte : decouvert depuis le GGUF local.
+- requete generale : routee vers Qwen avec reponse correcte.
+- requete projet Obsidia : routee vers Brody / Native Memory readonly.
+- decision authority : `KX108_ONLY`.
+- aucun fallback Qwen sur le test general final.
+
+Preuve live observee :
+```text
+JARJAR_QWEN_MODEL: discovered=C:\\Users\\Aubin\\Desktop\\MODELS\\QWEN\\qwen2.5-3b-instruct-q4_k_m.gguf
+JARJAR · QWEN> La capitale de l'Australie est Canberra.
+```
+
+Classification :
+`P4_QWEN_TEXT = FERME_LIVE`
+`P4_BRODY_ROUTE = FERME_LIVE`
+`P4_KERNEL_API = FERME_LIVE`
+`P4_VISION = RESTE_A_VALIDER_LIVE`
+
+Le seul test P4 restant est une requete visuelle reelle avec evidence image/screen/camera afin de confirmer la route Qwen-VL de bout en bout.
