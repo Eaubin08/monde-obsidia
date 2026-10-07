@@ -243,14 +243,23 @@ if ($qwenState -eq 'OFFLINE' -and -not (Port-Open 8080)) {
     }
     Start-Sleep -Seconds 1
     $launcher = Join-Path $Jarjar 'scripts\start_qwen_text.ps1'
-    $launchCommand = "& '" + $launcher.Replace("'","''") + "' *>> '" + $qwenTextLog.Replace("'","''") + "'"
-    $qwenServer = Start-Server 'QWEN TEXT RETRY' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-Command',$launchCommand) $Jarjar
-    $qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 12
+    $nativeLog = Join-Path $obsidiaLocal 'jarjar_qwen_text_llama.log'
+    Remove-Item -LiteralPath $nativeLog -Force -ErrorAction SilentlyContinue
+    $launchCommand = "& '" + $launcher.Replace("'","''") + "' -CpuOnly -LogFile '" + $nativeLog.Replace("'","''") + "' *>> '" + $qwenTextLog.Replace("'","''") + "'"
+    $qwenServer = Start-Server 'QWEN TEXT RETRY CPU' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-Command',$launchCommand) $Jarjar
+    $qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 20
 }
 
-if ($qwenState -eq 'OFFLINE' -and (Test-Path -LiteralPath $qwenTextLog)) {
+if ($qwenState -eq 'OFFLINE') {
     Write-Host '[QWEN TEXT] Dernieres lignes du diagnostic :' -ForegroundColor Yellow
-    Get-Content -LiteralPath $qwenTextLog -Tail 20 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
+    if (Test-Path -LiteralPath $qwenTextLog) {
+        Get-Content -LiteralPath $qwenTextLog -Tail 20 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
+    }
+    $nativeLog = Join-Path $obsidiaLocal 'jarjar_qwen_text_llama.log'
+    if (Test-Path -LiteralPath $nativeLog) {
+        Write-Host '[QWEN TEXT] Diagnostic llama.cpp :' -ForegroundColor Yellow
+        Get-Content -LiteralPath $nativeLog -Tail 30 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
+    }
 }
 
 $qwenReady = ($qwenState -eq 'READY')
