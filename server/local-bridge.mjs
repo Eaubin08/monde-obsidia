@@ -133,8 +133,14 @@ function jarjarObservedStatus(){
    if(Date.now()-stat.mtimeMs<10000)telemetry=JSON.parse(readFileSync(path,'utf8'))
   }
  }catch{}
+ let qwenTextDiagnostic=''
+ try{
+  const local=process.env.LOCALAPPDATA||resolve(homedir(),'AppData','Local')
+  const log=resolve(local,'Obsidia','jarjar_qwen_text.log')
+  if(existsSync(log))qwenTextDiagnostic=readFileSync(log,'utf8').trim().split(/\r?\n/).slice(-8).join('\n')
+ }catch{}
  return {
-  state,components,managed:!!managed,sessionId:managed?.[0]||null,
+  state,components,managed:!!managed,sessionId:managed?.[0]||null,qwenTextDiagnostic,
   decisionAuthority:telemetry?.decision_authority||'KX108_ONLY',
   inputMode:telemetry?.mode||null,
   hudState:telemetry?.hud_state||null,
