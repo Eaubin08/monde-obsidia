@@ -68,7 +68,28 @@ function Stop-CanonicalQwenText {
         $line -match 'llama-server(?:\.exe)?' -and
         $line -match '(?:--port\s+|--port=)8080\b'
     )
-    $recognizedByExecutable = $processName -match '^llama-server
+    $recognizedByExecutable = ($processName -eq 'llama-server')
+
+    if (-not ($recognizedByCommand -or $recognizedByExecutable)) {
+        Write-Host "[QWEN TEXT] PID=$pidValue process=$processName" -ForegroundColor Yellow
+        if ($line) {
+            Write-Host "[QWEN TEXT] CommandLine=$line" -ForegroundColor DarkYellow
+        }
+        throw "Port 8080 occupe par un processus non reconnu. Aucun arret automatique effectue. PID=$pidValue"
+    }
+
+    Write-Host "[QWEN TEXT] Redemarrage propre du llama-server existant PID=$pidValue process=$processName" -ForegroundColor Yellow
+    taskkill.exe /PID $pidValue /T /F | Out-Null
+
+    $deadline = (Get-Date).AddSeconds(10)
+    while ((Get-Date) -lt $deadline -and (Port-Open 8080)) {
+        Start-Sleep -Milliseconds 200
+    }
+
+    if (Port-Open 8080) {
+        throw 'Impossible de liberer le port 8080.'
+    }
+}
 
 function Resolve-Executable([string]$FilePath) {
     if (Test-Path -LiteralPath $FilePath) { return (Resolve-Path -LiteralPath $FilePath).Path }
