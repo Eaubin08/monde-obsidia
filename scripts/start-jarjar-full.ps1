@@ -195,10 +195,12 @@ if (-not (Test-Path -LiteralPath (Join-Path $KernelDir 'node_modules\express')))
 } else { Write-Host '[1/6] Dependances Kernel deja presentes.' -ForegroundColor DarkGray }
 
 if (-not (Port-Open 3001)) {
-    Write-Host '[2/6] Demarrage Kernel X108 :3001...' -ForegroundColor Cyan
-    $kernelServer = Start-Server 'KERNEL X108' 'node.exe' @('.\server.kernel.sealed.cjs') $KernelDir
-} else { Write-Host '[2/6] Kernel X108 deja actif.' -ForegroundColor DarkGray }
-$null = Wait-Service 3001 'KERNEL X108' $kernelServer 60
+    Write-Host '[2/6] Kernel X108 OFFLINE :3001' -ForegroundColor Red
+    Write-Host 'Lance Kernel depuis Monde > Workspace > Lancements pour ouvrir le terminal colore valide.' -ForegroundColor Yellow
+    throw 'Kernel X108 doit etre lance depuis Monde avant Jarjar.'
+}
+Write-Host '[2/6] Kernel X108 deja actif. Reutilisation de :3001.' -ForegroundColor Green
+$null = Wait-Service 3001 'KERNEL X108' $null 10
 
 $ObsidiaPython = @(
     (Join-Path $Obsidia '.venv\Scripts\python.exe'),
@@ -211,12 +213,12 @@ if (-not $ObsidiaPython) {
 }
 
 if (-not (Port-Open 8000)) {
-    Write-Host '[3/6] Demarrage API Obsidia/Brody :8000...' -ForegroundColor Cyan
-    $env:PYTHONPATH = $Obsidia
-    $env:OBSIDIA_KERNEL_URL = 'http://127.0.0.1:3001/kernel/ragnarok'
-    $apiServer = Start-Server 'OBSIDIA API/BRODY' $ObsidiaPython @('-m','uvicorn','apps.obsidia_api.main:app','--host','127.0.0.1','--port','8000') $Obsidia
-} else { Write-Host '[3/6] API Obsidia/Brody deja active.' -ForegroundColor DarkGray }
-$null = Wait-Service 8000 'OBSIDIA API/BRODY' $apiServer 120
+    Write-Host '[3/6] API Obsidia/Brody OFFLINE :8000' -ForegroundColor Red
+    Write-Host 'Lance API depuis Monde > Workspace > Lancements pour ouvrir le terminal colore valide.' -ForegroundColor Yellow
+    throw 'API Obsidia/Brody doit etre lancee depuis Monde avant Jarjar.'
+}
+Write-Host '[3/6] API Obsidia/Brody deja active. Reutilisation de :8000.' -ForegroundColor Green
+$null = Wait-Service 8000 'OBSIDIA API/BRODY' $null 10
 
 $qwenServer = $null
 $qwenReady = $true
