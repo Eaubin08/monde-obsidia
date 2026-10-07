@@ -367,3 +367,55 @@ Ces validations restent à exécuter en fin de téléchargement Qwen.
   - Un repo lisible sans runtime affiche désormais `Sources disponibles / Runtime core non prêt`.
 
 Quick checks source après ce passage : `20/20` invariants critiques présents.
+
+
+### Réaudit source — passage 3
+
+Nouveaux défauts trouvés et corrigés :
+
+- `POKEMON_AVAILABLE_INACTIVE_OVERLAP` : CORRIGE
+  - les agents déclarés non locaux/inactifs ne sont plus comptés simultanément comme disponibles.
+
+- `QWEN_LOCAL_MODEL_HANDOFF` : CORRIGE_SOURCE
+  - le launcher Jarjar préfère désormais :
+    1. `OBSIDIA_QWEN_TEXT_MODEL` si fourni ;
+    2. `%USERPROFILE%\Desktop\MODELS\QWEN\qwen2.5-3b-instruct-q4_k_m.gguf` si le fichier complet est présent ;
+    3. Hugging Face seulement sinon.
+  - cela évite de retélécharger Qwen après le téléchargement manuel actuel.
+
+- `BRODY_API_FOREIGN_PORT` : CORRIGE
+  - un simple port 8000 ouvert n'est plus `ready=true`.
+  - l'identité `service=obsidia-api` doit être confirmée.
+  - un service étranger sur 8000 est refusé.
+
+- `KERNEL_API_PORT_ONLY_READY` : CORRIGE
+  - Kernel 3001 et API 8000 ne sont plus déclarés READY sur simple port ouvert.
+  - le propriétaire du port doit correspondre au process canonique attendu.
+  - Jarjar refuse un prérequis sur port occupé par un process non canonique.
+
+- `OBSIDURE_DRY_FALSE_POSITIVE` : CORRIGE
+  - `Obsidure DryRun` exige maintenant `run_agent_obsidure.ps1` avec `-DryRun`.
+
+- `JARJAR_SELF_PROCESS_FALSE_POSITIVE` : CORRIGE
+  - la sonde PowerShell exclut son propre PID avant de rechercher `scripts.run_jarjar_live`.
+
+- `QWEN_PORT_ONLY_READY` : CORRIGE
+  - Qwen texte READY exige maintenant un `llama-server --port 8080`.
+  - Qwen-VL READY exige maintenant un `llama-server --port 8081`.
+
+Vérification heartbeat :
+- observer : heartbeat toutes les 1 seconde ;
+- Monde : LIVE si événement < 5 secondes ;
+- marge cohérente, aucun défaut source identifié ici.
+
+### Reste live-only
+
+Le réaudit source ne peut pas prouver sans exécution Windows :
+- que les processus réels ont exactement les lignes de commande attendues après pull ;
+- que les ports 3001/8000/8080/8081 sont tous détectés correctement sur le fixe ;
+- que le GGUF téléchargé se charge complètement ;
+- que `/v1/chat/completions` répond réellement ;
+- que le routage réel choisit Qwen/Brody/Vision comme prévu ;
+- que build + tests TypeScript passent dans l'environnement local.
+
+Ces points restent réservés au test live final.
