@@ -365,7 +365,8 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  }
  const tool=data.tool||'obsidure';if(!['obsidure','brody','cli'].includes(tool))throw Error('Outil inconnu');const mode=data.mode;if(!['audit','audit-long','interactive'].includes(mode)|| (tool!=='obsidure'&&mode!=='interactive'))throw Error('Mission inconnue');
  if([...processes.entries()].some(([sid,p])=>p.active&&!p.native&&p.tool===tool&&liveSnapshot().sessions.find(s=>s.sessionId===sid)?.presence!=='ended'))throw Error('Une session interface est déjà en cours : arrête-la ou attends sa fin');
- if(launching.has(tool))throw Error('Cet outil est déjà en cours de lancement');launchKey=tool;launching.add(tool);
+ const interfaceLaunchKey='interface:'+tool;
+ if(launching.has(interfaceLaunchKey))throw Error('Cette session interface est déjà en cours de lancement');launchKey=interfaceLaunchKey;launching.add(interfaceLaunchKey);
  const root=realpathSync(repository());const session=randomUUID();
  contained(root,launchers[tool]);
  const args=[observer,'--repo',root,'--output',liveDirectory,'--agent',tool,'--session',session];
@@ -428,8 +429,14 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   const p={pid,active:true,output:'',exitCode:null,native:true,surface:'terminal',tool:id,title};processes.set(session,p)
   res.end(JSON.stringify({opened:true,tool:id,sessionId:session,pid,repository:jr,launcher:master}));return
  }
- const file=launchers[id];if(!file)throw Error('Outil non raccordé');if(launching.has(id))throw Error('Cet outil est déjà en cours de lancement');launchKey=id;launching.add(id);const root=realpathSync(repository());contained(root,file);
- for(const [session,p] of processes){if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}if(p.active&&p.tool===id){if(!p.native)throw Error('Une session de cet outil est active dans la page. La sélectionner ou l’arrêter avant d’ouvrir un terminal.');const live=liveSnapshot().sessions.find(s=>s.sessionId===session);if(live?.presence==='ended')continue;await focusTerminal(p.title,p.pid);res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return}}
+ const file=launchers[id];if(!file)throw Error('Outil non raccordé');const terminalLaunchKey='terminal:'+id;if(launching.has(terminalLaunchKey))throw Error('Ce terminal est déjà en cours de lancement');launchKey=terminalLaunchKey;launching.add(terminalLaunchKey);const root=realpathSync(repository());contained(root,file);
+ for(const [session,p] of processes){
+  if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}
+  if(p.active&&p.native&&p.tool===id){
+   const live=liveSnapshot().sessions.find(s=>s.sessionId===session);if(live?.presence==='ended')continue
+   await focusTerminal(p.title,p.pid);res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return
+  }
+ }
  const wrapper=observer,session=randomUUID(),title='OBSIDIA · '+id+' · '+session.slice(0,8);
  const pythonArgs=[wrapper,'--repo',root,'--output',liveDirectory,'--agent',id,'--session',session];
  const command=terminalCommand(root,title,pythonFor(root),pythonArgs);
