@@ -280,8 +280,16 @@ function canonicalPortOwner(id,pid){
  const line=processCommandLine(pid)
  if(!line)return false
  if(id==='kernel-x108')return /server\.kernel\.sealed\.cjs/i.test(line)
- if(id==='obsidia-api')return /uvicorn/i.test(line)&&/apps\.obsidia_api\.main:app/i.test(line)&&/(--port\s+8000|--port=8000)/i.test(line)
+ if(id==='obsidia-api')return /uvicorn/i.test(line)&&/apps\.obsidia_api\.main:app/i.test(line)
  return false
+}
+async function canonicalApiEndpoint(){
+ try{
+  const r=await fetch('http://127.0.0.1:8000/',{signal:AbortSignal.timeout(1500)})
+  if(!r.ok)return false
+  const d=await r.json()
+  return d?.service==='obsidia-api'
+ }catch{return false}
 }
 async function releaseFrozenServicePort(id){
  const port=id==='kernel-x108'?3001:id==='obsidia-api'?8000:null
@@ -298,7 +306,8 @@ async function releaseFrozenServicePort(id){
 
  let pid=listeningPid(port)
  if(!pid)return
- if(!canonicalPortOwner(id,pid))throw Error(`Port ${port} déjà occupé par un processus non reconnu. Aucun arrêt automatique effectué.`)
+ const recognized=id==='obsidia-api'?(await canonicalApiEndpoint()||canonicalPortOwner(id,pid)):canonicalPortOwner(id,pid)
+ if(!recognized)throw Error(`Port ${port} déjà occupé par un processus non reconnu. Aucun arrêt automatique effectué.`)
  try{
   execFileSync('taskkill.exe',['/PID',String(pid),'/T','/F'],{encoding:'utf8',timeout:10000,windowsHide:true})
  }catch{
