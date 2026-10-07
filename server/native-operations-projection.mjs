@@ -101,8 +101,12 @@ export function readNativeOperationalEvidence(sourceRootOverride=null,opsRootOve
     const state=safeJson(resolve(entityRoot,'state.json'))
     if(state){
      const canonicalEntityId=
-      state.task_id||state.record_id||state.followup_id||
-      state.interaction_id||state.relationship_id||entityId
+      domain==='native_tasks'&&kind==='task'?state.task_id:
+      domain==='native_crm'&&kind==='record'?state.record_id:
+      domain==='native_crm'&&kind==='followup'?state.followup_id:
+      domain==='native_crm'&&kind==='interaction'?state.interaction_id:
+      domain==='native_crm'&&kind==='relationship'?state.relationship_id:
+      entityId
      entities.push({
       domain_id:domain,
       entity_kind:kind,
