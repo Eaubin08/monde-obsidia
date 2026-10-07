@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react'
 
-type Session={sessionId:string;agentId:string;name:string;presence:'live'|'unknown'|'ended';nativeService?:boolean;observedState?:'READY'|'STARTING'|'OFFLINE';objective?:string|null;message?:string}
+type Session={sessionId:string;agentId:string;name:string;presence:'live'|'unknown'|'ended';nativeService?:boolean;observedState?:'READY'|'STARTING'|'OFFLINE';objective?:string|null;message?:string;source?:string}
 type State={sessions:Session[]}
 type JarjarStatus={state:'OFFLINE'|'STARTING'|'READY'|'DEGRADED';managed:boolean;decisionAuthority:string;inputMode:string|null;cognitionSource:string;components:{kernel:{ready:boolean};brodyApi:{ready:boolean};qwenText:{ready:boolean};qwenVL:{ready:boolean};hud:{ready:boolean}}}
 
@@ -42,6 +42,7 @@ export default function V5Launchers(){
   }catch(e){setMessage(String(e))}finally{setLaunching('')}
  }
  const stopJarjar=async()=>{setLaunching('jarjar');try{const r=await fetch('/obsidia-local/jarjar/stop',{method:'POST'});if(!r.ok)throw Error('Arrêt impossible');setMessage('Jarjar arrêté')}catch(e){setMessage(String(e))}finally{setLaunching('')}}
+ const isManagedTerminal=(s?:Session)=>!!s&&s.nativeService&&!!s.sessionId&&!s.sessionId.startsWith('observed-')
 
  return <section className="v5-launchers">
   <header className="v5-launchers-head"><div><small>WORKSPACE / RUNTIME</small><h2>Lancements</h2><p>Démarrer les agents, outils et services sans mélanger le runtime avec leur travail dans Pokémon.</p></div>{message&&<strong>{message}</strong>}</header>
@@ -61,7 +62,7 @@ export default function V5Launchers(){
 
    <section>
     <header><small>SERVICES SYSTÈME</small><h3>Runtime et domaines</h3></header>
-    <div className="v5pk-launch-grid">{launchable.filter(x=>x[2]==='service').map(([id,label])=>{const svc=native.find(s=>s.agentId===id);const status=svc?.observedState||'OFFLINE';return <article key={id} className={status==='READY'?'active':status==='STARTING'?'starting':'ready'}><div><strong>{label}</strong><span>{status}</span></div><p>{status==='READY'?'Service observé actif':status==='STARTING'?'Démarrage en cours':'Arrêté / non observé'}</p><div className="v5pk-actions"><button disabled={launching===id} onClick={()=>launch(id)}>{status==='READY'?'Ouvrir / lancer':'Lancer'}</button>{svc&&<button onClick={()=>focus('session:'+svc.sessionId)}>Contexte</button>}</div></article>})}</div>
+    <div className="v5pk-launch-grid">{launchable.filter(x=>x[2]==='service').map(([id,label])=>{const svc=native.find(s=>s.agentId===id);const status=svc?.observedState||'OFFLINE';const managed=isManagedTerminal(svc);return <article key={id} className={status==='READY'?'active':status==='STARTING'?'starting':'ready'}><div><strong>{label}</strong><span>{status}</span></div><p>{status==='READY'?(managed?'Terminal Monde actif':'Service actif hors terminal Monde'):status==='STARTING'?'Démarrage en cours':'Arrêté / non observé'}</p><div className="v5pk-actions">{status==='READY'&&!managed?<button disabled title="Le service utilise déjà son port hors de Monde. Arrête cette instance avant de lancer le terminal coloré validé.">Déjà actif hors Monde</button>:<button disabled={launching===id||status==='STARTING'} onClick={()=>launch(id)}>{managed?'Rouvrir terminal':'Lancer terminal'}</button>}{svc&&<button onClick={()=>focus('session:'+svc.sessionId)}>Contexte</button>}</div></article>})}</div>
    </section>
   </div>
 
