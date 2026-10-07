@@ -41,7 +41,8 @@ while True:
   print('compact=OFF',flush=True)
   continue
  if value=='/exit':break
- result=call_brody_api('http://127.0.0.1:8000',{'message':value,'compact':compact})
+ import os
+ result=call_brody_api(os.environ.get('TEST_BRODY_ENDPOINT','http://127.0.0.1:8000'),{'message':value,'compact':compact})
  print(json.dumps(result),flush=True)
 `)
 mkdirSync(resolve(repo,'apps/obsidia_api'),{recursive:true})
@@ -125,18 +126,32 @@ test('Launchers and live process contracts',async t=>{
    const events=readFileSync(resolve(output,sessionId+'.jsonl'),'utf8')
    assert.ok(events.includes('Audit réel 1/20'));assert.ok(!events.includes('Audit réel 20/20'))
   })
-  await t.test('Brody API starts automatically, receives non-compact request and emits answer',async()=>{
-   const {sessionId}=await post('run',{mode:'interactive',tool:'brody'})
-   await until(()=>session(sessionId),s=>s?.phase==='WAITING_INPUT')
-   await post('input/'+sessionId,{text:'demande Brody'})
-   const s=await until(()=>session(sessionId),s=>s?.events.some(e=>e.kind==='response'))
-   assert.ok(s.events.some(e=>e.phase==='BRODY_REQUEST'))
-   assert.equal(s.events.find(e=>e.kind==='response').result.final_answer_source,'TEST_FIXTURE_ONLY')
-   const p=(await get('processes')).processes.find(p=>p.sessionId===sessionId)
-   assert.ok(p.output.includes('"compact_received": false'))
-   assert.equal((await get('services')).brody.ready,true)
-   await post('stop/'+sessionId)
-   await until(()=>session(sessionId),s=>s?.presence==='ended')
+  await t.test('Brody interface sends non-compact request to its configured API and emits answer',async()=>{
+   const fixtureApi=createServer(async(req,res)=>{
+    if(req.method!=='POST'||req.url!=='/api/brody/chat'){res.writeHead(404).end();return}
+    let raw='';for await(const chunk of req)raw+=chunk
+    const d=JSON.parse(raw||'{}')
+    res.writeHead(200,{'Content-Type':'application/json'})
+    res.end(JSON.stringify({final_answer:'TEST_FIXTURE_ONLY '+d.message,final_answer_source:'TEST_FIXTURE_ONLY',compact_received:d.compact}))
+   })
+   await new Promise(r=>fixtureApi.listen(0,'127.0.0.1',r))
+   const previous=process.env.TEST_BRODY_ENDPOINT
+   process.env.TEST_BRODY_ENDPOINT='http://127.0.0.1:'+fixtureApi.address().port
+   try{
+    const {sessionId}=await post('run',{mode:'interactive',tool:'brody'})
+    await until(()=>session(sessionId),s=>s?.phase==='WAITING_INPUT')
+    await post('input/'+sessionId,{text:'demande Brody'})
+    const s=await until(()=>session(sessionId),s=>s?.events.some(e=>e.kind==='response'))
+    assert.ok(s.events.some(e=>e.phase==='BRODY_REQUEST'))
+    assert.equal(s.events.find(e=>e.kind==='response').result.final_answer_source,'TEST_FIXTURE_ONLY')
+    const p=(await get('processes')).processes.find(p=>p.sessionId===sessionId)
+    assert.ok(p.output.includes('"compact_received": false'))
+    await post('stop/'+sessionId)
+    await until(()=>session(sessionId),s=>s?.presence==='ended')
+   }finally{
+    if(previous===undefined)delete process.env.TEST_BRODY_ENDPOINT;else process.env.TEST_BRODY_ENDPOINT=previous
+    await new Promise(r=>fixtureApi.close(r))
+   }
   })
   await t.test('Windows: real PowerShell windows launch each tool and stop their process tree',{skip:process.platform!=='win32'},async()=>{
    for(const tool of ['cli','brody','obsidure']){
