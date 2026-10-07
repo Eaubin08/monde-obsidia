@@ -328,6 +328,38 @@ async function releaseFrozenServicePort(id){
  }
  throw Error(`Le processus Obsidia précédent sur le port ${port} ne s'est pas arrêté.`)
 }
+async function waitLocalPort(port,label,timeoutMs=20000){
+ const deadline=Date.now()+timeoutMs
+ while(Date.now()<deadline){
+  if(listeningPid(port))return
+  await new Promise(r=>setTimeout(r,250))
+ }
+ throw Error(label+' non prêt sur le port '+port)
+}
+async function ensureJarjarPrerequisite(id,root){
+ const port=id==='kernel-x108'?3001:id==='obsidia-api'?8000:null
+ if(!port)throw Error('Pré-requis Jarjar inconnu : '+id)
+ if(listeningPid(port))return {reused:true,port}
+
+ for(const [session,p] of processes){
+  if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}
+  if(p.active&&p.native&&p.tool===id){
+   await waitLocalPort(port,id,20000)
+   return {reused:true,port,sessionId:session}
+  }
+ }
+
+ const spec=nativeServiceSpec(id,root)
+ if(!spec)throw Error('Service pré-requis non raccordé : '+id)
+ const session=randomUUID(),title='OBSIDIA · '+spec.title+' · '+session.slice(0,8)
+ emitNativeService(session,id,spec.title,root)
+ const command=`$host.UI.RawUI.WindowTitle='${title.replaceAll("'","''")}'; ${spec.command}`
+ const pid=await launchTerminal(command)
+ processes.set(session,{pid,active:true,output:'',exitCode:null,native:true,surface:'terminal',tool:id,title})
+ await waitLocalPort(port,id,20000)
+ return {opened:true,port,sessionId:session,pid}
+}
+
 function markEnd(id,message){try{const log=resolve(liveDirectory,id+'.jsonl'),last=JSON.parse(readFileSync(log,'utf8').trim().split('\n').at(-1));if(last.kind!=='session_end')appendFileSync(log,JSON.stringify({...last,timestamp:new Date().toISOString(),kind:'session_end',phase:'PROCESS_EXIT',status:'error',exitCode:null,message})+'\n')}catch{}}
 
 async function awaitObserver(id,p){
@@ -423,6 +455,9 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  }
  if(id==='jarjar'){
   if(launching.has(id))throw Error('Jarjar est déjà en cours de lancement');launchKey=id;launching.add(id)
+  const root=realpathSync(repository())
+  await ensureJarjarPrerequisite('kernel-x108',root)
+  await ensureJarjarPrerequisite('obsidia-api',root)
   const jr=jarjarRoot()
   if(!existsSync(jr))throw Error('Repo Jarjar absent. Candidats : '+jarjarRootCandidates().join(' | '))
   if(!existsSync(resolve(jr,jarjarModuleFile)))throw Error('Launcher Jarjar absent : '+resolve(jr,jarjarModuleFile))
