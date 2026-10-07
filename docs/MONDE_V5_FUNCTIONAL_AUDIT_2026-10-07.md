@@ -499,3 +499,38 @@ Classification :
 `P4_VISION = RESTE_A_VALIDER_LIVE`
 
 Le seul test P4 restant est une requete visuelle reelle avec evidence image/screen/camera afin de confirmer la route Qwen-VL de bout en bout.
+
+
+## P4 vision / voix — réaudit live après premier test réel
+
+Premier test réel :
+`Regarde mon écran et dis-moi ce que tu vois.`
+
+Résultat observé :
+`BRODY/OBSIDIA/FALLBACK[VISION_AND_QWEN_UNAVAILABLE]`
+
+Constats :
+- Qwen-VL : port 8081 READY, mais la route vision n'a pas produit de réponse.
+- OpenCV : erreurs MSMF sur indices caméra configurés.
+- la timeline live pouvait échouer entièrement lorsqu'une caméra levait une exception, même si une capture écran valide existait déjà.
+- le provider vision masquait ses exceptions dans le router.
+- Qwen-VL utilisait encore un identifiant de modèle codé en dur au lieu de découvrir le modèle exposé par llama-server.
+- la capture voix a atteint le plafond historique de 120 s, preuve que le seuil silence par défaut était trop permissif pour le micro-casque / bruit ambiant.
+- le HUD pouvait rester visuellement vert car LISTENING pouvait écraser THINKING/SPEAKING lors de concurrence clavier/voix.
+
+Correctifs Jarjar posés sur `fix/qwen-live-main-20261007` :
+- caméra fail-soft par slot ;
+- erreurs vision visibles dans le terminal ;
+- Qwen-VL découvre son modèle via `/v1/models` ;
+- indices caméra par défaut élargis 0,1,2,3 ;
+- durée max utterance : 20 s par défaut ;
+- seuil RMS par défaut : 650 ;
+- protection des états HUD THINKING/SPEAKING contre un reset LISTENING prématuré.
+
+Classification actuelle :
+`P4_QWEN_TEXT = FERME_LIVE`
+`P4_BRODY_ROUTE = FERME_LIVE`
+`P4_KERNEL_API = FERME_LIVE`
+`P4_VISION = CORRIGE_SOURCE / A_REVALIDER_LIVE`
+`P4_VOICE_BOUNDARY = CORRIGE_SOURCE / A_REVALIDER_LIVE`
+`P4_HUD_STATE_COLORS = CORRIGE_SOURCE / A_REVALIDER_LIVE`
