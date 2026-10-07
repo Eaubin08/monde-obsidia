@@ -252,6 +252,106 @@ export function buildObsidiaState(snapshot,live){
   mission.decisionAuthority='KX108_ONLY'
   mission.status=mission.impactRefs.length?'IMPACT_PROVED':mission.receiptRefs.length?'RECEIPT_OBSERVED':mission.decisionRecordRefs.length?'DECISION_OBSERVED':'OBSERVED'
  }
+ const native=snapshot?.nativeOperationalEvidence
+ for(const s of native?.sources||[]){
+  const id=stable('native_source',s.source_id)
+  entities.push({
+   id,kind:'native_source',label:s.source_id,source:'native_source_runtime',
+   sourceId:s.source_id,sourceKind:s.source_kind,provider:s.provider,
+   registrationHash:s.registration_hash,capabilities:s.capabilities,
+   active:s.active,readonly:s.readonly,
+   externalMutationAllowed:s.external_mutation_allowed,
+   decisionAuthority:s.decision_authority,observedAt:s.registered_at
+  })
+  relations.push({from:'obsidia',type:'HAS_NATIVE_SOURCE',to:id})
+ }
+ for(const o of native?.observations||[]){
+  const id=stable('source_observation',o.observation_id)
+  entities.push({
+   id,kind:'source_observation',label:o.observation_id,source:'native_source_runtime',
+   observationId:o.observation_id,observationHash:o.observation_hash,
+   sourceId:o.source_id,sourceKind:o.source_kind,provider:o.provider,
+   registrationHash:o.registration_hash,
+   contentSha256:o.content_sha256,metadataSha256:o.metadata_sha256,
+   decisionAuthority:o.decision_authority,observedAt:o.observed_at
+  })
+  relations.push(
+   {from:stable('native_source',o.source_id),type:'OBSERVES',to:id},
+   {from:'obsidia',type:'HAS_SOURCE_OBSERVATION',to:id}
+  )
+ }
+ for(const p of native?.packets||[]){
+  const id=stable('source_packet',p.packet_id)
+  entities.push({
+   id,kind:'source_packet',label:p.packet_id,source:'native_source_runtime',
+   packetId:p.packet_id,packetHash:p.packet_hash,sourceId:p.source_id,
+   sourceKind:p.source_kind,provider:p.provider,
+   registrationHash:p.registration_hash,observationId:p.observation_id,
+   observationHash:p.observation_hash,contentSha256:p.content_sha256,
+   metadataSha256:p.metadata_sha256,provenanceComplete:p.provenance_complete,
+   decisionAuthority:p.decision_authority,observedAt:p.observed_at
+  })
+  relations.push(
+   {from:stable('source_observation',p.observation_id),type:'PRODUCES_SOURCE_PACKET',to:id},
+   {from:stable('native_source',p.source_id),type:'HAS_SOURCE_PACKET',to:id}
+  )
+ }
+ for(const n of native?.entities||[]){
+  const state=n.state||{}
+  let kind='native_entity',label=n.entity_id
+  if(n.domain_id==='native_tasks'&&n.entity_kind==='task'){kind='task';label=state.title||n.entity_id}
+  else if(n.domain_id==='native_crm'&&n.entity_kind==='record'){kind='crm_record';label=state.display_label||n.entity_id}
+  else if(n.domain_id==='native_crm'&&n.entity_kind==='followup'){kind='followup';label=state.followup_id||n.entity_id}
+  else if(n.domain_id==='native_crm'&&n.entity_kind==='interaction'){kind='crm_interaction';label=state.interaction_type||n.entity_id}
+  else if(n.domain_id==='native_crm'&&n.entity_kind==='relationship'){kind='crm_relationship';label=state.relation_type||n.entity_id}
+  const id=stable(kind,n.entity_id)
+  entities.push({
+   id,kind,label,source:'native_ops',domainId:n.domain_id,
+   entityKind:n.entity_kind,entityId:n.entity_id,state,
+   status:state.status||state.lifecycle_status||null,
+   observedAt:state.updated_at||state.created_at||null,
+   decisionAuthority:'KX108_ONLY'
+  })
+  relations.push({from:'obsidia',type:'HAS_NATIVE_OPERATIONAL_ENTITY',to:id})
+  if(kind==='followup'){
+   if(state.record_id)relations.push({from:stable('crm_record',state.record_id),type:'HAS_FOLLOWUP',to:id})
+   if(state.task_ref)relations.push({from:id,type:'LINKS_TASK',to:stable('task',state.task_ref)})
+  }
+  if(kind==='crm_interaction'&&state.record_id)relations.push({from:stable('crm_record',state.record_id),type:'HAS_INTERACTION',to:id})
+  if(kind==='crm_relationship'){
+   if(state.from_record_id)relations.push({from:stable('crm_record',state.from_record_id),type:'RELATIONSHIP_OUT',to:id})
+   if(state.to_record_id)relations.push({from:id,type:'RELATIONSHIP_TO',to:stable('crm_record',state.to_record_id)})
+  }
+ }
+ for(const r of native?.receipts||[]){
+  const id=stable('native_receipt',r.receipt_id)
+  entities.push({
+   id,kind:'native_receipt',label:r.operation||r.receipt_id,source:'native_ops',
+   receiptId:r.receipt_id,receiptHash:r.receipt_hash,domainId:r.domain_id,
+   entityKind:r.entity_kind,entityId:r.entity_id,operation:r.operation,
+   mutationId:r.mutation_id,mutationHash:r.mutation_hash,
+   worldActionRequestHash:r.world_action_request_hash,
+   kx108DecisionRecordId:r.kx108_decision_record_id,
+   kx108DecisionRecordHash:r.kx108_decision_record_hash,
+   beforeStateHash:r.before_state_hash,afterStateHash:r.after_state_hash,
+   version:r.version,decisionAuthority:r.decision_authority,observedAt:r.created_at
+  })
+  const stateKind=r.domain_id==='native_tasks'&&r.entity_kind==='task'?'task':
+   r.domain_id==='native_crm'&&r.entity_kind==='record'?'crm_record':
+   r.domain_id==='native_crm'&&r.entity_kind==='followup'?'followup':
+   r.domain_id==='native_crm'&&r.entity_kind==='interaction'?'crm_interaction':
+   r.domain_id==='native_crm'&&r.entity_kind==='relationship'?'crm_relationship':'native_entity'
+  relations.push(
+   {from:stable(stateKind,r.entity_id),type:'HAS_NATIVE_RECEIPT',to:id},
+   {from:'obsidia',type:'HAS_NATIVE_RECEIPT',to:id}
+  )
+  if(r.kx108_decision_record_id)relations.push({
+   from:stable('decision_record',r.kx108_decision_record_id),
+   type:'AUTHORIZES_NATIVE_RECEIPT',
+   to:id
+  })
+ }
+
  for(const p of snapshot?.proposals||[]){
   const proposalId=stable('proposal',p.id)
   entities.push({id:proposalId,kind:'proposal',label:p.id,path:p.path,observedAt:p.observedAt,source:'_PATCH_PROPOSALS'})
@@ -279,12 +379,12 @@ export function buildObsidiaState(snapshot,live){
    allowedToDecide:false,
    allowedToAct:false
   },
-  sourceSchemas:['Event Schema Obsidia V4 (reference)','OBSIDIA_VISUAL_EVENT_V1 (runtime observation)','Git repository snapshot'],
+  sourceSchemas:['Event Schema Obsidia V4 (reference)','OBSIDIA_VISUAL_EVENT_V1 (runtime observation)','Git repository snapshot','OBSIDIA_NATIVE_SOURCE_*_V0','NATIVE_MUTATION_RECEIPT_V0'],
   observedAt:live?.observedAt||snapshot?.observedAt||new Date().toISOString(),
   entities,relations,sessions,missions,agentFamilies:snapshot?.agentFamilies||[],
   views:{
-   world:{question:'OÙ ?',entityRefs:entities.filter(e=>['ecosystem','repository','domain','agent','session','proposal','receipt','objective','result','artifact','decision','decision_record','sealed_receipt','rollback_evidence','impact','mission'].includes(e.kind)).map(e=>e.id)},
-   workspace:{question:'QUOI ?',entityRefs:entities.filter(e=>['repository','domain','proposal','receipt','session','objective','result','artifact','decision','decision_record','sealed_receipt','rollback_evidence','impact','mission'].includes(e.kind)).map(e=>e.id)},
+   world:{question:'OÙ ?',entityRefs:entities.filter(e=>['ecosystem','repository','domain','agent','session','proposal','receipt','objective','result','artifact','decision','decision_record','sealed_receipt','rollback_evidence','impact','mission','native_source','source_observation','source_packet','crm_record','task','followup','crm_interaction','crm_relationship','native_receipt'].includes(e.kind)).map(e=>e.id)},
+   workspace:{question:'QUOI ?',entityRefs:entities.filter(e=>['repository','domain','proposal','receipt','session','objective','result','artifact','decision','decision_record','sealed_receipt','rollback_evidence','impact','mission','native_source','source_observation','source_packet','crm_record','task','followup','crm_interaction','crm_relationship','native_receipt'].includes(e.kind)).map(e=>e.id)},
    pokemon:{question:'QUI ?',entityRefs:entities.filter(e=>['agent','session'].includes(e.kind)).map(e=>e.id)}
   }
  }
