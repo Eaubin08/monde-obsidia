@@ -30,8 +30,8 @@ test('V5 preserves functional capabilities without legacy renderers',()=>{
 
 test('Pokemon stays focused on agent life and organization',()=>{
  for(const x of [
-  'Total','Agents actifs','PARCOURS VIVANT','MISSIONS / ÉQUIPES',
-  'POPULATION CONNUE','Village visuel','Registre détaillé du catalogue'
+  'Population','Agents vivants','CYCLE VIVANT','MISSIONS / ÉQUIPES',
+  'Population connue','VILLAGE VIVANT','Registre détaillé'
  ])assert.ok(pokemon.includes(x),x)
  for(const x of ['Lancer un agent ou un service','Kernel X108','API Obsidia + Brody + Native Memory'])assert.ok(!pokemon.includes(x),x)
 })
