@@ -66,7 +66,7 @@ export default function V5Root(){
  const files=snap?.files||[]
 
  const focus=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);setContextId(id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
- const go=(v:View)=>{location.hash=v}
+ const go=(v:View)=>{setView(v);location.hash=v}
  const openFile=async(path:string)=>{setSelectedFile(path);try{const r=await fetch('/obsidia-local/file?path='+encodeURIComponent(path));const d=await r.json();if(!r.ok)throw Error(d.error||'Lecture impossible');setFileContent(d.content||'')}catch(e){setFileContent(String(e))}}
  const activeTool=(tool:'brody'|'obsidure'|'cli')=>[...(shared?.sessions||[])].reverse().find(s=>s.agentId===tool&&s.presence==='live')||[...(shared?.sessions||[])].reverse().find(s=>s.agentId===tool)
  const runTool=async(tool:'brody'|'obsidure'|'cli',mode='interactive')=>{setToolBusy(true);setMessage('Démarrage '+tool+'…');try{const d=await sessionAction('run',{mode,tool});if(d.sessionId)sessionStorage.setItem('obsidia-selected-session',d.sessionId);setMessage(tool+' prêt')}catch(e){setMessage(String(e))}finally{setToolBusy(false)}}
@@ -110,7 +110,7 @@ export default function V5Root(){
   <aside className="v5-sidebar">
    <a className="v5-brand" href="#world"><span>◈</span><div><strong>OBSIDIA</strong><small>Écosystème IA</small></div></a>
    <nav className="v5-primary-nav">
-    {nav.map(([id,label])=><a key={id} href={'#'+id} aria-current={view===id?'page':undefined}><span>{id==='world'?'◎':id==='workspace'?'▦':id==='agents'?'◇':'⌕'}</span><div><strong>{label}</strong><small>{id==='world'?'Vue globale':id==='workspace'?'Projets et outils':id==='agents'?'Agents IA':'Connaissances'}</small></div></a>)}
+    {nav.map(([id,label])=><a key={id} href={'#'+id} aria-current={view===id?'page':undefined} onClick={()=>{if(id==='world')setWorldZone('home');setView(id)}}><span>{id==='world'?'◎':id==='workspace'?'▦':id==='agents'?'◇':'⌕'}</span><div><strong>{label}</strong><small>{id==='world'?'Vue globale':id==='workspace'?'Projets et outils':id==='agents'?'Agents IA':'Connaissances'}</small></div></a>)}
    </nav>
    <div className="v5-sidebar-foot">
     <div className="v5-context-mini"><span>Contexte</span><strong>{contextLabel}</strong></div>
