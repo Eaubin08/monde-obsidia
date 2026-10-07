@@ -18,6 +18,9 @@ test('V5 cross-view navigation stays wired',()=>{
   "location.hash='workspace'",
  ]) assert.ok((root+'\n'+pokemon).includes(invariant),invariant)
  assert.ok(root.includes("sessionStorage.getItem('obsidia-workspace-area')"))
+ assert.ok(root.includes("openContextWorkspace"))
+ assert.ok(root.includes("focusSearchAgent"))
+ assert.ok(root.includes("setWorldZone('activity')"))
  assert.ok(pokemon.includes("window.addEventListener('obsidia-context'"))
 })
 
