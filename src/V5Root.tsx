@@ -80,7 +80,7 @@ export default function V5Root(){
   }
   return all.find(s=>s.presence==='live'&&integrated(s))||all.find(integrated)
  }
- const runTool=async(tool:'brody'|'obsidure'|'cli',mode='interactive')=>{setToolBusy(true);setMessage('Démarrage '+tool+'…');try{const d=await sessionAction('run',{mode,tool});if(d.sessionId)sessionStorage.setItem('obsidia-selected-session',d.sessionId);setMessage(tool+' prêt')}catch(e){setMessage(String(e))}finally{setToolBusy(false)}}
+ const runTool=async(tool:'brody'|'obsidure'|'cli',mode='interactive')=>{setToolBusy(true);setMessage('Démarrage '+tool+'…');try{if(tool==='brody'||tool==='obsidure')await ensureBrodyApiTerminal();const d=await sessionAction('run',{mode,tool});if(d.sessionId)sessionStorage.setItem('obsidia-selected-session',d.sessionId);setMessage(tool+' prêt')}catch(e){setMessage(String(e))}finally{setToolBusy(false)}}
  const ensureBrodyApiTerminal=async()=>{
   try{
    const sr=await fetch('/obsidia-local/services')
@@ -101,7 +101,7 @@ export default function V5Root(){
   }
   throw Error('API Obsidia non prête après relance du terminal')
  }
- const sendTool=async(tool:'brody'|'obsidure'|'cli')=>{if(!toolText.trim())return;setToolBusy(true);try{if(tool==='brody')await ensureBrodyApiTerminal();let s=activeTool(tool);let id=s?.presence==='live'?s.sessionId:'';if(!id){const d=await sessionAction('run',{mode:'interactive',tool});id=d.sessionId;sessionStorage.setItem('obsidia-selected-session',id);for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,150));const lr=await fetch('/obsidia-local/live');const ld=await lr.json();s=ld.sessions?.find((x:Session)=>x.sessionId===id);if(s?.phase==='WAITING_INPUT')break}}await sessionAction('input/'+id,{text:toolText.trim()});setToolText('')}catch(e){setMessage(String(e))}finally{setToolBusy(false)}}
+ const sendTool=async(tool:'brody'|'obsidure'|'cli')=>{if(!toolText.trim())return;setToolBusy(true);try{if(tool==='brody'||tool==='obsidure')await ensureBrodyApiTerminal();let s=activeTool(tool);let id=s?.presence==='live'?s.sessionId:'';if(!id){const d=await sessionAction('run',{mode:'interactive',tool});id=d.sessionId;sessionStorage.setItem('obsidia-selected-session',id);for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,150));const lr=await fetch('/obsidia-local/live');const ld=await lr.json();s=ld.sessions?.find((x:Session)=>x.sessionId===id);if(s?.phase==='WAITING_INPUT')break}}await sessionAction('input/'+id,{text:toolText.trim()});setToolText('')}catch(e){setMessage(String(e))}finally{setToolBusy(false)}}
  const stopTool=async(tool:'brody'|'obsidure'|'cli')=>{const s=activeTool(tool);if(!s)return;setToolBusy(true);try{await sessionAction('stop/'+s.sessionId);setMessage(tool+' arrêté')}catch(e){setMessage(String(e))}finally{setToolBusy(false)}}
 
  const composerKeyDown=(e:KeyboardEvent<HTMLInputElement|HTMLTextAreaElement>,tool:'brody'|'obsidure'|'cli')=>{
