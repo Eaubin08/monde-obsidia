@@ -229,12 +229,23 @@ $qwenTextLog = Join-Path $obsidiaLocal 'jarjar_qwen_text.log'
 $qwenNativeLog = Join-Path $obsidiaLocal 'jarjar_qwen_text_llama.log'
 $qwenRepo = 'Qwen/Qwen2.5-3B-Instruct-GGUF'
 $qwenFile = 'qwen2.5-3b-instruct-q4_k_m.gguf'
+$qwenHfBlobDir = Join-Path $env:USERPROFILE '.cache\huggingface\hub\models--Qwen--Qwen2.5-3B-Instruct-GGUF\blobs'
+
+function Clear-QwenBrokenDownload {
+    if (-not (Test-Path -LiteralPath $qwenHfBlobDir)) { return }
+    $partials = @(Get-ChildItem -LiteralPath $qwenHfBlobDir -Filter '*.downloadInProgress' -File -ErrorAction SilentlyContinue)
+    foreach ($partial in $partials) {
+        Write-Host "[QWEN TEXT] Suppression resume HF incomplet: $($partial.Name)" -ForegroundColor Yellow
+        Remove-Item -LiteralPath $partial.FullName -Force -ErrorAction SilentlyContinue
+    }
+}
 
 if (-not (Port-Open 8080)) {
     Write-Host '[4/6] Demarrage Qwen texte :8080...' -ForegroundColor Cyan
     if (-not $LlamaExecutable) { throw 'llama-server introuvable pour Qwen texte.' }
     Remove-Item -LiteralPath $qwenTextLog -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $qwenNativeLog -Force -ErrorAction SilentlyContinue
+    Clear-QwenBrokenDownload
 
     $qwenArgs = @(
         '-hfr', $qwenRepo,
@@ -251,25 +262,25 @@ if (-not (Port-Open 8080)) {
 $qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 12
 
 if ($qwenState -eq 'OFFLINE' -and -not (Port-Open 8080)) {
-    Write-Host '[QWEN TEXT] Premier lancement echoue. Retry CPU direct...' -ForegroundColor Yellow
+    Write-Host '[QWEN TEXT] Premier lancement echoue. Nettoyage du resume HF puis retry propre...' -ForegroundColor Yellow
     if (Test-Path -LiteralPath $qwenNativeLog) {
         Get-Content -LiteralPath $qwenNativeLog -Tail 20 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
     }
     Start-Sleep -Seconds 1
     Remove-Item -LiteralPath $qwenNativeLog -Force -ErrorAction SilentlyContinue
-    $qwenCpuArgs = @(
+    Clear-QwenBrokenDownload
+    $qwenRetryArgs = @(
         '-hfr', $qwenRepo,
         '-hff', $qwenFile,
         '--host', '127.0.0.1',
         '--port', '8080',
         '-c', '4096',
-        '--gpu-layers', '0',
         '--log-file', $qwenNativeLog,
         '--log-verbosity', '5',
         '--log-colors', 'off'
     )
-    $qwenServer = Start-Server 'QWEN TEXT RETRY CPU' $LlamaExecutable $qwenCpuArgs $Jarjar
-    $qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 25
+    $qwenServer = Start-Server 'QWEN TEXT RETRY CLEAN' $LlamaExecutable $qwenRetryArgs $Jarjar
+    $qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 30
 }
 
 if ($qwenState -eq 'OFFLINE') {
