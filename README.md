@@ -19,19 +19,50 @@ Prérequis : Node.js/npm, Git, Python et les dépendances du dépôt Obsidia. Le
 
 Double-cliquer `METTRE_A_JOUR.cmd` dans le même dossier. Le lanceur arrête le Vite de ce projet et ses processus enfants, fait `git pull --ff-only`, puis relance. Il installe les dépendances si le lockfile change ou si leur chargement est incomplet. Il vérifie leur chargement après installation et s’arrête sur un échec. `DEMARRER.cmd` détecte aussi une installation incomplète, même lorsque le dossier `node_modules` existe. Aucun nouveau ZIP ou dossier de version.
 
-## Sessions et tests depuis la page
+## Usage actuel de la V5
 
-Dans **Pokémon View** :
+La navigation active est :
 
-- **CLI Obsidia**, **Brody**, **Obsidure** en haut ouvrent une fenêtre PowerShell Windows, conservée après la fin du programme. Une session native déjà active est remise au premier plan.
-- **Audit Obsidure (dry-run)** lance un audit dans la page.
-- **Test long · 20 audits · ≥ 1 min** exécute 20 audits réels, avec 4 secondes entre les audits. Les pauses sont affichées comme telles. C'est un contrôle de lancement et d'observation, pas la régression globale Obsidia.
-- **Session Brody / CLI Obsidia / Obsidure** lance le programme dans la page. Sélectionner sa session, saisir une demande lorsqu'il attend une entrée, lire la sortie ou arrêter.
-- Un programme actif émet ses phases et sa présence ; un programme terminé est distingué d'une fenêtre Windows encore ouverte.
+- **Monde** : où se trouvent les objets, domaines, missions, preuves et couches.
+- **Workspace** : travail, outils, fichiers, preuves et **lancements runtime**.
+- **Pokémon** : qui travaille, état des agents, cycle de vie, équipes et missions.
+- **Recherche** : retrouver un objet puis l'ouvrir dans la bonne vue.
 
-Brody réutilise son API locale sur 8000 ou la démarre depuis `apps.obsidia_api.main:app`. Le client reçoit `/compact off` au démarrage. Les erreurs Python/API remontent dans la page. L'interface ne remplace pas le moteur Brody.
+Les launchers ne vivent plus dans Pokémon. Ils sont dans **Workspace > Lancements**.
 
-Les chemins sont résolus depuis ce dépôt, même si le dossier courant change. Python provient de `OBSIDIA_PYTHON`, puis du venv Obsidia existant, puis du PATH. `OBSIDIA_SOURCE_REPO` permet de choisir une autre copie source.
+### Services et outils
+
+Depuis Workspace :
+
+- **Kernel X108** : service d'autorité sur `:3001`.
+- **API Obsidia / Brody / Native Memory** : service sur `:8000`.
+- **GPS / Defense / Aviation** et **Trading → X108** : services/domaines natifs.
+- **Brody**, **Obsidure** et **CLI** : sessions terminal ou interface distinctes.
+- **Jarjar** : orchestration Kernel + API + Qwen texte `:8080` + Qwen-VL `:8081` + HUD.
+
+Monde n'utilise pas un simple port ouvert comme preuve suffisante pour Kernel/API/Qwen : les processus attendus sont vérifiés avant de déclarer les composants READY.
+
+Brody ne remplace pas l'autorité de décision. La projection Monde reste `canonicalTruth=false` et l'autorité affichée reste `KX108_ONLY`.
+
+### Qwen local
+
+Le launcher Jarjar préfère un modèle Qwen texte local complet :
+
+```text
+%USERPROFILE%\Desktop\MODELS\QWEN\qwen2.5-3b-instruct-q4_k_m.gguf
+```
+
+ou le chemin défini par `OBSIDIA_QWEN_TEXT_MODEL`.
+
+Si un téléchargement `curl.exe` est encore en cours vers ce fichier, Jarjar refuse de démarrer Qwen texte afin d'éviter un second téléchargement concurrent. Hugging Face n'est utilisé qu'en absence de modèle local prêt.
+
+### Démarrage
+
+`DEMARRER.cmd` lance Vite en mode développement avec le bridge local `/obsidia-local/*`.
+
+Le script `npm run preview` sert uniquement à prévisualiser le build statique Vite ; il ne doit pas être utilisé comme launcher runtime Obsidia tant que le bridge n'implémente pas `configurePreviewServer`.
+
+Les chemins source sont résolus depuis ce dépôt. `OBSIDIA_SOURCE_REPO`, `OBSIDIA_PYTHON`, `OBSIDIA_JARJAR_ROOT`, `OBSIDIA_JARJAR_PYTHON` et `OBSIDIA_QWEN_TEXT_MODEL` permettent de remplacer les chemins locaux par défaut.
 
 ## Vérification
 
