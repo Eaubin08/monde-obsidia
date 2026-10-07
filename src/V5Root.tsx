@@ -28,7 +28,7 @@ const zones:[WorldZone,string][]=[['home','Vue globale'],['activity','Activité'
 export default function V5Root(){
  const initial=(location.hash.slice(1)||'world') as View
  const [view,setView]=useState<View>(['world','workspace','agents','search'].includes(initial)?initial:'world')
- const [workspaceArea,setWorkspaceArea]=useState<WorkspaceArea>('home')
+ const [workspaceArea,setWorkspaceArea]=useState<WorkspaceArea>(()=>{const saved=sessionStorage.getItem('obsidia-workspace-area');return (['home','launchers','brody','obsidure','cli','files'].includes(saved||'')?saved:'home') as WorkspaceArea})
  const [worldZone,setWorldZone]=useState<WorldZone>('home')
  const [shared,setShared]=useState<Shared|null>(null)
  const [snap,setSnap]=useState<Snapshot|null>(null)
@@ -54,12 +54,14 @@ export default function V5Root(){
   const refresh=async()=>{if(pending)return;pending=true;try{const [s,w]=await Promise.all([read('/obsidia-local/snapshot'),read('/obsidia-local/state')]);setSnap(s);setShared(w)}catch(e){if(!abort.signal.aborted)setMessage(String(e))}finally{pending=false}}
   void refresh()
   const timer=setInterval(refresh,4000)
-  const hash=()=>{const next=(location.hash.slice(1)||'world') as View;if(['world','workspace','agents','search'].includes(next))setView(next)}
+  const hash=()=>{const next=(location.hash.slice(1)||'world') as View;if(['world','workspace','agents','search'].includes(next)){setView(next);if(next==='workspace'){const saved=sessionStorage.getItem('obsidia-workspace-area');if(['home','launchers','brody','obsidure','cli','files'].includes(saved||''))setWorkspaceArea(saved as WorkspaceArea)}}}
   const context=(e:Event)=>setContextId((e as CustomEvent<string>).detail||sessionStorage.getItem('obsidia-focus-entity')||'')
   window.addEventListener('hashchange',hash)
   window.addEventListener('obsidia-context',context as EventListener)
   return()=>{abort.abort();clearInterval(timer);window.removeEventListener('hashchange',hash);window.removeEventListener('obsidia-context',context as EventListener)}
  },[])
+
+ useEffect(()=>{sessionStorage.setItem('obsidia-workspace-area',workspaceArea)},[workspaceArea])
 
  useEffect(()=>{const c=new AbortController();const poll=async()=>{try{const [pr,cr]=await Promise.all([fetch('/obsidia-local/processes',{signal:c.signal}),fetch('/obsidia-local/cli-runtime',{signal:c.signal})]);if(pr.ok)setProcesses((await pr.json()).processes||[]);if(cr.ok)setCliRuntime(await cr.json())}catch{}};void poll();const t=setInterval(poll,1400);return()=>{c.abort();clearInterval(t)}},[])
 
