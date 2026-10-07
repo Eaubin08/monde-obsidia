@@ -9,7 +9,7 @@ import './ui-v5.css'
 
 type View='world'|'workspace'|'agents'|'search'
 type WorkspaceArea='home'|'brody'|'obsidure'|'cli'|'files'
-type WorldZone='activity'|'rnd'|'agents'|'governance'|'knowledge'|'domains'|'layers'
+type WorldZone='home'|'activity'|'rnd'|'agents'|'governance'|'knowledge'|'domains'|'layers'
 type Agent={id:number;name:string;family:string;role:string|null;output:string|null}
 type Layer={id:string;title:string;content:string;path:string;commit:string}
 type Proposal={id:string;path:string;receipt:string|null;observedAt:string;data:Record<string,unknown>}
@@ -21,13 +21,13 @@ type Shared={decisionAuthority:string;entities:Entity[];relations:{from:string;t
 type Process={sessionId:string;active:boolean;runtimeActive:boolean;native:boolean;tool:string;output:string}
 
 const nav:[View,string][]=[['world','Monde'],['workspace','Workspace'],['agents','Pokémon'],['search','Recherche']]
-const zones:[WorldZone,string][]=[['activity','Activité'],['rnd','R&D / Build'],['agents','Agents & organes'],['governance','Gouvernance & preuves'],['knowledge','Objets & résultats'],['domains','Domaines'],['layers','Couches documentaires']]
+const zones:[WorldZone,string][]=[['home','Vue globale'],['activity','Activité'],['rnd','R&D / Build'],['agents','Agents & organes'],['governance','Gouvernance & preuves'],['knowledge','Objets & résultats'],['domains','Domaines'],['layers','Couches documentaires']]
 
 export default function V5Root(){
  const initial=(location.hash.slice(1)||'world') as View
  const [view,setView]=useState<View>(['world','workspace','agents','search'].includes(initial)?initial:'world')
  const [workspaceArea,setWorkspaceArea]=useState<WorkspaceArea>('home')
- const [worldZone,setWorldZone]=useState<WorldZone>('activity')
+ const [worldZone,setWorldZone]=useState<WorldZone>('home')
  const [shared,setShared]=useState<Shared|null>(null)
  const [snap,setSnap]=useState<Snapshot|null>(null)
  const [agents,setAgents]=useState<Agent[]>([])
@@ -77,6 +77,7 @@ export default function V5Root(){
 
  const worldItems=useMemo(()=>{
   if(!shared)return [] as {id:string;kind:string;label:string;meta:string}[]
+  if(worldZone==='home')return []
   if(worldZone==='activity')return live.map(s=>({id:'session:'+s.sessionId,kind:'LIVE',label:s.name||s.agentId,meta:s.objective||s.phase}))
   if(worldZone==='agents')return shared.entities.filter(e=>e.kind==='agent').map(e=>({id:e.id,kind:'AGENT',label:e.label,meta:e.agentId||''}))
   if(worldZone==='governance')return shared.entities.filter(e=>['decision_record','sealed_receipt','rollback_evidence','impact'].includes(e.kind)).slice(-30).reverse().map(e=>({id:e.id,kind:e.kind,label:e.label,meta:e.gate||e.status||e.decisionAuthority||''}))
@@ -126,7 +127,7 @@ export default function V5Root(){
    {message&&<p className="v5-message">{message}</p>}
 
    <main className="v5-main">
-   {view==='world'&&<section className="v5-page v5-dashboard">
+   {view==='world'&&worldZone==='home'&&<section className="v5-page v5-dashboard">
     <header className="v5-welcome">
      <div><h1>Bienvenue sur Obsidia</h1><p>Un écosystème d’agents, de connaissances et d’actions autour de tes projets.</p></div>
      <div className="v5-kpis">
@@ -139,7 +140,7 @@ export default function V5Root(){
     </header>
 
     <section className="v5-space-grid">
-     <button className="v5-space-card world" onClick={()=>{setWorldZone('domains');go('world')}}><div className="icon">◎</div><div className="head"><h2>Monde</h2><span>Explorer l’écosystème</span></div><div className="metrics"><strong>{domainCount}<small>domaines</small></strong><strong>{snap?.worktrees?.length||0}<small>worktrees</small></strong><strong>{shared?.entities.length||0}<small>objets</small></strong></div><div className="spark bars blue">{Array.from({length:12},(_,i)=><i key={i} style={{height:(18+((i*13)%42))+'px'}}/> )}</div><footer>Terrains · R&D · Gouvernance · Couches</footer></button>
+     <button className="v5-space-card world" onClick={()=>{setWorldZone('home');go('world')}}><div className="icon">◎</div><div className="head"><h2>Monde</h2><span>Explorer l’écosystème</span></div><div className="metrics"><strong>{domainCount}<small>domaines</small></strong><strong>{snap?.worktrees?.length||0}<small>worktrees</small></strong><strong>{shared?.entities.length||0}<small>objets</small></strong></div><div className="spark bars blue">{Array.from({length:12},(_,i)=><i key={i} style={{height:(18+((i*13)%42))+'px'}}/> )}</div><footer>Terrains · R&D · Gouvernance · Couches</footer></button>
      <button className="v5-space-card workspace" onClick={()=>go('workspace')}><div className="icon">▦</div><div className="head"><h2>Workspace</h2><span>Construire et collaborer</span></div><div className="metrics"><strong>{live.length}<small>agents</small></strong><strong>{files.length}<small>fichiers</small></strong><strong>{proofCount}<small>preuves</small></strong></div><div className="spark line purple"/><footer>Brody · Obsidure · CLI · Fichiers</footer></button>
      <button className="v5-space-card pokemon" onClick={()=>go('agents')}><div className="icon">◇</div><div className="head"><h2>Pokémon</h2><span>Agents et leurs actions</span></div><div className="metrics"><strong>{shared?.entities.filter(e=>e.kind==='agent').length||0}<small>agents</small></strong><strong>{shared?.missions.length||0}<small>missions</small></strong><strong>{live.length}<small>live</small></strong></div><div className="spark bars green">{Array.from({length:12},(_,i)=><i key={i} style={{height:(14+((i*17)%46))+'px'}}/> )}</div><footer>Agents · Pipeline · Population · Missions</footer></button>
      <button className="v5-space-card search" onClick={()=>go('search')}><div className="icon">⌕</div><div className="head"><h2>Recherche</h2><span>Connaissances et preuves</span></div><div className="metrics"><strong>{agents.length}<small>agents</small></strong><strong>{files.length}<small>fichiers</small></strong><strong>{proofCount}<small>preuves</small></strong></div><div className="spark line violet"/><footer>Domaines · Missions · Fichiers · Couches</footer></button>
@@ -172,6 +173,20 @@ export default function V5Root(){
       <div className="v5-eco"><div className="donut"><strong>{shared?.entities.filter(e=>e.kind==='agent').length||0}</strong><small>agents</small></div><ul><li><span className="g"/>Live <strong>{live.length}</strong></li><li><span className="b"/>Domaines <strong>{domainCount}</strong></li><li><span className="p"/>Fichiers <strong>{files.length}</strong></li><li><span className="a"/>Preuves <strong>{proofCount}</strong></li></ul></div>
      </article>
     </section>
+   </section>}
+
+   {view==='world'&&worldZone!=='home'&&<section className="v5-page v5-world-section">
+    <header className="v5-page-head">
+     <div><small>MONDE</small><h1>{zones.find(([id])=>id===worldZone)?.[1]}</h1><p>Explorer cette partie de l’écosystème Obsidia.</p></div>
+     <button onClick={()=>setWorldZone('home')}>← Vue globale</button>
+    </header>
+    <nav className="v5-zonebar">{zones.map(([id,label])=><button key={id} aria-pressed={worldZone===id} onClick={()=>setWorldZone(id)}>{label}</button>)}</nav>
+    <section className="v5-grid">
+     {worldItems.map(item=><button className="v5-object" key={item.id} onClick={()=>{if(item.id.startsWith('layer:')){const lid=item.id.slice(6);const l=layers.find(x=>x.id===lid);if(l){setSelectedFile(l.path);setFileContent(l.content)}}else focus(item.id)}}><small>{item.kind}</small><strong>{item.label}</strong><span>{item.meta}</span></button>)}
+     {!worldItems.length&&<p className="v5-empty">Aucun objet observé dans cette zone.</p>}
+    </section>
+    {contextEntity&&<aside className="v5-focus"><small>OBJET SÉLECTIONNÉ</small><h2>{contextEntity.label}</h2><p>{contextEntity.kind} · {contextEntity.id}</p><div><button onClick={()=>go('workspace')}>Workspace</button><button onClick={()=>go('agents')}>Pokémon</button></div><details><summary>Relations · {shared?.relations.filter(r=>r.from===contextEntity.id||r.to===contextEntity.id).length||0}</summary>{shared?.relations.filter(r=>r.from===contextEntity.id||r.to===contextEntity.id).map((r,i)=><p key={i}><code>{r.from}</code> → {r.type} → <code>{r.to}</code></p>)}</details></aside>}
+    {worldZone==='layers'&&selectedFile&&<section className="v5-layer-reader"><header><strong>{selectedFile}</strong><button onClick={()=>{setSelectedFile('');setFileContent('')}}>Fermer</button></header><pre>{fileContent}</pre></section>}
    </section>}
 
    {view==='workspace'&&<section className="v5-page">
