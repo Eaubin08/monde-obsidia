@@ -40,7 +40,7 @@ test('Workspace owns launchers and native services',()=>{
  for(const x of [
   'Lancements','Lancer Jarjar','Kernel X108','API Obsidia + Brody + Native Memory',
   'GPS / Defense / Aviation','Trading → X108','Brody Enriched','Obsidure DryRun',
-  'Ouvrir / lancer'
+  'Lancer / ouvrir'
  ])assert.ok(launchers.includes(x),x)
 })
 
