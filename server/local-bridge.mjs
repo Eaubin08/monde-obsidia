@@ -265,8 +265,15 @@ export function gitWorktrees(root){
   })
  }catch{return []}
 }
+let snapshotCache={root:null,at:0,value:null}
 function snapshot(root=repository()){
- if(!existsSync(root))return {available:false,error:'Copie locale du dépôt non trouvée',observedAt:new Date().toISOString(),files:[],proposals:[],tools:[]}
+ const now=Date.now()
+ if(snapshotCache.value&&snapshotCache.root===root&&now-snapshotCache.at<3000)return snapshotCache.value
+ if(!existsSync(root)){
+  const value={available:false,error:'Copie locale du dépôt non trouvée',observedAt:new Date(now).toISOString(),files:[],proposals:[],tools:[]}
+  snapshotCache={root,at:now,value}
+  return value
+ }
  const sha=git(root,'rev-parse','HEAD'),branch=git(root,'branch','--show-current');
  const files=git(root,'ls-files').split('\n').filter(p=>/\.(md|json|jsonl|ya?ml|py|tsx?|ps1|lean)$/.test(p)&&!p.startsWith('.')&&!/(^|\/)(secrets|audit\/local|node_modules)\//.test(p)&&!/(^|\/)(credentials|tokens?)\./i.test(p));
  let proposals=[];const dir=resolve(root,'_PATCH_PROPOSALS');if(existsSync(dir)){
@@ -274,7 +281,9 @@ function snapshot(root=repository()){
    try{const p=contained(root,`_PATCH_PROPOSALS/${item.name}/proposal.json`);if(statSync(p).size>1024*1024)continue;const data=JSON.parse(readFileSync(p,'utf8'));proposals.push({id:item.name,path:`_PATCH_PROPOSALS/${item.name}/proposal.json`,data,observedAt:statSync(p).mtime.toISOString(),receipt:existsSync(resolve(dir,item.name,'RECEIPT.md'))?`_PATCH_PROPOSALS/${item.name}/RECEIPT.md`:null})}catch{}
   }
  }
- return {available:true,repository:root,sha,branch,worktrees:gitWorktrees(root),observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),agentFamilies:agentFamilies(root),runtimeEvidence:canonicalRuntimeEvidence(),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:[...Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null})),{id:'jarjar',path:jarjarModule,available:process.platform==='win32'&&existsSync(jarjarRoot())&&existsSync(resolve(jarjarRoot(),jarjarModuleFile))&&existsSync(jarjarPython()),reason:process.platform!=='win32'?'Windows requis':!existsSync(jarjarRoot())?'Repo Jarjar absent':!existsSync(resolve(jarjarRoot(),jarjarModuleFile))?'Launcher Jarjar absent':!existsSync(jarjarPython())?'Python Jarjar canonique absent':null}]}
+ const value={available:true,repository:root,sha,branch,worktrees:gitWorktrees(root),observedAt:new Date(now).toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),agentFamilies:agentFamilies(root),runtimeEvidence:canonicalRuntimeEvidence(),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:[...Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null})),{id:'jarjar',path:jarjarModule,available:process.platform==='win32'&&existsSync(jarjarRoot())&&existsSync(resolve(jarjarRoot(),jarjarModuleFile))&&existsSync(jarjarPython()),reason:process.platform!=='win32'?'Windows requis':!existsSync(jarjarRoot())?'Repo Jarjar absent':!existsSync(resolve(jarjarRoot(),jarjarModuleFile))?'Launcher Jarjar absent':!existsSync(jarjarPython())?'Python Jarjar canonique absent':null}]}
+ snapshotCache={root,at:now,value}
+ return value
 }
 const processes=new Map(),launching=new Set();
 
