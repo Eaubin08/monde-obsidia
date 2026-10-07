@@ -1,4 +1,4 @@
-import {brodyServiceStatus,ensureBrodyApi,closeOwnedBrodyApi} from './brody-service.mjs'
+import {brodyServiceStatus,closeOwnedBrodyApi} from './brody-service.mjs'
 import {terminalCommand,launchTerminal,focusTerminal,stopTerminal,terminalAlive} from './native-terminal.mjs'
 import {liveSnapshot,liveDirectory} from './live-events.mjs'
 import {buildObsidiaState} from './obsidia-state.mjs'
@@ -368,7 +368,6 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  if(launching.has(tool))throw Error('Cet outil est déjà en cours de lancement');launchKey=tool;launching.add(tool);
  const root=realpathSync(repository());const session=randomUUID();
  contained(root,launchers[tool]);
- if(tool==='brody')await ensureBrodyApi(root);
  const args=[observer,'--repo',root,'--output',liveDirectory,'--agent',tool,'--session',session];
  if(mode!=='interactive')args.push('--audit','--audit-cycles',mode==='audit-long'?'20':'1','--audit-interval',mode==='audit-long'?'4':'0');
  const child=spawn(pythonFor(root),args,{cwd:root,stdio:['pipe','pipe','pipe'],windowsHide:true,env:{...process.env,PYTHONUNBUFFERED:'1',PYTHONIOENCODING:'utf-8'}});
@@ -423,7 +422,6 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  }
  const file=launchers[id];if(!file)throw Error('Outil non raccordé');if(launching.has(id))throw Error('Cet outil est déjà en cours de lancement');launchKey=id;launching.add(id);const root=realpathSync(repository());contained(root,file);
  for(const [session,p] of processes){if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}if(p.active&&p.tool===id){if(!p.native)throw Error('Une session de cet outil est active dans la page. La sélectionner ou l’arrêter avant d’ouvrir un terminal.');const live=liveSnapshot().sessions.find(s=>s.sessionId===session);if(live?.presence==='ended')continue;await focusTerminal(p.title,p.pid);res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return}}
- if(id==='brody')await ensureBrodyApi(root);
  const wrapper=observer,session=randomUUID(),title='OBSIDIA · '+id+' · '+session.slice(0,8);
  const pythonArgs=[wrapper,'--repo',root,'--output',liveDirectory,'--agent',id,'--session',session];
  const command=terminalCommand(root,title,pythonFor(root),pythonArgs);
