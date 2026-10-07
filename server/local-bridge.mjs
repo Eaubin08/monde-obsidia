@@ -398,7 +398,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
    if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}
    if(p.active&&p.tool===id){await focusTerminal(p.title,p.pid);res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return}
   }
-  if(id==='kernel-x108'||id==='obsidia-api')await releaseFrozenServicePort(id)
+  if(id==='obsidia-api')await releaseFrozenServicePort(id)
   const session=randomUUID(),title='OBSIDIA · '+spec.title+' · '+session.slice(0,8)
   emitNativeService(session,id,spec.title,root)
   const command=`$host.UI.RawUI.WindowTitle='${title.replaceAll("'","''")}'; ${spec.command}`
