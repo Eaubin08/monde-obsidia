@@ -6,57 +6,47 @@ type Entity={id:string;kind:string;label:string;agentId?:string;domainId?:string
 type Mission={id:string;actionId:string;agentId:string|null;status:string;traceabilityStatus:string;sessionRefs:string[];resultRefs:string[];primaryBlocker?:string}
 type Family={id:string;label:string;kind:string;agents:string[];localPresent:boolean}
 type State={entities:Entity[];relations:{from:string;type:string;to:string}[];sessions:Session[];missions:Mission[];agentFamilies?:Family[]}
-type JarjarStatus={state:'OFFLINE'|'STARTING'|'READY'|'DEGRADED';managed:boolean;decisionAuthority:string;inputMode:string|null;hudState:string|null;cognitionSource:string;governanceSource:string;governancePhase:string;humanConfirmationRequired:boolean;lastUserInput:string;lastResult:string;components:{kernel:{ready:boolean};brodyApi:{ready:boolean};qwenText:{ready:boolean};qwenVL:{ready:boolean};hud:{ready:boolean}}}
 type Filter='all'|'live'|'ready'|'planned'|'blocked'|'inactive'
 
-const launchable=[
- ['brody','Brody',true],['obsidure','Obsidure',true],['cli','CLI Obsidia',true],
- ['kernel-x108','Kernel X108',true],['obsidia-api','API Obsidia + Brody + Native Memory',true],
- ['gps-defense','GPS / Defense / Aviation',true],['trading-x108','Trading → X108',true],
- ['brody-enriched','Brody Enriched',true],['obsidure-dry','Obsidure DryRun',true],
- ['jarjar','Jarjar',true],['jarvis','Jarvis',false]
-] as const
-const terminalOnly=new Set(['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
 const stage=(s:Session)=>s.status==='blocked'||s.status==='error'?'Bloqué':['STARTING','SESSION_CONFIG'].includes(s.phase)?'Préparation':s.phase==='WAITING_INPUT'?'Disponible':['V_VALIDATION','LEAN_BUILD'].includes(s.phase)?'Validation':['R_REINTEGRATION','BRODY_RESPONSE'].includes(s.phase)?'Review / preuve':'Travail'
 const stages=['Disponible','Préparation','Travail','Validation','Review / preuve','Bloqué']
 
 export default function V5Pokemon(){
  const [state,setState]=useState<State|null>(null)
- const [jarjar,setJarjar]=useState<JarjarStatus|null>(null)
  const [filter,setFilter]=useState<Filter>('all')
  const [selected,setSelected]=useState(sessionStorage.getItem('obsidia-selected-session')||'')
  const [family,setFamily]=useState('')
- const [launching,setLaunching]=useState('')
- const [message,setMessage]=useState('')
  const [catalogSelection,setCatalogSelection]=useState('')
 
  useEffect(()=>{
   const c=new AbortController()
-  const poll=async()=>{try{const [s,j]=await Promise.all([fetch('/obsidia-local/state',{signal:c.signal}),fetch('/obsidia-local/jarjar/status',{signal:c.signal})]);if(s.ok)setState(await s.json());if(j.ok)setJarjar(await j.json())}catch{}}
+  const poll=async()=>{try{const s=await fetch('/obsidia-local/state',{signal:c.signal});if(s.ok)setState(await s.json())}catch{}}
   void poll();const t=setInterval(poll,1200);return()=>{c.abort();clearInterval(t)}
  },[])
 
  const sessions=state?.sessions||[]
- const serviceSessions=sessions.filter(s=>s.presence==='live'&&s.nativeService)
  const live=sessions.filter(s=>s.presence==='live'&&!s.nativeService&&s.agentId!=='cli')
  const current=sessions.find(s=>s.sessionId===selected)
  const currentMission=current?state?.missions.find(m=>m.sessionRefs.includes('session:'+current.sessionId)):undefined
- const organFamily:Family={id:'organs',label:'Organes / outils',kind:'launcher',localPresent:true,agents:launchable.map(x=>x[0]) as string[]}
- const families=[organFamily,...(state?.agentFamilies||[])]
+ const declaredFamilies=state?.agentFamilies||[]
+ const familyAgentIds=new Set(declaredFamilies.flatMap(f=>f.agents))
+ const runtimeAgentIds=[...new Set(live.map(s=>s.agentId))].filter(id=>!familyAgentIds.has(id))
+ const runtimeFamily:Family={id:'runtime-agents',label:'Agents runtime',kind:'runtime',localPresent:true,agents:runtimeAgentIds}
+ const families=[...declaredFamilies,...(runtimeAgentIds.length?[runtimeFamily]:[])]
  const catalog=new Set(families.flatMap(f=>f.agents))
  const liveIds=new Set(live.map(s=>s.agentId))
- const readyIds=new Set(launchable.filter(x=>x[2]).map(x=>x[0]).filter(id=>!liveIds.has(id)))
- const plannedIds=new Set(launchable.filter(x=>!x[2]).map(x=>x[0]))
  const blocked=live.filter(s=>s.status==='blocked'||s.status==='error')
- const inactive=[...catalog].filter(id=>!liveIds.has(id)&&!readyIds.has(id)&&!plannedIds.has(id)).length
+ const inactive=[...catalog].filter(id=>!liveIds.has(id)).length
  const counts:{id:Filter;label:string;value:number}[]=[
-  {id:'all',label:'Total',value:catalog.size},{id:'live',label:'Live',value:liveIds.size},{id:'ready',label:'Prêts',value:readyIds.size},
-  {id:'planned',label:'Futurs',value:plannedIds.size},{id:'blocked',label:'Bloqués',value:blocked.length},{id:'inactive',label:'Inactifs',value:inactive}
+  {id:'all',label:'Total',value:catalog.size},{id:'live',label:'Live',value:liveIds.size},{id:'ready',label:'Disponibles',value:live.filter(s=>stage(s)==='Disponible').length},
+  {id:'planned',label:'Préparation',value:live.filter(s=>stage(s)==='Préparation').length},{id:'blocked',label:'Bloqués',value:blocked.length},{id:'inactive',label:'Inactifs',value:inactive}
  ]
- const visible=live.filter(s=>(filter==='all'||filter==='live'||(filter==='blocked'&&(s.status==='blocked'||s.status==='error')))&&(!family||families.find(f=>f.id===family)?.agents.includes(s.agentId)))
+ const visible=live.filter(s=>{
+  const match=filter==='all'||filter==='live'||(filter==='blocked'&&(s.status==='blocked'||s.status==='error'))||(filter==='ready'&&stage(s)==='Disponible')||(filter==='planned'&&stage(s)==='Préparation')
+  return match&&(!family||families.find(f=>f.id===family)?.agents.includes(s.agentId))
+ })
  const teams=(state?.missions||[]).map(m=>({m,sessions:live.filter(s=>m.sessionRefs.includes('session:'+s.sessionId))})).filter(x=>x.sessions.length)
  const ungrouped=live.filter(s=>!teams.some(t=>t.sessions.some(x=>x.sessionId===s.sessionId)))
- const nativeServices=serviceSessions.map(s=>({id:s.agentId,label:s.name,state:s.observedState||s.phase as 'READY'|'STARTING'|'OFFLINE',managed:!s.sessionId.startsWith('observed-'),sessionId:s.sessionId}))
  const catalogSelected=catalogSelection?catalog.has(catalogSelection)?catalogSelection:'':selected?current?.agentId||'':''
  const catalogLive=catalogSelected?live.find(s=>s.agentId===catalogSelected):undefined
  const catalogFamily=catalogSelected?families.find(f=>f.agents.includes(catalogSelected)):undefined
@@ -64,11 +54,9 @@ export default function V5Pokemon(){
  const focus=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
  const choose=(s:Session)=>{setSelected(s.sessionId);sessionStorage.setItem('obsidia-selected-session',s.sessionId);focus('session:'+s.sessionId)}
  const workspace=(s:Session)=>{choose(s);sessionStorage.setItem('obsidia-workspace-area',s.agentId==='brody'?'brody':s.agentId==='obsidure'?'obsidure':s.agentId==='cli'?'cli':'home');location.hash='workspace'}
- const launch=async(id:string,terminal=false)=>{setLaunching(id);setMessage('Lancement '+id+'…');try{const url=terminal?'/obsidia-local/open/'+id:'/obsidia-local/run';const r=await fetch(url,terminal?{method:'POST'}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:id,mode:'interactive'})});const d=await r.json();if(!r.ok)throw Error(d.error||'Échec');if(d.sessionId){setSelected(d.sessionId);sessionStorage.setItem('obsidia-selected-session',d.sessionId);focus('session:'+d.sessionId)}setMessage(id+' lancé')}catch(e){setMessage(String(e))}finally{setLaunching('')}}
- const stopJarjar=async()=>{setLaunching('jarjar');try{const r=await fetch('/obsidia-local/jarjar/stop',{method:'POST'});if(!r.ok)throw Error('Arrêt impossible');setMessage('Jarjar arrêté')}catch(e){setMessage(String(e))}finally{setLaunching('')}}
 
  return <section className="v5pk">
-  <header className="v5-page-head"><div><small>QUI ?</small><h1>Pokémon</h1><p>Les agents, leurs états et leurs actions au même endroit.</p></div><div className="v5pk-head-counts"><strong>{live.length} agent(s) live</strong><small>{serviceSessions.length} service(s) système actif(s)</small></div></header>
+  <header className="v5-page-head"><div><small>QUI ?</small><h1>Pokémon</h1><p>Les agents, leurs états et leurs actions au même endroit.</p></div><div className="v5pk-head-counts"><strong>{live.length} agent(s) live</strong><small>services système déplacés dans Workspace</small></div></header>
 
   <section className="v5pk-status">{counts.map(c=><button key={c.id} aria-pressed={filter===c.id} onClick={()=>setFilter(c.id)}><strong>{c.value}</strong><span>{c.label}</span></button>)}</section>
 
@@ -83,11 +71,6 @@ export default function V5Pokemon(){
    </aside>
   </section>
 
-  <section className="v5pk-launch">
-   <div className="v5pk-title"><div><small>COMMANDER</small><h2>Lancer un agent ou un service</h2></div>{message&&<span>{message}</span>}</div>
-   <article className="v5pk-jarjar"><div><div><small>ASSISTANT TERRAIN</small><h3>Jarjar</h3></div><strong>{jarjar?.state||'OFFLINE'}</strong></div><p>Autorité {jarjar?.decisionAuthority||'KX108_ONLY'} · entrée {jarjar?.inputMode||'non observée'} · cognition {jarjar?.cognitionSource||'en attente'}</p><div className="v5pk-components">{[['Kernel',jarjar?.components.kernel.ready],['API/Brody',jarjar?.components.brodyApi.ready],['Qwen',jarjar?.components.qwenText.ready],['Qwen-VL',jarjar?.components.qwenVL.ready],['HUD',jarjar?.components.hud.ready]].map(([n,ok])=><span key={String(n)} className={ok?'ok':''}>{String(n)} · {ok?'READY':'OFFLINE'}</span>)}</div><div className="v5pk-actions">{jarjar?.state==='OFFLINE'?<button disabled={launching==='jarjar'} onClick={()=>launch('jarjar',true)}>Lancer Jarjar</button>:jarjar?.managed?<button disabled={launching==='jarjar'} onClick={stopJarjar}>Arrêter Jarjar</button>:<button disabled>Lancé hors Monde</button>}</div></article>
-   <div className="v5pk-launch-grid">{launchable.filter(x=>x[0]!=='jarjar').map(([id,label,ready])=>{const active=live.find(s=>s.agentId===id);const native=nativeServices.find(s=>s.id===id);const serviceState=native?.state;const isNative=terminalOnly.has(id);const observedLive=!!active||serviceState==='READY';return <article key={id} className={observedLive?'active':serviceState==='STARTING'?'starting':ready?'ready':'future'}><div><strong>{label}</strong><span>{active?'LIVE':serviceState|| (ready?'PRÊT':'FUTUR')}</span></div><p>{active?.objective||active?.message||(serviceState==='READY'?'Service système déjà actif':serviceState==='STARTING'?'Démarrage en cours':ready?'Disponible':'Activation à venir')}</p><div className="v5pk-actions">{active?<><button onClick={()=>choose(active)}>Voir</button><button onClick={()=>workspace(active)}>Workspace</button></>:serviceState==='READY'?<>{native?.managed?<button onClick={()=>launch(id,true)}>Ouvrir terminal</button>:<button disabled>Déjà actif</button>}</>:ready?<button disabled={launching===id||serviceState==='STARTING'} onClick={()=>launch(id,isNative||id==='brody'||id==='obsidure'||id==='cli')}>{serviceState==='STARTING'?'Démarrage…':'Lancer'}</button>:<button disabled>À venir</button>}{(id==='brody'||id==='obsidure'||id==='cli')&&<button onClick={()=>{sessionStorage.setItem('obsidia-workspace-area',id);location.hash='workspace'}}>Workspace</button>}<button onClick={()=>{setCatalogSelection(id);focus(active?'session:'+active.sessionId:'agent:'+id)}}>Détails</button></div></article>})}</div>
-  </section>
 
   <section className="v5pk-pipeline">
    <div className="v5pk-title"><div><small>PARCOURS VIVANT</small><h2>Cycle de travail des agents</h2><p>Lis de gauche à droite : disponible → préparation → travail → validation → preuve. Les blocages sortent du flux normal.</p></div></div>
