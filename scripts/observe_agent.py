@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime,timezone
 
 def main():
- p=argparse.ArgumentParser();p.add_argument('--repo',required=True);p.add_argument('--output',required=True);p.add_argument('--agent',choices=['obsidure','brody','cli'],required=True);p.add_argument('--session',default=None);p.add_argument('--audit',action='store_true');p.add_argument('--audit-cycles',type=int,default=1);p.add_argument('--audit-interval',type=float,default=0);a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--repo',required=True);p.add_argument('--output',required=True);p.add_argument('--agent',choices=['obsidure','brody','cli'],required=True);p.add_argument('--session',default=None);p.add_argument('--surface',choices=['interface','terminal'],default='interface');p.add_argument('--audit',action='store_true');p.add_argument('--audit-cycles',type=int,default=1);p.add_argument('--audit-interval',type=float,default=0);a=p.parse_args()
  if not 1<=a.audit_cycles<=20:p.error('Nombre de cycles : 1 à 20')
  if not 0<=a.audit_interval<=10:p.error('Intervalle : 0 à 10 secondes')
  
@@ -15,7 +15,7 @@ def main():
  def emit(kind,**fields):
   try:
    with lock:
-    e={'schema':'OBSIDIA_VISUAL_EVENT_V1','sessionId':sid,'agentId':a.agent,'name':names[a.agent],'pid':os.getpid(),'repository':str(root),'timestamp':datetime.now(timezone.utc).isoformat(),'kind':kind,**state,**fields}
+    e={'schema':'OBSIDIA_VISUAL_EVENT_V1','sessionId':sid,'agentId':a.agent,'name':names[a.agent],'pid':os.getpid(),'repository':str(root),'timestamp':datetime.now(timezone.utc).isoformat(),'kind':kind,'surface':a.surface,'nativeTerminal':a.surface=='terminal',**state,**fields}
     with log.open('a',encoding='utf-8') as f:f.write(json.dumps(e,ensure_ascii=False)+'\n')
   except OSError:pass # Observation failure never changes the agent's result.
  old_stdout,old_stderr=sys.stdout,sys.stderr
