@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react'
 
 type Event={kind:string;timestamp:string;status:string;phase:string;message:string;objective?:string;result?:Record<string,unknown>}
-type Session={sessionId:string;agentId:string;name:string;repository:string;status:string;phase:string;message:string;objective:string|null;timestamp:string;presence:'live'|'unknown'|'ended';nativeService?:boolean;observedState?:'READY'|'STARTING'|'OFFLINE';source?:string;events:Event[]}
+type Session={sessionId:string;agentId:string;name:string;repository:string;status:string;phase:string;message:string;objective:string|null;timestamp:string;presence:'live'|'unknown'|'ended';nativeService?:boolean;observedState?:'READY'|'STARTING'|'OFFLINE';source?:string;events:Event[];jarjarRuntime?:boolean;inputMode?:string|null;cognitionSource?:string;decisionAuthority?:string;governanceSource?:string;governancePhase?:string;humanConfirmationRequired?:boolean;confirmationPrompt?:string;telemetryFresh?:boolean;components?:Record<string,unknown>}
 type Entity={id:string;kind:string;label:string;agentId?:string;domainId?:string}
 type Mission={id:string;actionId:string;agentId:string|null;status:string;traceabilityStatus:string;sessionRefs:string[];resultRefs:string[];primaryBlocker?:string}
 type Family={id:string;label:string;kind:string;agents:string[];localPresent:boolean}
@@ -53,6 +53,19 @@ export default function V5Pokemon(){
   void poll();const t=setInterval(poll,1200);return()=>{c.abort();clearInterval(t)}
  },[])
 
+ useEffect(()=>{
+  const sync=()=>{
+   const focus=sessionStorage.getItem('obsidia-focus-entity')||''
+   const selectedSession=sessionStorage.getItem('obsidia-selected-session')||''
+   if(selectedSession)setSelected(selectedSession)
+   if(focus.startsWith('session:'))setSelected(focus.slice(8))
+  }
+  const onContext=()=>sync()
+  window.addEventListener('obsidia-context',onContext)
+  sync()
+  return()=>window.removeEventListener('obsidia-context',onContext)
+ },[])
+
  const sessions=state?.sessions||[]
  const live=sessions.filter(s=>s.presence==='live'&&!s.nativeService&&s.agentId!=='cli')
  const current=live.find(s=>s.sessionId===selected)||live[0]
@@ -65,14 +78,15 @@ export default function V5Pokemon(){
  const catalog=new Set(families.flatMap(f=>f.agents))
  const liveIds=new Set(live.map(s=>s.agentId))
  const blocked=live.filter(s=>stage(s)==='Bloqué')
- const inactive=[...catalog].filter(id=>!liveIds.has(id)).length
+ const availableIds=[...catalog].filter(id=>!liveIds.has(id))
+ const inactiveIds=declaredFamilies.filter(f=>!f.localPresent).flatMap(f=>f.agents).filter(id=>!liveIds.has(id))
  const counts:{id:Filter;label:string;value:number}[]=[
   {id:'all',label:'Population',value:catalog.size},
   {id:'live',label:'Agents vivants',value:live.length},
-  {id:'available',label:'Disponibles',value:live.filter(s=>stage(s)==='Disponible').length},
+  {id:'available',label:'Disponibles',value:availableIds.length+live.filter(s=>stage(s)==='Disponible').length},
   {id:'preparing',label:'Préparation',value:live.filter(s=>stage(s)==='Préparation').length},
   {id:'blocked',label:'Bloqués',value:blocked.length},
-  {id:'inactive',label:'Inactifs',value:inactive}
+  {id:'inactive',label:'Inactifs',value:inactiveIds.length}
  ]
  const visible=live.filter(s=>{
   const st=stage(s)
@@ -111,6 +125,7 @@ export default function V5Pokemon(){
        <div className="v5pk-habitat-agents">{items.map(s=>{const role=roleMeta(s);return <button key={s.sessionId} className={current?.sessionId===s.sessionId?'selected':''} onClick={()=>choose(s)} title={role.label}><span className="v5pk-role-symbol">{role.glyph}</span><strong>{s.name}</strong><small>{role.label}</small></button>})}{!items.length&&<span className="v5pk-zone-empty">Aucun agent</span>}</div>
       </section>
      })}
+     {(filter==='available'||filter==='inactive')&&<section className="v5pk-habitat habitat-disponible"><header><span className="v5pk-habitat-icon">{filter==='available'?'✦':'○'}</span><div><strong>{filter==='available'?'Disponibles':'Inactifs'}</strong><small>{(filter==='available'?availableIds:inactiveIds).length} agent(s)</small></div></header><div className="v5pk-habitat-agents">{(filter==='available'?availableIds:inactiveIds).map(id=><button key={id} onClick={()=>setCatalogSelection(id)} title={id}><span className="v5pk-role-symbol">◈</span><strong>{id}</strong><small>{filter==='available'?'Prêt à être lancé':'Non observé localement'}</small></button>)}</div></section>}
      <div className="v5pk-village-core"><span>◈</span><small>Obsidia</small></div>
     </div>
    </article>
@@ -118,6 +133,7 @@ export default function V5Pokemon(){
    <aside className="v5pk-agent-card">
     <header><small>FICHE AGENT</small>{current&&<span className="v5pk-live-pill">● Actif</span>}</header>
     {current?<><div className="v5pk-agent-identity"><span className="v5pk-agent-emblem">{currentRole?.glyph}</span><div><h2>{current.name}</h2><p>{currentRole?.label}</p></div></div>
+     {current.jarjarRuntime&&<div className="v5pk-runtime-facts"><p><small>Entrée</small><strong>{current.inputMode||'non observée'}</strong></p><p><small>Cognition</small><strong>{current.cognitionSource||'en attente'}</strong></p><p><small>Autorité</small><strong>{current.decisionAuthority||'KX108_ONLY'}</strong></p><p><small>Gouvernance</small><strong>{current.governancePhase||current.governanceSource||'aucune action'}</strong></p>{current.confirmationPrompt&&<p><small>Confirmation</small><strong>{current.confirmationPrompt}</strong></p>}<p><small>Télémétrie</small><strong>{current.telemetryFresh?'fraîche':'non fraîche'}</strong></p></div>}
      <nav className="v5pk-agent-tabs"><button aria-pressed="true">Vue d’ensemble</button><button onClick={()=>focus(currentMission?.id||'session:'+current.sessionId)}>Mission</button><button onClick={()=>focus('session:'+current.sessionId)}>Historique</button></nav>
      <dl className="v5pk-agent-facts">
       <div><dt>Famille</dt><dd>{selectedFamily?.label||'Runtime'}</dd></div>
