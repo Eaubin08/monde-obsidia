@@ -233,9 +233,22 @@ $qwenLocalCandidates = @(
     $env:OBSIDIA_QWEN_TEXT_MODEL,
     (Join-Path $env:USERPROFILE 'Desktop\MODELS\QWEN\qwen2.5-3b-instruct-q4_k_m.gguf')
 ) | Where-Object { $_ } | Select-Object -Unique
-$qwenLocalModel = $qwenLocalCandidates | Where-Object {
-    (Test-Path -LiteralPath $_) -and ((Get-Item -LiteralPath $_).Length -gt 1000000000)
-} | Select-Object -First 1
+function Test-QwenLocalModelReady([string]$Path) {
+    if (-not $Path -or -not (Test-Path -LiteralPath $Path)) { return $false }
+    try {
+        if ((Get-Item -LiteralPath $Path).Length -le 1000000000) { return $false }
+        $escaped = [Regex]::Escape($Path)
+        $writer = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+            $_.Name -ieq 'curl.exe' -and $_.CommandLine -match $escaped
+        } | Select-Object -First 1
+        if ($writer) {
+            Write-Host "[QWEN TEXT] Fichier local encore en telechargement (curl PID=$($writer.ProcessId)): $Path" -ForegroundColor Yellow
+            return $false
+        }
+        return $true
+    } catch { return $false }
+}
+$qwenLocalModel = $qwenLocalCandidates | Where-Object { Test-QwenLocalModelReady $_ } | Select-Object -First 1
 $qwenHfBlobDir = Join-Path $env:USERPROFILE '.cache\huggingface\hub\models--Qwen--Qwen2.5-3B-Instruct-GGUF\blobs'
 
 function Clear-QwenBrokenDownload {
