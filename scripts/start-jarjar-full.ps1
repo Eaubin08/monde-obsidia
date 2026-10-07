@@ -57,11 +57,401 @@ function Get-ProcessCommandLine([int]$ProcessId) {
 function Stop-CanonicalQwenText {
     $pidValue = Get-ListeningPid 8080
     if (-not $pidValue) { return }
+
     $line = Get-ProcessCommandLine $pidValue
-    if ($line -notmatch 'llama-server(?:\.exe)?' -or $line -notmatch '(?:--port\s+|--port=)8080\b') {
+    $processName = ''
+    try {
+        $processName = (Get-Process -Id $pidValue -ErrorAction Stop).ProcessName
+    } catch {}
+
+    $recognizedByCommand = (
+        $line -match 'llama-server(?:\.exe)?' -and
+        $line -match '(?:--port\s+|--port=)8080\b'
+    )
+    $recognizedByExecutable = $processName -match '^llama-server
+
+function Resolve-Executable([string]$FilePath) {
+    if (Test-Path -LiteralPath $FilePath) { return (Resolve-Path -LiteralPath $FilePath).Path }
+    $command = Get-Command $FilePath -ErrorAction SilentlyContinue
+    if ($command -and $command.Source) { return $command.Source }
+    if ($FilePath -ieq 'powershell.exe') {
+        $candidate = Join-Path $PSHOME 'powershell.exe'
+        if (Test-Path -LiteralPath $candidate) { return $candidate }
+    }
+    throw "Executable introuvable: $FilePath"
+}
+
+function Quote-Arg([string]$Value) {
+    if ($null -eq $Value) { return '""' }
+    $escaped = $Value.Replace('\','\\').Replace('"','\"')
+    return '"' + $escaped + '"'
+}
+
+function Resolve-LlamaExecutable {
+    foreach ($name in @('llama-server','llama')) {
+        $cmd = Get-Command $name -ErrorAction SilentlyContinue
+        if ($cmd -and $cmd.Source) { return $cmd.Source }
+    }
+
+    $roots = @(
+        (Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links'),
+        (Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages'),
+        (Join-Path $env:USERPROFILE 'AppData\Local\Microsoft\WinGet\Links'),
+        (Join-Path $env:USERPROFILE 'AppData\Local\Microsoft\WinGet\Packages'),
+        'C:\Users\User\AppData\Local\Microsoft\WinGet\Links',
+        'C:\Users\User\AppData\Local\Microsoft\WinGet\Packages'
+    ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
+
+    foreach ($root in $roots) {
+        foreach ($name in @('llama-server.exe','llama.exe')) {
+            try {
+                $hit = Get-ChildItem -LiteralPath $root -Filter $name -File -Recurse -ErrorAction SilentlyContinue |
+                    Select-Object -First 1 -ExpandProperty FullName
+                if ($hit) { return $hit }
+            } catch {}
+        }
+    }
+    return $null
+}
+
+function Start-Server([string]$Name, [string]$FilePath, [string[]]$Arguments, [string]$WorkingDirectory) {
+    Write-Host "[$Name] lancement..." -ForegroundColor DarkCyan
+    $resolvedFile = Resolve-Executable $FilePath
+    $argLine = (@($Arguments) | Where-Object { $null -ne $_ } | ForEach-Object { Quote-Arg ([string]$_) }) -join ' '
+
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $resolvedFile
+    $psi.Arguments = $argLine
+    $psi.WorkingDirectory = $WorkingDirectory
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+
+    $process = [System.Diagnostics.Process]::Start($psi)
+    if (-not $process) { throw "Impossible de lancer $Name" }
+    Write-Host "[$Name] PID=$($process.Id)" -ForegroundColor DarkGray
+    return $process
+}
+
+
+function Wait-Service([int]$Port, [string]$Name, $Server, [int]$TimeoutSeconds = 120, [switch]$Optional) {
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        if (Port-Open $Port) {
+            Write-Host "[$Name] READY :$Port" -ForegroundColor Green
+            return $true
+        }
+        if ($Server -and $Server.HasExited) {
+            if ($Optional) {
+                Write-Host "[$Name] process exited before port $Port opened." -ForegroundColor Yellow
+                return $false
+            }
+            throw "$Name stopped before opening port $Port"
+        }
+        Start-Sleep -Seconds 1
+    }
+    if ($Optional) {
+        Write-Host "[$Name] timeout - continuing without this optional service." -ForegroundColor Yellow
+        return $false
+    }
+    throw "$Name not ready on port $Port after $TimeoutSeconds s"
+}
+
+
+function Start-OptionalService([int]$Port, [string]$Name, $Server, [int]$ProbeSeconds = 4) {
+    $deadline = (Get-Date).AddSeconds($ProbeSeconds)
+    while ((Get-Date) -lt $deadline) {
+        if (Port-Open $Port) {
+            Write-Host "[$Name] READY :$Port" -ForegroundColor Green
+            return 'READY'
+        }
+        if ($Server -and $Server.HasExited) {
+            Write-Host "[$Name] OFFLINE - process exited before port $Port opened." -ForegroundColor Yellow
+            return 'OFFLINE'
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    Write-Host "[$Name] STARTING :$Port - attente du chargement avant Jarjar." -ForegroundColor Cyan
+    return 'STARTING'
+}
+
+$WorldRoot = Split-Path -Parent $PSScriptRoot
+$ObsidiaCandidates = @(
+    $env:OBSIDIA_SOURCE_REPO,
+    (Join-Path (Split-Path -Parent $WorldRoot) 'sources\obsidia-x108-proofs'),
+    (Join-Path $env:USERPROFILE 'Desktop\OBSIDIA_WORLDS\sources\obsidia-x108-proofs')
+) | Where-Object { $_ } | Select-Object -Unique
+$Obsidia = $ObsidiaCandidates | Where-Object { Test-Path -LiteralPath (Join-Path $_ 'runtime_terrain_bank_trading_gps\server.kernel.sealed.cjs') } | Select-Object -First 1
+if (-not $Obsidia) { throw "Repo Obsidia introuvable. Candidats: $($ObsidiaCandidates -join ' | ')" }
+
+$JarjarCandidates = @(
+    $env:OBSIDIA_JARJAR_ROOT,
+    (Join-Path $env:USERPROFILE 'Desktop\Jarvis-iron-obsidia-'),
+    'C:\Users\User\Desktop\Jarvis-iron-obsidia-'
+) | Where-Object { $_ } | Select-Object -Unique
+$Jarjar = $JarjarCandidates | Where-Object { Test-Path -LiteralPath (Join-Path $_ 'scripts\run_jarjar_live.py') } | Select-Object -First 1
+if (-not $Jarjar) { throw "Repo Jarjar introuvable. Candidats: $($JarjarCandidates -join ' | ')" }
+
+$JarjarPythonCandidates = @(
+    $env:OBSIDIA_JARJAR_PYTHON,
+    (Join-Path $Jarjar '.venv\Scripts\python.exe'),
+    (Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe')
+) | Where-Object { $_ } | Select-Object -Unique
+$JarjarPython = $JarjarPythonCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if (-not $JarjarPython) { throw "Python Jarjar introuvable. Candidats: $($JarjarPythonCandidates -join ' | ')" }
+
+$KernelDir = Join-Path $Obsidia 'runtime_terrain_bank_trading_gps'
+
+$LlamaExecutable = Resolve-LlamaExecutable
+if ($LlamaExecutable) {
+    $LlamaDir = Split-Path -Parent $LlamaExecutable
+    if (($env:PATH -split ';') -notcontains $LlamaDir) {
+        $env:PATH = "$LlamaDir;$env:PATH"
+    }
+}
+
+
+Write-Host ''
+Write-Host '=== JARJAR SERVER ===' -ForegroundColor Cyan
+Write-Host "Obsidia: $Obsidia"
+Write-Host "Jarjar : $Jarjar"
+Write-Host "Python : $JarjarPython"
+if ($LlamaExecutable) {
+    Write-Host "llama  : $LlamaExecutable" -ForegroundColor Green
+} else {
+    Write-Host "llama  : INTROUVABLE (Qwen restera optionnel)" -ForegroundColor Yellow
+}
+Write-Host ''
+
+if (-not (Test-Path -LiteralPath (Join-Path $KernelDir 'node_modules\express'))) {
+    Write-Host '[1/6] Installation dependances Kernel (npm ci)...' -ForegroundColor Yellow
+    Push-Location $KernelDir
+    try { & npm.cmd ci; if ($LASTEXITCODE -ne 0) { throw "npm ci a echoue avec code $LASTEXITCODE" } }
+    finally { Pop-Location }
+} else { Write-Host '[1/6] Dependances Kernel deja presentes.' -ForegroundColor DarkGray }
+
+if (-not (Port-Open 3001)) {
+    Write-Host '[2/6] Kernel X108 OFFLINE :3001' -ForegroundColor Red
+    Write-Host 'Lance Kernel depuis Monde > Workspace > Lancements pour ouvrir le terminal colore valide.' -ForegroundColor Yellow
+    throw 'Kernel X108 doit etre lance depuis Monde avant Jarjar.'
+}
+Write-Host '[2/6] Kernel X108 deja actif. Reutilisation de :3001.' -ForegroundColor Green
+$null = Wait-Service 3001 'KERNEL X108' $null 10
+
+$ObsidiaPython = @(
+    (Join-Path $Obsidia '.venv\Scripts\python.exe'),
+    (Join-Path $Obsidia 'venv\Scripts\python.exe')
+) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if (-not $ObsidiaPython) {
+    $py = Get-Command python -ErrorAction SilentlyContinue
+    if (-not $py) { throw 'Python Obsidia introuvable.' }
+    $ObsidiaPython = $py.Source
+}
+
+if (-not (Port-Open 8000)) {
+    Write-Host '[3/6] API Obsidia/Brody OFFLINE :8000' -ForegroundColor Red
+    Write-Host 'Lance API depuis Monde > Workspace > Lancements pour ouvrir le terminal colore valide.' -ForegroundColor Yellow
+    throw 'API Obsidia/Brody doit etre lancee depuis Monde avant Jarjar.'
+}
+Write-Host '[3/6] API Obsidia/Brody deja active. Reutilisation de :8000.' -ForegroundColor Green
+$null = Wait-Service 8000 'OBSIDIA API/BRODY' $null 10
+
+$qwenServer = $null
+$qwenReady = $true
+$obsidiaLocal = Join-Path $env:LOCALAPPDATA 'Obsidia'
+New-Item -ItemType Directory -Path $obsidiaLocal -Force | Out-Null
+$qwenTextLog = Join-Path $obsidiaLocal 'jarjar_qwen_text.log'
+
+$qwenNativeLog = Join-Path $obsidiaLocal 'jarjar_qwen_text_llama.log'
+$qwenRepo = 'Qwen/Qwen2.5-3B-Instruct-GGUF'
+$qwenFile = 'qwen2.5-3b-instruct-q4_k_m.gguf'
+$qwenLocalCandidates = @(
+    $env:OBSIDIA_QWEN_TEXT_MODEL,
+    (Join-Path $env:USERPROFILE 'Desktop\MODELS\QWEN\qwen2.5-3b-instruct-q4_k_m.gguf')
+) | Where-Object { $_ } | Select-Object -Unique
+function Get-QwenLocalDownloadWriter([string]$Path) {
+    if (-not $Path) { return $null }
+    try {
+        $escaped = [Regex]::Escape($Path)
+        return Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+            $_.Name -ieq 'curl.exe' -and $_.CommandLine -match $escaped
+        } | Select-Object -First 1
+    } catch { return $null }
+}
+function Test-QwenLocalModelReady([string]$Path) {
+    if (-not $Path -or -not (Test-Path -LiteralPath $Path)) { return $false }
+    try {
+        if ((Get-Item -LiteralPath $Path).Length -le 1000000000) { return $false }
+        return -not (Get-QwenLocalDownloadWriter $Path)
+    } catch { return $false }
+}
+$qwenLocalDownload = $qwenLocalCandidates | Where-Object {
+    (Test-Path -LiteralPath $_) -and (Get-QwenLocalDownloadWriter $_)
+} | Select-Object -First 1
+$qwenLocalModel = $qwenLocalCandidates | Where-Object { Test-QwenLocalModelReady $_ } | Select-Object -First 1
+$qwenTextGpuLayers = if ($env:OBSIDIA_QWEN_TEXT_GPU_LAYERS) { $env:OBSIDIA_QWEN_TEXT_GPU_LAYERS } else { '0' }
+$qwenHfBlobDir = Join-Path $env:USERPROFILE '.cache\huggingface\hub\models--Qwen--Qwen2.5-3B-Instruct-GGUF\blobs'
+
+function Clear-QwenBrokenDownload {
+    if (-not (Test-Path -LiteralPath $qwenHfBlobDir)) { return }
+    $partials = @(Get-ChildItem -LiteralPath $qwenHfBlobDir -Filter '*.downloadInProgress' -File -ErrorAction SilentlyContinue)
+    foreach ($partial in $partials) {
+        Write-Host "[QWEN TEXT] Suppression resume HF incomplet: $($partial.Name)" -ForegroundColor Yellow
+        Remove-Item -LiteralPath $partial.FullName -Force -ErrorAction SilentlyContinue
+    }
+}
+
+if ((Port-Open 8080) -and $qwenLocalModel) {
+    Stop-CanonicalQwenText
+}
+if (-not (Port-Open 8080)) {
+    Write-Host '[4/6] Demarrage Qwen texte :8080...' -ForegroundColor Cyan
+    if ($qwenLocalDownload) {
+        $writer = Get-QwenLocalDownloadWriter $qwenLocalDownload
+        throw "Qwen local est encore en telechargement via curl (PID=$($writer.ProcessId)): $qwenLocalDownload"
+    }
+    if (-not $LlamaExecutable) { throw 'llama-server introuvable pour Qwen texte.' }
+    Remove-Item -LiteralPath $qwenTextLog -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $qwenNativeLog -Force -ErrorAction SilentlyContinue
+    if ($qwenLocalModel) {
+        Write-Host "[QWEN TEXT] Modele local detecte: $qwenLocalModel" -ForegroundColor Green
+        $qwenArgs = @(
+            '-m', $qwenLocalModel,
+            '--host', '127.0.0.1',
+            '--port', '8080',
+            '-c', '4096',
+            '--gpu-layers', $qwenTextGpuLayers,
+            '--log-file', $qwenNativeLog,
+            '--log-verbosity', '5',
+            '--log-colors', 'off'
+        )
+    } else {
+        Clear-QwenBrokenDownload
+        $qwenArgs = @(
+            '-hfr', $qwenRepo,
+            '-hff', $qwenFile,
+            '--host', '127.0.0.1',
+            '--port', '8080',
+            '-c', '4096',
+            '--gpu-layers', $qwenTextGpuLayers,
+            '--log-file', $qwenNativeLog,
+            '--log-verbosity', '5',
+            '--log-colors', 'off'
+        )
+    }
+    $qwenServer = Start-Server 'QWEN TEXT' $LlamaExecutable $qwenArgs $Jarjar
+} else { Write-Host '[4/6] Qwen texte deja actif.' -ForegroundColor DarkGray }
+$qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 12
+
+if ($qwenState -eq 'STARTING') {
+    Write-Host '[QWEN TEXT] Attente activation reelle :8080 avant Jarjar...' -ForegroundColor Cyan
+    try {
+        Wait-Service 8080 'QWEN TEXT' $qwenServer 180
+        $qwenState = 'READY'
+    } catch {
+        $qwenState = 'OFFLINE'
+        Write-Host "[QWEN TEXT] Echec activation initiale: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
+if ($qwenState -eq 'OFFLINE' -and -not (Port-Open 8080)) {
+    Write-Host '[QWEN TEXT] Premier lancement echoue. Nettoyage du resume HF puis retry propre...' -ForegroundColor Yellow
+    if (Test-Path -LiteralPath $qwenNativeLog) {
+        Get-Content -LiteralPath $qwenNativeLog -Tail 20 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
+    }
+    Start-Sleep -Seconds 1
+    Remove-Item -LiteralPath $qwenNativeLog -Force -ErrorAction SilentlyContinue
+    if ($qwenLocalModel) {
+        $qwenRetryArgs = @(
+            '-m', $qwenLocalModel,
+            '--host', '127.0.0.1',
+            '--port', '8080',
+            '-c', '4096',
+            '--gpu-layers', $qwenTextGpuLayers,
+            '--log-file', $qwenNativeLog,
+            '--log-verbosity', '5',
+            '--log-colors', 'off'
+        )
+    } else {
+        Clear-QwenBrokenDownload
+        $qwenRetryArgs = @(
+            '-hfr', $qwenRepo,
+            '-hff', $qwenFile,
+            '--host', '127.0.0.1',
+            '--port', '8080',
+            '-c', '4096',
+            '--gpu-layers', $qwenTextGpuLayers,
+            '--log-file', $qwenNativeLog,
+            '--log-verbosity', '5',
+            '--log-colors', 'off'
+        )
+    }
+    $qwenServer = Start-Server 'QWEN TEXT RETRY CLEAN' $LlamaExecutable $qwenRetryArgs $Jarjar
+    try {
+        Wait-Service 8080 'QWEN TEXT' $qwenServer 180
+        $qwenState = 'READY'
+    } catch {
+        $qwenState = 'OFFLINE'
+        Write-Host "[QWEN TEXT] Echec activation apres retry: $($_.Exception.Message)" -ForegroundColor Red
+    }
+}
+
+if ($qwenState -eq 'OFFLINE') {
+    Write-Host '[QWEN TEXT] Dernieres lignes du diagnostic :' -ForegroundColor Yellow
+    if (Test-Path -LiteralPath $qwenNativeLog) {
+        Write-Host '[QWEN TEXT] Diagnostic llama.cpp :' -ForegroundColor Yellow
+        Get-Content -LiteralPath $qwenNativeLog -Tail 30 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
+    } else {
+        Write-Host '  Aucun log llama.cpp produit.' -ForegroundColor DarkYellow
+    }
+}
+
+$qwenReady = ($qwenState -eq 'READY')
+if (-not $qwenReady) {
+    throw 'Qwen texte :8080 non READY. Jarjar ne demarre pas tant que le provider local texte est indisponible.'
+}
+
+$visionServer = $null
+$visionReady = $true
+if (-not (Port-Open 8081)) {
+    Write-Host '[5/6] Demarrage Qwen-VL :8081...' -ForegroundColor Cyan
+    $launcher = Join-Path $Jarjar 'scripts\start_qwen_vl.ps1'
+    if (-not (Test-Path $launcher)) { throw "Launcher Qwen-VL absent: $launcher" }
+    $visionServer = Start-Server 'QWEN-VL' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher) $Jarjar
+} else { Write-Host '[5/6] Qwen-VL deja actif.' -ForegroundColor DarkGray }
+$visionState = Start-OptionalService 8081 'QWEN-VL' $visionServer 4
+$visionReady = ($visionState -eq 'READY')
+
+Write-Host ''
+Write-Host '====================================================' -ForegroundColor Green
+if ($qwenState -eq 'STARTING') { Write-Host 'QWEN TEXT: STARTING - chargement en arriere-plan.' -ForegroundColor Cyan }
+elseif (-not $qwenReady) { Write-Host 'QWEN TEXT: OFFLINE - Jarjar continue sans route locale Qwen.' -ForegroundColor Yellow }
+if ($visionState -eq 'STARTING') { Write-Host 'QWEN-VL: STARTING - chargement en arriere-plan.' -ForegroundColor Cyan }
+elseif (-not $visionReady) { Write-Host 'QWEN-VL: OFFLINE - Jarjar continue sans vision locale.' -ForegroundColor Yellow }
+Write-Host '[6/6] SERVEURS READY -> INTERFACE JARJAR' -ForegroundColor Green
+Write-Host '====================================================' -ForegroundColor Green
+$env:JARJAR_BOUNDED_STRUCTURED_ROUTING_V0='1'
+$env:JARJAR_LOCAL_BRODY='1'
+$env:JARJAR_OBSIDIA_CHAT_URL='http://127.0.0.1:8000/api/brody/chat'
+$env:JARJAR_QWEN_URL='http://127.0.0.1:8080/v1/chat/completions'
+$env:JARJAR_VISION_URL='http://127.0.0.1:8081/v1/chat/completions'
+$env:JARJAR_KERNEL_URL='http://127.0.0.1:3001/kernel/ragnarok'
+$env:PYTHONUTF8='1'
+$env:PYTHONUNBUFFERED='1'
+$env:PYTHONIOENCODING='utf-8'
+Set-Location -LiteralPath $Jarjar
+& $JarjarPython -m scripts.run_jarjar_live
+
+Write-Host ''
+Write-Host "Jarjar termine. ExitCode=$LASTEXITCODE" -ForegroundColor Yellow
+Read-Host 'Entree pour fermer'
+
+    if (-not ($recognizedByCommand -or $recognizedByExecutable)) {
+        Write-Host "[QWEN TEXT] PID=$pidValue process=$processName" -ForegroundColor Yellow
+        if ($line) { Write-Host "[QWEN TEXT] CommandLine=$line" -ForegroundColor DarkYellow }
         throw "Port 8080 occupe par un processus non reconnu. Aucun arret automatique effectue. PID=$pidValue"
     }
-    Write-Host "[QWEN TEXT] Redemarrage propre du llama-server existant PID=$pidValue" -ForegroundColor Yellow
+
+    Write-Host "[QWEN TEXT] Redemarrage propre du llama-server existant PID=$pidValue process=$processName" -ForegroundColor Yellow
     taskkill.exe /PID $pidValue /T /F | Out-Null
     $deadline = (Get-Date).AddSeconds(10)
     while ((Get-Date) -lt $deadline -and (Port-Open 8080)) { Start-Sleep -Milliseconds 200 }
