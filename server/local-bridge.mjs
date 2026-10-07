@@ -446,6 +446,34 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  for(const [id,v] of processes)if(processes.size>50&&!v.active)processes.delete(id);
  await awaitObserver(session,p);res.end(JSON.stringify({sessionId:session,started:true}));return
  }
+ if(req.method==='GET'&&url.pathname==='/cli-runtime'){
+  const services=nativeServicesObservedStatus()
+  const byId=id=>services.find(s=>s.id===id)
+  const root=repository()
+  const nativeMemoryCandidates=[
+   resolve(root,'_obsidia_native_memory','OBSIDIA_NATIVE_MEMORY_INDEX_V1'),
+   resolve(root,'runtime_terrain_bank_trading_gps','_obsidia_native_memory','OBSIDIA_NATIVE_MEMORY_INDEX_V1')
+  ]
+  const nativeMemoryReady=nativeMemoryCandidates.some(p=>existsSync(p))
+  const api=byId('obsidia-api'),kernel=byId('kernel-x108')
+  const sigmaReady=!!api?.ready
+  const state=(api?.ready&&kernel?.ready&&nativeMemoryReady)?'READY':'DEGRADED'
+  res.end(JSON.stringify({
+   schema:'MONDE_CLI_RUNTIME_PROJECTION_V1',
+   readonly:true,
+   canonicalTruth:false,
+   decisionAuthority:'KX108_ONLY',
+   state,
+   services:[
+    {id:'kernel',label:'Kernel X108',status:kernel?.state||'OFFLINE',evidence:kernel?.evidence||'PORT_3001'},
+    {id:'api',label:'API Obsidia / Brody',status:api?.state||'OFFLINE',evidence:api?.evidence||'PORT_8000'},
+    {id:'sigma',label:'Sigma / domaines',status:sigmaReady?'READY':'OFFLINE',evidence:'API_8000_SIGMA_ROUTES'},
+    {id:'native-memory',label:'Native Memory',status:nativeMemoryReady?'READY':'NOT_OBSERVED',evidence:'LOCAL_NATIVE_MEMORY_INDEX'}
+   ],
+   legacy:{graphiti:'HISTORICAL_NOT_ACTIVE',neo4j:'HISTORICAL_NOT_ACTIVE',ui5173:'LEGACY_SURFACE_NOT_MONDE'},
+   observedAt:new Date().toISOString()
+  }));return
+ }
  if(req.method==='GET'&&url.pathname==='/state'){
  const snap=snapshot(),live=liveSnapshot()
  live.sessions=(live.sessions||[]).map(s=>{
