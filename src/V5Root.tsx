@@ -41,6 +41,7 @@ export default function V5Root(){
  const [processes,setProcesses]=useState<Process[]>([])
  const [searchQuery,setSearchQuery]=useState('')
  const [searchKind,setSearchKind]=useState<'all'|'agent'|'mission'|'domain'|'file'|'proof'|'layer'>('all')
+ const [searchSelection,setSearchSelection]=useState<{id:string;kind:string;label:string;meta:string}|null>(null)
 
  useEffect(()=>{
   const abort=new AbortController()
@@ -88,15 +89,18 @@ export default function V5Root(){
  },[shared,worldZone,live,snap,layers])
 
  const searchResults=useMemo(()=>{
-  const q=searchQuery.trim().toLowerCase();if(q.length<2)return [] as {id:string;kind:string;label:string;meta:string;action:()=>void}[]
+  const q=searchQuery.trim().toLowerCase()
+  if(q.length<2&&searchKind==='all')return [] as {id:string;kind:string;label:string;meta:string;action:()=>void}[]
   const out:{id:string;kind:string;label:string;meta:string;action:()=>void}[]=[]
-  const allow=(k:string)=>searchKind==='all'||(searchKind==='agent'&&k.includes('agent'))||(searchKind==='mission'&&k.includes('mission'))||(searchKind==='domain'&&k.includes('domain'))||(searchKind==='file'&&k.includes('fichier'))||(searchKind==='layer'&&k.includes('couche'))||(searchKind==='proof'&&['decision','receipt','rollback','impact','result','artifact','preuve'].some(x=>k.includes(x)))
-  for(const a of agents){const hay=(a.name+' '+a.family+' '+(a.role||'')).toLowerCase();if(hay.includes(q)&&allow('agent'))out.push({id:'rd:'+a.id,kind:'Agent R&D',label:a.name,meta:a.family,action:()=>{setWorldZone('agents');go('world')}})}
-  for(const l of layers){const hay=(l.title+' '+l.path+' '+l.content).toLowerCase();if(hay.includes(q)&&allow('couche'))out.push({id:'layer:'+l.id,kind:'Couche',label:l.title,meta:l.path,action:()=>{setWorldZone('layers');go('world')}})}
-  for(const p of files){if(p.toLowerCase().includes(q)&&allow('fichier'))out.push({id:'file:'+p,kind:'Fichier',label:p.split('/').at(-1)||p,meta:p,action:()=>{void openFile(p);setWorkspaceArea('files');go('workspace')}})}
-  for(const e of shared?.entities||[]){const hay=(e.label+' '+e.kind+' '+(e.path||'')+' '+(e.source||'')).toLowerCase();if(hay.includes(q)&&allow(e.kind.toLowerCase()))out.push({id:e.id,kind:e.kind,label:e.label,meta:e.path||e.source||e.id,action:()=>{focus(e.id);go('world')}})}
-  for(const m of shared?.missions||[]){const hay=(m.actionId+' '+(m.agentId||'')+' '+m.status).toLowerCase();if(hay.includes(q)&&allow('mission'))out.push({id:m.id,kind:'Mission',label:m.actionId,meta:(m.agentId||'—')+' · '+m.status,action:()=>{focus(m.id);go('world')}})}
-  return out.slice(0,80)
+  const hit=(text:string)=>!q||text.toLowerCase().includes(q)
+  const allow=(k:string)=>searchKind==='all'||(searchKind==='agent'&&k.includes('agent'))||(searchKind==='mission'&&k.includes('mission'))||(searchKind==='domain'&&k.includes('domain'))||(searchKind==='file'&&k.includes('fichier'))||(searchKind==='layer'&&k.includes('couche'))||(searchKind==='proof'&&['decision','receipt','rollback','impact','result','artifact','preuve','sealed'].some(x=>k.includes(x)))
+  const add=(id:string,kind:string,label:string,meta:string,action:()=>void)=>{if(allow(kind.toLowerCase())&&hit(label+' '+meta+' '+kind))out.push({id,kind,label,meta,action})}
+  for(const a of agents)add('rd:'+a.id,'Agent R&D',a.name,a.family+' · '+(a.role||'rôle non documenté'),()=>setSearchSelection({id:'rd:'+a.id,kind:'Agent R&D',label:a.name,meta:a.family+' · '+(a.role||'rôle non documenté')}))
+  for(const l of layers)add('layer:'+l.id,'Couche',l.title,l.path,()=>setSearchSelection({id:'layer:'+l.id,kind:'Couche',label:l.title,meta:l.path}))
+  for(const p of files)add('file:'+p,'Fichier',p.split('/').at(-1)||p,p,()=>setSearchSelection({id:'file:'+p,kind:'Fichier',label:p.split('/').at(-1)||p,meta:p}))
+  for(const e of shared?.entities||[])add(e.id,e.kind,e.label,e.path||e.source||e.targetPath||e.id,()=>setSearchSelection({id:e.id,kind:e.kind,label:e.label,meta:e.path||e.source||e.targetPath||e.id}))
+  for(const m of shared?.missions||[])add(m.id,'Mission',m.actionId,(m.agentId||'agent non relié')+' · '+m.status,()=>setSearchSelection({id:m.id,kind:'Mission',label:m.actionId,meta:(m.agentId||'agent non relié')+' · '+m.status}))
+  return out.slice(0,100)
  },[searchQuery,searchKind,agents,layers,files,shared])
 
  const domainCount=shared?.entities.filter(e=>e.kind==='domain').length||0
@@ -159,7 +163,7 @@ export default function V5Root(){
 
      <article className="v5-panel">
       <header><div><h2>Dernières preuves et résultats</h2><small>{resultEntities.length} récent(s)</small></div><button onClick={()=>{setWorkspaceArea('files');go('workspace')}}>Voir tout</button></header>
-      <div className="v5-list results">{resultEntities.map(e=><button key={e.id} onClick={()=>focus(e.id)}><span className="avatar result">▤</span><div><strong>{e.label}</strong><small>{e.kind} · {e.path||e.source||'objet partagé'}</small></div><em>OK</em></button>)}{!resultEntities.length&&<p className="v5-empty">Aucun résultat récent.</p>}</div>
+      <div className="v5-list results">{resultEntities.map(e=><button key={e.id} onClick={()=>{focus(e.id);setWorldZone('knowledge')}}><span className="avatar result">▤</span><div><strong>{e.label}</strong><small>{e.kind} · {e.path||e.source||'objet partagé'}</small></div><em>OK</em></button>)}{!resultEntities.length&&<p className="v5-empty">Aucun résultat récent.</p>}</div>
      </article>
     </section>
 
@@ -201,7 +205,9 @@ export default function V5Root(){
 
    {view==='search'&&<section className="v5-page">
     <header className="v5-page-head"><div><small>TROUVER</small><h1>Recherche</h1><p>Un seul endroit pour retrouver agents, missions, domaines, fichiers et preuves.</p></div></header>
-    <section className="v5-search"><input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Chercher dans Obsidia…" aria-label="Recherche globale"/><nav>{([['all','Tout'],['agent','Agents'],['mission','Missions'],['domain','Domaines'],['file','Fichiers'],['proof','Preuves'],['layer','Couches']] as const).map(([id,label])=><button key={id} aria-pressed={searchKind===id} onClick={()=>setSearchKind(id)}>{label}</button>)}</nav><div className="v5-search-results">{searchQuery.trim().length>=2?(searchResults.length?searchResults.map(r=><button key={r.id} onClick={r.action}><small>{r.kind}</small><strong>{r.label}</strong><span>{r.meta}</span></button>):<p className="v5-empty">Aucun résultat.</p>):<p className="v5-empty">Écris au moins deux caractères.</p>}</div></section>
+    <section className="v5-search"><input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Chercher dans Obsidia…" aria-label="Recherche globale"/><nav>{([['all','Tout'],['agent','Agents'],['mission','Missions'],['domain','Domaines'],['file','Fichiers'],['proof','Preuves'],['layer','Couches']] as const).map(([id,label])=><button key={id} aria-pressed={searchKind===id} onClick={()=>{setSearchKind(id);setSearchSelection(null)}}>{label}</button>)}</nav><div className="v5-search-results">{searchResults.length?searchResults.map(r=><button key={r.id} onClick={r.action}><small>{r.kind}</small><strong>{r.label}</strong><span>{r.meta}</span></button>):<p className="v5-empty">{searchKind==='all'&&searchQuery.trim().length<2?'Choisis une catégorie ou écris au moins deux caractères.':'Aucun résultat.'}</p>}</div>
+    {searchSelection&&<aside className="v5-search-detail"><header><div><small>{searchSelection.kind}</small><h2>{searchSelection.label}</h2></div><button onClick={()=>setSearchSelection(null)}>Fermer</button></header><p>{searchSelection.meta}</p><div className="v5-detail-actions">{searchSelection.kind==='Fichier'?<button onClick={()=>{void openFile(searchSelection.meta);setWorkspaceArea('files');go('workspace')}}>Ouvrir dans Workspace</button>:searchSelection.kind==='Couche'?<button onClick={()=>{const id=searchSelection.id.slice(6);const l=layers.find(x=>x.id===id);if(l){setSelectedFile(l.path);setFileContent(l.content)}setWorldZone('layers');go('world')}}>Ouvrir la couche</button>:<><button onClick={()=>{if(!searchSelection.id.startsWith('rd:'))focus(searchSelection.id);setWorldZone(searchSelection.kind==='Mission'?'activity':searchSelection.kind.toLowerCase().includes('domain')?'domains':searchSelection.kind.toLowerCase().includes('agent')?'agents':['result','artifact'].includes(searchSelection.kind)?'knowledge':'governance');go('world')}}>Voir dans Monde</button>{searchSelection.kind.toLowerCase().includes('agent')&&<button onClick={()=>go('agents')}>Voir dans Pokémon</button>}</>}</div></aside>}
+    </section>
     <section className="v5-recent"><h2>Activité récente</h2>{recent.map((e,i)=><button key={e.sessionId+e.timestamp+i} onClick={()=>{focus('session:'+e.sessionId);go('world')}}><strong>{e.name||e.agentId}</strong><span>{e.phase}</span><small>{e.message}</small></button>)}</section>
    </section>}
   </main>
