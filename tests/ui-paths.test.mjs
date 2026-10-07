@@ -80,3 +80,27 @@ test('Pokemon lifecycle includes catalog available and inactive agents',()=>{
   "Registre détaillé",
  ]) assert.ok(pokemon.includes(invariant),invariant)
 })
+
+
+test('Kernel and API READY require canonical process identity',()=>{
+ for(const invariant of [
+  "PORT_3001_CANONICAL_PROCESS",
+  "PORT_8000_CANONICAL_PROCESS",
+  "PORT_3001_FOREIGN_PROCESS",
+  "PORT_8000_FOREIGN_PROCESS",
+  "canonicalPortOwner('kernel-x108'",
+  "canonicalPortOwner('obsidia-api'",
+  "Pré-requis Jarjar refusé",
+ ]) assert.ok(bridge.includes(invariant),invariant)
+ assert.ok(!bridge.includes("ready:portOpen(3001)"))
+ assert.ok(!bridge.includes("ready:portOpen(8000)"))
+})
+
+test('Jarjar prefers a completed local Qwen GGUF',()=>{
+ for(const invariant of [
+  "OBSIDIA_QWEN_TEXT_MODEL",
+  "Desktop\\MODELS\\QWEN\\qwen2.5-3b-instruct-q4_k_m.gguf",
+  "$qwenLocalModel",
+  "'-m', $qwenLocalModel",
+ ]) assert.ok(jarjarLauncher.includes(invariant),invariant)
+})
