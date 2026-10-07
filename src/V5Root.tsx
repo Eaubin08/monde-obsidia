@@ -16,10 +16,10 @@ type Layer={id:string;title:string;content:string;path:string;commit:string}
 type Proposal={id:string;path:string;receipt:string|null;observedAt:string;data:Record<string,unknown>}
 type Snapshot={available:boolean;repository?:string;sha?:string;branch?:string;files:string[];proposals:Proposal[];worktrees?:{path:string;branch:string;head:string;dirty:boolean}[]}
 type Entity={id:string;kind:string;label:string;agentId?:string;path?:string;source?:string;targetPath?:string;status?:string;gate?:string;reasonCode?:string;decisionAuthority?:string;runtimeFilePresent?:boolean}
-type Session={id:string;sessionId:string;agentId:string;name:string;presence:'live'|'unknown'|'ended';phase:string;message:string;objective:string|null;nativeService?:boolean;source?:string;repository?:string;decisionAuthority?:string;observedState?:string;events:{kind:string;phase:string;message:string;timestamp:string;objective?:string;result?:Record<string,unknown>}[]}
+type Session={id:string;sessionId:string;agentId:string;name:string;presence:'live'|'unknown'|'ended';phase:string;message:string;objective:string|null;nativeService?:boolean;nativeTerminal?:boolean;surface?:'terminal'|'interface'|null;source?:string;repository?:string;decisionAuthority?:string;observedState?:string;events:{kind:string;phase:string;message:string;timestamp:string;objective?:string;result?:Record<string,unknown>}[]}
 type Mission={id:string;label:string;actionId:string;agentId:string|null;status:string;traceabilityStatus:string;sessionRefs:string[];resultRefs:string[];primaryBlocker?:string;recommendedNextStep?:string}
 type Shared={decisionAuthority:string;entities:Entity[];relations:{from:string;type:string;to:string}[];sessions:Session[];missions:Mission[]}
-type Process={sessionId:string;active:boolean;runtimeActive:boolean;native:boolean;tool:string;output:string}
+type Process={sessionId:string;active:boolean;runtimeActive:boolean;native:boolean;surface?:'terminal'|'interface';tool:string;output:string}
 
 const nav:[View,string][]=[['world','Monde'],['workspace','Workspace'],['agents','Pokémon'],['search','Recherche']]
 const zones:[WorldZone,string][]=[['home','Vue globale'],['activity','Activité'],['rnd','R&D / Build'],['agents','Agents & organes'],['governance','Gouvernance & preuves'],['knowledge','Objets & résultats'],['domains','Domaines'],['layers','Couches documentaires']]
@@ -73,7 +73,11 @@ export default function V5Root(){
  const openFile=async(path:string)=>{setSelectedFile(path);try{const r=await fetch('/obsidia-local/file?path='+encodeURIComponent(path));const d=await r.json();if(!r.ok)throw Error(d.error||'Lecture impossible');setFileContent(d.content||'')}catch(e){setFileContent(String(e))}}
  const activeTool=(tool:'brody'|'obsidure'|'cli')=>{
   const all=[...(shared?.sessions||[])].reverse().filter(s=>s.agentId===tool)
-  const integrated=(s:Session)=>{const p=processes.find(p=>p.sessionId===s.sessionId);return !!p&&!p.native}
+  const integrated=(s:Session)=>{
+   if(s.surface)return s.surface==='interface'
+   const p=processes.find(p=>p.sessionId===s.sessionId)
+   return !!p&&!p.native
+  }
   return all.find(s=>s.presence==='live'&&integrated(s))||all.find(integrated)
  }
  const runTool=async(tool:'brody'|'obsidure'|'cli',mode='interactive')=>{setToolBusy(true);setMessage('Démarrage '+tool+'…');try{const d=await sessionAction('run',{mode,tool});if(d.sessionId)sessionStorage.setItem('obsidia-selected-session',d.sessionId);setMessage(tool+' prêt')}catch(e){setMessage(String(e))}finally{setToolBusy(false)}}
