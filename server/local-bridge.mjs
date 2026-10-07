@@ -354,7 +354,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   if(p.native){await stopTerminal(p.pid);p.active=false;markEnd(session,'Jarjar arrêté depuis Monde')}else p.child.kill()
   res.end(JSON.stringify({ok:true,sessionId:session,state:'OFFLINE'}));return
  }
- if(req.method==='GET'&&url.pathname==='/processes'){await Promise.all([...processes.entries()].filter(([,p])=>p.native&&p.active).map(async ([id,p])=>{p.active=await terminalAlive(p.pid);if(!p.active)markEnd(id,'Terminal Windows fermé')}));res.end(JSON.stringify({processes:[...processes.entries()].map(([id,p])=>({sessionId:id,active:p.active,runtimeActive:p.active&&liveSnapshot().sessions.find(s=>s.sessionId===id)?.presence!=='ended',exitCode:p.exitCode,native:!!p.native,tool:p.tool,title:p.title,output:p.native&&existsSync(resolve(liveDirectory,id+'.console.txt'))?readFileSync(resolve(liveDirectory,id+'.console.txt'),'utf8').slice(-32000):p.output}))}));return}
+ if(req.method==='GET'&&url.pathname==='/processes'){await Promise.all([...processes.entries()].filter(([,p])=>p.native&&p.active).map(async ([id,p])=>{p.active=await terminalAlive(p.pid);if(!p.active)markEnd(id,'Terminal Windows fermé')}));res.end(JSON.stringify({processes:[...processes.entries()].map(([id,p])=>({sessionId:id,active:p.active,runtimeActive:p.active&&liveSnapshot().sessions.find(s=>s.sessionId===id)?.presence!=='ended',exitCode:p.exitCode,native:!!p.native,tool:p.tool,surface:p.surface||(p.native?'terminal':'interface'),title:p.title,output:p.native&&existsSync(resolve(liveDirectory,id+'.console.txt'))?readFileSync(resolve(liveDirectory,id+'.console.txt'),'utf8').slice(-32000):p.output}))}));return}
  if(req.method==='POST'&&(url.pathname==='/run'||url.pathname.startsWith('/input/')||url.pathname.startsWith('/stop/')||url.pathname.startsWith('/focus/'))){
  if(req.headers.origin!==`http://${req.headers.host}`)throw Error('Origine refusée');
  const data=await body(req);
@@ -378,7 +378,15 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  for(const [id,v] of processes)if(processes.size>50&&!v.active)processes.delete(id);
  await awaitObserver(session,p);res.end(JSON.stringify({sessionId:session,started:true}));return
  }
- if(req.method==='GET'&&url.pathname==='/state'){const snap=snapshot(),live=liveSnapshot();live.jarjar=jarjarObservedStatus();live.nativeServices=nativeServicesObservedStatus();res.end(JSON.stringify(buildObsidiaState(snap,live)));return}
+ if(req.method==='GET'&&url.pathname==='/state'){
+ const snap=snapshot(),live=liveSnapshot()
+ live.sessions=(live.sessions||[]).map(s=>{
+  const p=processes.get(s.sessionId)
+  return p?{...s,surface:p.surface||(p.native?'terminal':'interface'),nativeTerminal:!!p.native}:s
+ })
+ live.jarjar=jarjarObservedStatus();live.nativeServices=nativeServicesObservedStatus()
+ res.end(JSON.stringify(buildObsidiaState(snap,live)));return
+}
  if(req.method==='GET'&&url.pathname==='/live'){res.end(JSON.stringify(liveSnapshot()));return}
  if(req.method==='GET'&&url.pathname==='/reports'){
  const reports=existsSync(liveDirectory)?readdirSync(liveDirectory).filter(f=>/^[a-zA-Z0-9-]+\.report\.json$/.test(f)).slice(-100).flatMap(f=>{try{return [JSON.parse(readFileSync(resolve(liveDirectory,f),'utf8'))]}catch{return []}}):[];res.end(JSON.stringify({reports}));return
@@ -403,7 +411,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   emitNativeService(session,id,spec.title,root)
   const command=`$host.UI.RawUI.WindowTitle='${title.replaceAll("'","''")}'; ${spec.command}`
   const pid=await launchTerminal(command)
-  const p={pid,active:true,output:'',exitCode:null,native:true,tool:id,title};processes.set(session,p)
+  const p={pid,active:true,output:'',exitCode:null,native:true,surface:'terminal',tool:id,title};processes.set(session,p)
   res.end(JSON.stringify({opened:true,tool:id,sessionId:session,pid}));return
  }
  if(id==='jarjar'){
@@ -417,7 +425,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   const session=randomUUID(),title='OBSIDIA · JARJAR FULL · '+session.slice(0,8)
   const command=`$host.UI.RawUI.WindowTitle='${title}'; & '${master.replaceAll("'","''")}'; Write-Host 'Ce terminal reste ouvert.'`
   const pid=await launchTerminal(command)
-  const p={pid,active:true,output:'',exitCode:null,native:true,tool:id,title};processes.set(session,p)
+  const p={pid,active:true,output:'',exitCode:null,native:true,surface:'terminal',tool:id,title};processes.set(session,p)
   res.end(JSON.stringify({opened:true,tool:id,sessionId:session,pid,repository:jr,launcher:master}));return
  }
  const file=launchers[id];if(!file)throw Error('Outil non raccordé');if(launching.has(id))throw Error('Cet outil est déjà en cours de lancement');launchKey=id;launching.add(id);const root=realpathSync(repository());contained(root,file);
@@ -426,7 +434,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  const pythonArgs=[wrapper,'--repo',root,'--output',liveDirectory,'--agent',id,'--session',session];
  const command=terminalCommand(root,title,pythonFor(root),pythonArgs);
  const pid=await launchTerminal(command);
- const p={pid,active:true,output:'',exitCode:null,native:true,tool:id,title};processes.set(session,p);await awaitObserver(session,p);res.end(JSON.stringify({opened:true,tool:id,sessionId:session,pid}));return
+ const p={pid,active:true,output:'',exitCode:null,native:true,surface:'terminal',tool:id,title};processes.set(session,p);await awaitObserver(session,p);res.end(JSON.stringify({opened:true,tool:id,sessionId:session,pid}));return
  }
  res.statusCode=404;res.end(JSON.stringify({error:'Route inconnue'}))
  }catch(e){res.statusCode=400;res.end(JSON.stringify({error:e.message}))}finally{if(launchKey)launching.delete(launchKey)}
