@@ -286,11 +286,25 @@ function canonicalPortOwner(id,pid){
 async function releaseFrozenServicePort(id){
  const port=id==='kernel-x108'?3001:id==='obsidia-api'?8000:null
  if(!port)return
- if(id==='obsidia-api')closeOwnedBrodyApi()
+
+ if(id==='obsidia-api'){
+  closeOwnedBrodyApi()
+  const gracefulDeadline=Date.now()+2500
+  while(Date.now()<gracefulDeadline){
+   await new Promise(r=>setTimeout(r,120))
+   if(!listeningPid(port))return
+  }
+ }
+
  let pid=listeningPid(port)
  if(!pid)return
  if(!canonicalPortOwner(id,pid))throw Error(`Port ${port} déjà occupé par un processus non reconnu. Aucun arrêt automatique effectué.`)
- execFileSync('taskkill.exe',['/PID',String(pid),'/T','/F'],{encoding:'utf8',timeout:10000,windowsHide:true})
+ try{
+  execFileSync('taskkill.exe',['/PID',String(pid),'/T','/F'],{encoding:'utf8',timeout:10000,windowsHide:true})
+ }catch{
+  if(!listeningPid(port))return
+  throw Error(`Impossible d'arrêter l'ancienne instance Obsidia sur le port ${port}.`)
+ }
  const deadline=Date.now()+5000
  while(Date.now()<deadline){
   await new Promise(r=>setTimeout(r,120))
