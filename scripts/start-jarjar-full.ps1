@@ -35,6 +35,39 @@ function Port-Open([int]$Port) {
     } catch { return $false }
 }
 
+function Get-ListeningPid([int]$Port) {
+    try {
+        $line = netstat.exe -ano -p tcp | Where-Object {
+            $_ -match 'LISTENING' -and $_ -match "[:\]]$Port\s+"
+        } | Select-Object -First 1
+        if (-not $line) { return $null }
+        $parts = ($line -split '\s+') | Where-Object { $_ }
+        $pidValue = 0
+        if ([int]::TryParse($parts[-1], [ref]$pidValue)) { return $pidValue }
+    } catch {}
+    return $null
+}
+
+function Get-ProcessCommandLine([int]$ProcessId) {
+    try {
+        return (Get-CimInstance Win32_Process -Filter "ProcessId = $ProcessId" -ErrorAction Stop).CommandLine
+    } catch { return '' }
+}
+
+function Stop-CanonicalQwenText {
+    $pidValue = Get-ListeningPid 8080
+    if (-not $pidValue) { return }
+    $line = Get-ProcessCommandLine $pidValue
+    if ($line -notmatch 'llama-server(?:\.exe)?' -or $line -notmatch '(?:--port\s+|--port=)8080\b') {
+        throw "Port 8080 occupe par un processus non reconnu. Aucun arret automatique effectue. PID=$pidValue"
+    }
+    Write-Host "[QWEN TEXT] Redemarrage propre du llama-server existant PID=$pidValue" -ForegroundColor Yellow
+    taskkill.exe /PID $pidValue /T /F | Out-Null
+    $deadline = (Get-Date).AddSeconds(10)
+    while ((Get-Date) -lt $deadline -and (Port-Open 8080)) { Start-Sleep -Milliseconds 200 }
+    if (Port-Open 8080) { throw 'Impossible de liberer le port 8080.' }
+}
+
 function Resolve-Executable([string]$FilePath) {
     if (Test-Path -LiteralPath $FilePath) { return (Resolve-Path -LiteralPath $FilePath).Path }
     $command = Get-Command $FilePath -ErrorAction SilentlyContinue
@@ -253,6 +286,7 @@ $qwenLocalDownload = $qwenLocalCandidates | Where-Object {
     (Test-Path -LiteralPath $_) -and (Get-QwenLocalDownloadWriter $_)
 } | Select-Object -First 1
 $qwenLocalModel = $qwenLocalCandidates | Where-Object { Test-QwenLocalModelReady $_ } | Select-Object -First 1
+$qwenTextGpuLayers = if ($env:OBSIDIA_QWEN_TEXT_GPU_LAYERS) { $env:OBSIDIA_QWEN_TEXT_GPU_LAYERS } else { '0' }
 $qwenHfBlobDir = Join-Path $env:USERPROFILE '.cache\huggingface\hub\models--Qwen--Qwen2.5-3B-Instruct-GGUF\blobs'
 
 function Clear-QwenBrokenDownload {
@@ -264,6 +298,9 @@ function Clear-QwenBrokenDownload {
     }
 }
 
+if ((Port-Open 8080) -and $qwenLocalModel) {
+    Stop-CanonicalQwenText
+}
 if (-not (Port-Open 8080)) {
     Write-Host '[4/6] Demarrage Qwen texte :8080...' -ForegroundColor Cyan
     if ($qwenLocalDownload) {
@@ -280,6 +317,7 @@ if (-not (Port-Open 8080)) {
             '--host', '127.0.0.1',
             '--port', '8080',
             '-c', '4096',
+            '--gpu-layers', $qwenTextGpuLayers,
             '--log-file', $qwenNativeLog,
             '--log-verbosity', '5',
             '--log-colors', 'off'
@@ -292,6 +330,7 @@ if (-not (Port-Open 8080)) {
             '--host', '127.0.0.1',
             '--port', '8080',
             '-c', '4096',
+            '--gpu-layers', $qwenTextGpuLayers,
             '--log-file', $qwenNativeLog,
             '--log-verbosity', '5',
             '--log-colors', 'off'
@@ -325,6 +364,7 @@ if ($qwenState -eq 'OFFLINE' -and -not (Port-Open 8080)) {
             '--host', '127.0.0.1',
             '--port', '8080',
             '-c', '4096',
+            '--gpu-layers', $qwenTextGpuLayers,
             '--log-file', $qwenNativeLog,
             '--log-verbosity', '5',
             '--log-colors', 'off'
@@ -337,6 +377,7 @@ if ($qwenState -eq 'OFFLINE' -and -not (Port-Open 8080)) {
             '--host', '127.0.0.1',
             '--port', '8080',
             '-c', '4096',
+            '--gpu-layers', $qwenTextGpuLayers,
             '--log-file', $qwenNativeLog,
             '--log-verbosity', '5',
             '--log-colors', 'off'
