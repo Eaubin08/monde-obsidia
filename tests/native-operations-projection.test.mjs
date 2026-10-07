@@ -42,7 +42,7 @@ test('native operational projection exposes only canonical readonly objects',()=
    updated_at:'2026-10-07T12:02:00+00:00',version:1
   })
   write(resolve(ops,'native_crm','followup','id-followup-storage','state.json'),{
-   schema:'CRM_FOLLOWUP_NATIVE_V0',followup_id:'office-followup:abc',record_id:'office-case:abc',task_ref:'task-1',
+   schema:'CRM_FOLLOWUP_NATIVE_V0',followup_id:'office-followup:abc',record_id:'office-case:abc',task_ref:'office-task:abc',
    due_at:'2026-10-10T17:00:00+00:00',status:'OPEN',created_at:'2026-10-07T12:02:00+00:00',
    updated_at:'2026-10-07T12:02:00+00:00',version:1
   })
