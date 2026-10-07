@@ -352,3 +352,18 @@ Cela ne remplace pas :
 - le test de routage Jarjar avec Qwen :8080 READY
 
 Ces validations restent à exécuter en fin de téléchargement Qwen.
+
+
+### Corrections de navigation et vérité runtime — passage 2
+
+- Mission accueil Monde : ouvre maintenant la zone Activité avec la mission sélectionnée.
+- Activité récente : ouvre maintenant la zone Activité avec la session sélectionnée.
+- Bouton Workspace depuis un objet Monde : ouvre l'onglet Brody / Obsidure / CLI lorsque le contexte le permet.
+- Recherche → Pokémon : transporte désormais la sélection d'agent ; les entrées R&D essaient de résoudre l'agent canonique par libellé.
+- Recherche → Monde : conserve également le contexte ciblé.
+- Statut global V5 : `Core LIVE` n'est plus dérivé de `snapshot.available`.
+  - Kernel X108 READY observé requis.
+  - API Obsidia READY observée requise.
+  - Un repo lisible sans runtime affiche désormais `Sources disponibles / Runtime core non prêt`.
+
+Quick checks source après ce passage : `20/20` invariants critiques présents.
