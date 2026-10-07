@@ -6,10 +6,39 @@ type Entity={id:string;kind:string;label:string;agentId?:string;domainId?:string
 type Mission={id:string;actionId:string;agentId:string|null;status:string;traceabilityStatus:string;sessionRefs:string[];resultRefs:string[];primaryBlocker?:string}
 type Family={id:string;label:string;kind:string;agents:string[];localPresent:boolean}
 type State={entities:Entity[];relations:{from:string;type:string;to:string}[];sessions:Session[];missions:Mission[];agentFamilies?:Family[]}
-type Filter='all'|'live'|'ready'|'planned'|'blocked'|'inactive'
+type Filter='all'|'live'|'available'|'preparing'|'blocked'|'inactive'
+type Stage='Disponible'|'Préparation'|'Travail'|'Validation'|'Preuve'|'Bloqué'
 
-const stage=(s:Session)=>s.status==='blocked'||s.status==='error'?'Bloqué':['STARTING','SESSION_CONFIG'].includes(s.phase)?'Préparation':s.phase==='WAITING_INPUT'?'Disponible':['V_VALIDATION','LEAN_BUILD'].includes(s.phase)?'Validation':['R_REINTEGRATION','BRODY_RESPONSE'].includes(s.phase)?'Review / preuve':'Travail'
-const stages=['Disponible','Préparation','Travail','Validation','Review / preuve','Bloqué']
+const stage=(s:Session):Stage=>{
+ if(s.status==='blocked'||s.status==='error')return 'Bloqué'
+ if(['STARTING','SESSION_CONFIG'].includes(s.phase))return 'Préparation'
+ if(s.phase==='WAITING_INPUT')return 'Disponible'
+ if(['V_VALIDATION','LEAN_BUILD'].includes(s.phase))return 'Validation'
+ if(['R_REINTEGRATION','BRODY_RESPONSE'].includes(s.phase))return 'Preuve'
+ return 'Travail'
+}
+const stages:Stage[]=['Disponible','Préparation','Travail','Validation','Preuve','Bloqué']
+const stageMeta:Record<Stage,{icon:string;help:string}>={
+ Disponible:{icon:'✦',help:'Prêt à recevoir une mission'},
+ Préparation:{icon:'⚙',help:'Cadrage et préparation'},
+ Travail:{icon:'↯',help:'Exécution et production'},
+ Validation:{icon:'◇',help:'Contrôle et amélioration'},
+ Preuve:{icon:'✓',help:'Résultat et preuve'},
+ Bloqué:{icon:'!',help:'Diagnostic nécessaire'}
+}
+const roleMeta=(s:Pick<Session,'agentId'|'name'>)=>{
+ const k=(s.agentId+' '+s.name).toLowerCase()
+ if(k.includes('brody'))return {glyph:'▥',label:'Analyse / synthèse'}
+ if(k.includes('obsidure'))return {glyph:'⬡',label:'Preuve / logique'}
+ if(k.includes('jarjar')||k.includes('jarvis'))return {glyph:'≋',label:'Assistant / interaction'}
+ if(k.includes('vision')||k.includes('mira'))return {glyph:'◉',label:'Vision / perception'}
+ if(k.includes('plan')||k.includes('luna'))return {glyph:'◔',label:'Planification'}
+ if(k.includes('audit')||k.includes('guard')||k.includes('quality'))return {glyph:'◇',label:'Contrôle / qualité'}
+ if(k.includes('research')||k.includes('search')||k.includes('veille'))return {glyph:'⌕',label:'Recherche / veille'}
+ if(k.includes('strategy')||k.includes('strat'))return {glyph:'♞',label:'Stratégie'}
+ if(k.includes('data')||k.includes('analyse'))return {glyph:'▥',label:'Analyse / données'}
+ return {glyph:'◈',label:'Agent Obsidia'}
+}
 
 export default function V5Pokemon(){
  const [state,setState]=useState<State|null>(null)
@@ -26,7 +55,7 @@ export default function V5Pokemon(){
 
  const sessions=state?.sessions||[]
  const live=sessions.filter(s=>s.presence==='live'&&!s.nativeService&&s.agentId!=='cli')
- const current=sessions.find(s=>s.sessionId===selected)
+ const current=live.find(s=>s.sessionId===selected)||live[0]
  const currentMission=current?state?.missions.find(m=>m.sessionRefs.includes('session:'+current.sessionId)):undefined
  const declaredFamilies=state?.agentFamilies||[]
  const familyAgentIds=new Set(declaredFamilies.flatMap(f=>f.agents))
@@ -35,54 +64,97 @@ export default function V5Pokemon(){
  const families=[...declaredFamilies,...(runtimeAgentIds.length?[runtimeFamily]:[])]
  const catalog=new Set(families.flatMap(f=>f.agents))
  const liveIds=new Set(live.map(s=>s.agentId))
- const blocked=live.filter(s=>s.status==='blocked'||s.status==='error')
+ const blocked=live.filter(s=>stage(s)==='Bloqué')
  const inactive=[...catalog].filter(id=>!liveIds.has(id)).length
  const counts:{id:Filter;label:string;value:number}[]=[
-  {id:'all',label:'Total',value:catalog.size},{id:'live',label:'Live',value:liveIds.size},{id:'ready',label:'Disponibles',value:live.filter(s=>stage(s)==='Disponible').length},
-  {id:'planned',label:'Préparation',value:live.filter(s=>stage(s)==='Préparation').length},{id:'blocked',label:'Bloqués',value:blocked.length},{id:'inactive',label:'Inactifs',value:inactive}
+  {id:'all',label:'Population',value:catalog.size},
+  {id:'live',label:'Agents vivants',value:live.length},
+  {id:'available',label:'Disponibles',value:live.filter(s=>stage(s)==='Disponible').length},
+  {id:'preparing',label:'Préparation',value:live.filter(s=>stage(s)==='Préparation').length},
+  {id:'blocked',label:'Bloqués',value:blocked.length},
+  {id:'inactive',label:'Inactifs',value:inactive}
  ]
  const visible=live.filter(s=>{
-  const match=filter==='all'||filter==='live'||(filter==='blocked'&&(s.status==='blocked'||s.status==='error'))||(filter==='ready'&&stage(s)==='Disponible')||(filter==='planned'&&stage(s)==='Préparation')
+  const st=stage(s)
+  const match=filter==='all'||filter==='live'||(filter==='blocked'&&st==='Bloqué')||(filter==='available'&&st==='Disponible')||(filter==='preparing'&&st==='Préparation')
   return match&&(!family||families.find(f=>f.id===family)?.agents.includes(s.agentId))
  })
  const teams=(state?.missions||[]).map(m=>({m,sessions:live.filter(s=>m.sessionRefs.includes('session:'+s.sessionId))})).filter(x=>x.sessions.length)
  const ungrouped=live.filter(s=>!teams.some(t=>t.sessions.some(x=>x.sessionId===s.sessionId)))
- const catalogSelected=catalogSelection?catalog.has(catalogSelection)?catalogSelection:'':selected?current?.agentId||'':''
+ const catalogSelected=catalogSelection?catalog.has(catalogSelection)?catalogSelection:'':current?.agentId||''
  const catalogLive=catalogSelected?live.find(s=>s.agentId===catalogSelected):undefined
  const catalogFamily=catalogSelected?families.find(f=>f.agents.includes(catalogSelected)):undefined
+ const selectedFamily=current?families.find(f=>f.agents.includes(current.agentId)):undefined
+ const currentRole=current?roleMeta(current):null
 
  const focus=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
  const choose=(s:Session)=>{setSelected(s.sessionId);sessionStorage.setItem('obsidia-selected-session',s.sessionId);focus('session:'+s.sessionId)}
  const workspace=(s:Session)=>{choose(s);sessionStorage.setItem('obsidia-workspace-area',s.agentId==='brody'?'brody':s.agentId==='obsidure'?'obsidure':s.agentId==='cli'?'cli':'home');location.hash='workspace'}
 
- return <section className="v5pk">
-  <header className="v5-page-head"><div><small>QUI ?</small><h1>Pokémon</h1><p>Les agents, leurs états et leurs actions au même endroit.</p></div><div className="v5pk-head-counts"><strong>{live.length} agent(s) live</strong><small>services système déplacés dans Workspace</small></div></header>
+ return <section className="v5pk v5pk-world">
+  <header className="v5pk-hero-head">
+   <div><small>QUI ?</small><h1>Pokémon</h1><p>Un village vivant d’agents : qui travaille, où, avec qui et jusqu’à quelle preuve.</p></div>
+   <div className="v5pk-head-counts"><strong>{live.length} agent(s) live</strong><small>services système dans Workspace</small></div>
+  </header>
 
-  <section className="v5pk-status">{counts.map(c=><button key={c.id} aria-pressed={filter===c.id} onClick={()=>setFilter(c.id)}><strong>{c.value}</strong><span>{c.label}</span></button>)}</section>
+  <section className="v5pk-status v5pk-status-rich">{counts.map(c=><button key={c.id} aria-pressed={filter===c.id} onClick={()=>setFilter(c.id)}><strong>{c.value}</strong><span>{c.label}</span></button>)}</section>
 
-  <section className="v5pk-now">
-   <div className="v5pk-panel">
-    <div className="v5pk-title"><div><small>EN CE MOMENT</small><h2>Agents actifs</h2></div><select value={family} onChange={e=>setFamily(e.target.value)}><option value="">Toutes les familles</option>{families.map(f=><option key={f.id} value={f.id}>{f.label}</option>)}</select></div>
-    <div className="v5pk-agent-grid">{visible.map(s=><button key={s.sessionId} className={selected===s.sessionId?'selected':''} onClick={()=>choose(s)}><span className="v5pk-live-dot"/><strong>{s.name}</strong><small>{stage(s)}</small><p>{s.objective||s.message||'En attente'}</p><em>{s.repository?.split(/[\\/]/).pop()||'contexte non observé'}</em></button>)}{!visible.length&&<p className="v5-empty">Aucun agent actif pour ce filtre.</p>}</div>
-   </div>
-   <aside className="v5pk-inspector">
-    <small>SÉLECTION</small>
-    {current?<><h2>{current.name}</h2><span className="v5pk-state">{stage(current)}</span><h3>Travail</h3><p>{current.objective||current.message}</p><h3>Mission / preuve</h3><p>{currentMission?currentMission.actionId:'Aucune mission reliée'}</p><strong>{currentMission?.traceabilityStatus||'preuve non reliée'}</strong>{currentMission?.primaryBlocker&&<p className="v5pk-blocked">{currentMission.primaryBlocker}</p>}<div className="v5pk-actions"><button onClick={()=>workspace(current)}>Workspace</button><button onClick={()=>{focus(currentMission?.id||'session:'+current.sessionId);location.hash='world'}}>Monde</button></div><details><summary>Détails techniques</summary><p>{current.sessionId}</p><p>{current.repository}</p><p>{current.phase}</p></details></>:<><h2>Aucun agent sélectionné</h2><p>Clique un agent pour voir son travail.</p></>}
+  <section className="v5pk-village-layout">
+   <article className="v5pk-village-card">
+    <header className="v5pk-section-head"><div><small>VILLAGE VIVANT</small><h2>Agents par cycle de vie</h2><p>Chaque zone représente un état réel observé dans le travail des agents.</p></div><select value={family} onChange={e=>setFamily(e.target.value)}><option value="">Toutes les familles</option>{families.map(f=><option key={f.id} value={f.id}>{f.label}</option>)}</select></header>
+    <div className="v5pk-village-map">
+     {stages.map(name=>{
+      const items=visible.filter(s=>stage(s)===name)
+      const meta=stageMeta[name]
+      return <section key={name} className={'v5pk-habitat habitat-'+name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-')}>
+       <header><span className="v5pk-habitat-icon">{meta.icon}</span><div><strong>{name}</strong><small>{items.length} agent(s)</small></div></header>
+       <div className="v5pk-habitat-agents">{items.map(s=>{const role=roleMeta(s);return <button key={s.sessionId} className={current?.sessionId===s.sessionId?'selected':''} onClick={()=>choose(s)} title={role.label}><span className="v5pk-role-symbol">{role.glyph}</span><strong>{s.name}</strong><small>{role.label}</small></button>})}{!items.length&&<span className="v5pk-zone-empty">Aucun agent</span>}</div>
+      </section>
+     })}
+     <div className="v5pk-village-core"><span>◈</span><small>Obsidia</small></div>
+    </div>
+   </article>
+
+   <aside className="v5pk-agent-card">
+    <header><small>FICHE AGENT</small>{current&&<span className="v5pk-live-pill">● Actif</span>}</header>
+    {current?<><div className="v5pk-agent-identity"><span className="v5pk-agent-emblem">{currentRole?.glyph}</span><div><h2>{current.name}</h2><p>{currentRole?.label}</p></div></div>
+     <nav className="v5pk-agent-tabs"><button aria-pressed="true">Vue d’ensemble</button><button onClick={()=>focus(currentMission?.id||'session:'+current.sessionId)}>Mission</button><button onClick={()=>focus('session:'+current.sessionId)}>Historique</button></nav>
+     <dl className="v5pk-agent-facts">
+      <div><dt>Famille</dt><dd>{selectedFamily?.label||'Runtime'}</dd></div>
+      <div><dt>Mission actuelle</dt><dd>{currentMission?.actionId||'Aucune mission reliée'}</dd></div>
+      <div><dt>Phase actuelle</dt><dd><span className={'stage-dot stage-'+stage(current).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-')}/>{stage(current)}</dd></div>
+      <div><dt>Dernière action</dt><dd>{current.objective||current.message||current.phase}</dd></div>
+      <div><dt>Preuve</dt><dd>{currentMission?.traceabilityStatus||'Non reliée'}</dd></div>
+      <div><dt>Statut</dt><dd>{currentMission?.primaryBlocker?'Blocage : '+currentMission.primaryBlocker:'En cours'}</dd></div>
+     </dl>
+     <button className="v5pk-workspace-cta" onClick={()=>workspace(current)}>Ouvrir dans Workspace</button>
+     <details className="v5pk-tech"><summary>Détails techniques</summary><p>{current.sessionId}</p><p>{current.repository}</p><p>{current.phase}</p></details>
+    </>:<div className="v5-empty"><h2>Aucun agent actif</h2><p>Le village se remplira avec les sessions observées.</p></div>}
    </aside>
   </section>
 
-  <details className="v5pk-archive v5pk-village-block" open><summary>Village visuel</summary><div className="v5pk-village-scene"><div className="village-zone zone-work"><strong>Zone travail</strong>{live.filter(s=>['Travail','Validation','Review / preuve'].includes(stage(s))).map(s=><button key={s.sessionId} onClick={()=>{choose(s);setCatalogSelection(s.agentId)}}><span>●</span><strong>{s.name}</strong><small>{stage(s)}</small></button>)}</div><div className="village-zone zone-ready"><strong>Zone disponible</strong>{live.filter(s=>['Disponible','Préparation'].includes(stage(s))).map(s=><button key={s.sessionId} onClick={()=>{choose(s);setCatalogSelection(s.agentId)}}><span>●</span><strong>{s.name}</strong><small>{stage(s)}</small></button>)}</div><div className="village-zone zone-blocked"><strong>Zone blocage</strong>{live.filter(s=>stage(s)==='Bloqué').map(s=><button key={s.sessionId} onClick={()=>{choose(s);setCatalogSelection(s.agentId)}}><span>●</span><strong>{s.name}</strong><small>{stage(s)}</small></button>)}</div>{!live.length&&<p className="v5-empty">Village vide.</p>}</div></details>
-
-  <section className="v5pk-pipeline">
-   <div className="v5pk-title"><div><small>PARCOURS VIVANT</small><h2>Cycle de travail des agents</h2><p>Lis de gauche à droite : disponible → préparation → travail → validation → preuve. Les blocages sortent du flux normal.</p></div></div>
-   <div>{stages.map((name,index)=>{const items=live.filter(s=>stage(s)===name);return <article key={name} className={name==='Bloqué'?'blocked-stage':''}><header><span className="stage-number">{index+1}</span><strong>{name}</strong><span>{items.length}</span></header><p className="stage-help">{name==='Disponible'?'Prêt à recevoir une demande':name==='Préparation'?'Session et contexte en préparation':name==='Travail'?'Exécution / raisonnement en cours':name==='Validation'?'Tests et vérifications':name==='Review / preuve'?'Résultat et preuve en finalisation':'Intervention nécessaire'}</p>{items.map(s=><button key={s.sessionId} onClick={()=>choose(s)}>{s.name}<small>{s.objective||s.phase}</small></button>)}</article>})}</div>
+  <section className="v5pk-cycle">
+   <header className="v5pk-section-head"><div><small>CYCLE VIVANT</small><h2>Du disponible à la preuve</h2><p>Le parcours réel d’un agent, avec le blocage comme sortie d’exception.</p></div></header>
+   <div className="v5pk-cycle-track">{stages.map(name=>{const items=live.filter(s=>stage(s)===name);const meta=stageMeta[name];return <article key={name} className={'cycle-'+name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-')}><span className="v5pk-cycle-icon">{meta.icon}</span><div><strong>{name}</strong><small>{meta.help}</small></div><em>{items.length}</em><div className="v5pk-cycle-agents">{items.slice(0,5).map(s=><button key={s.sessionId} onClick={()=>choose(s)} title={s.name}>{roleMeta(s).glyph}</button>)}{items.length>5&&<span>+{items.length-5}</span>}</div></article>})}</div>
   </section>
 
-  <section className="v5pk-split">
-   <section className="v5pk-panel"><div className="v5pk-title"><div><small>MISSIONS / ÉQUIPES</small><h2>Qui travaille ensemble</h2></div></div>{teams.map(({m,sessions})=><article className="v5pk-team" key={m.id}><strong>{m.actionId}</strong><small>{m.status} · {m.traceabilityStatus}</small><div>{sessions.map(s=><button key={s.sessionId} onClick={()=>choose(s)}>{s.name}</button>)}</div></article>)}{ungrouped.length>0&&<article className="v5pk-team"><strong>Live sans mission reliée</strong><div>{ungrouped.map(s=><button key={s.sessionId} onClick={()=>choose(s)}>{s.name}</button>)}</div></article>}</section>
-   <section className="v5pk-panel"><div className="v5pk-title"><div><small>POPULATION CONNUE</small><h2>Familles</h2></div></div><div className="v5pk-family-grid">{families.map(f=><button key={f.id} className={family===f.id?'selected':''} onClick={()=>{setFamily(f.id);setCatalogSelection(f.agents[0]||'')}}><strong>{f.label}</strong><span>{f.agents.filter(id=>liveIds.has(id)).length} live / {f.agents.length}</span><small>{f.kind}</small></button>)}</div></section>
+  <section className="v5pk-bottom-grid">
+   <article className="v5pk-panel">
+    <div className="v5pk-title"><div><small>MISSIONS / ÉQUIPES</small><h2>Qui travaille ensemble</h2></div></div>
+    <div className="v5pk-team-list">{teams.map(({m,sessions})=><button className="v5pk-team-row" key={m.id} onClick={()=>focus(m.id)}><span className="v5pk-team-mark">◎</span><div><strong>{m.actionId}</strong><small>{m.status} · {m.traceabilityStatus}</small></div><div className="v5pk-mini-agents">{sessions.map(s=><i key={s.sessionId} title={s.name}>{roleMeta(s).glyph}</i>)}</div><em>{sessions.length}</em></button>)}{ungrouped.length>0&&<div className="v5pk-team-row muted"><span className="v5pk-team-mark">○</span><div><strong>Live sans mission reliée</strong><small>{ungrouped.length} agent(s)</small></div><div className="v5pk-mini-agents">{ungrouped.map(s=><i key={s.sessionId}>{roleMeta(s).glyph}</i>)}</div></div>}{!teams.length&&!ungrouped.length&&<p className="v5-empty">Aucune équipe observée.</p>}</div>
+   </article>
+
+   <article className="v5pk-panel">
+    <div className="v5pk-title"><div><small>FAMILLES / POPULATION</small><h2>Population connue</h2></div></div>
+    <div className="v5pk-family-list">{families.map(f=>{const liveCount=f.agents.filter(id=>liveIds.has(id)).length;return <button key={f.id} className={family===f.id?'selected':''} onClick={()=>{setFamily(f.id);setCatalogSelection(f.agents[0]||'')}}><span className="v5pk-family-symbol">◫</span><div><strong>{f.label}</strong><small>{liveCount} live / {f.agents.length} connus</small></div><em>{f.kind}</em></button>})}</div>
+   </article>
+
+   <details className="v5pk-panel v5pk-registry-compact" open>
+    <summary>Registre détaillé</summary>
+    <div className="v5pk-registry-stream">{live.slice().sort((a,b)=>String(b.timestamp).localeCompare(String(a.timestamp))).slice(0,12).map(s=><button key={s.sessionId} onClick={()=>{choose(s);setCatalogSelection(s.agentId)}}><time>{String(s.timestamp||'').slice(11,16)||'—'}</time><span className="v5pk-stream-symbol">{roleMeta(s).glyph}</span><div><strong>{s.name}</strong><small>{s.objective||s.message||stage(s)}</small></div><em>{stage(s)}</em></button>)}{!live.length&&<p className="v5-empty">Aucune activité live.</p>}</div>
+   </details>
   </section>
 
-  <details className="v5pk-archive v5pk-registry-block" open><summary>Registre détaillé du catalogue</summary><div className="v5pk-registry-layout"><div>{families.map(f=><section key={f.id}><h3>{f.label} · {f.agents.length}</h3><div className="v5pk-registry">{f.agents.map(id=><button key={id} className={catalogSelection===id?'selected':''} onClick={()=>{setCatalogSelection(id);setFamily(f.id)}}><strong>{id}</strong><small>{liveIds.has(id)?'LIVE':'inactif'}</small></button>)}</div></section>)}</div><aside className="v5pk-catalog-detail">{catalogSelected?<><small>FICHE AGENT</small><h2>{catalogSelected}</h2><p>Famille : <strong>{catalogFamily?.label||'non classée'}</strong></p><p>État : <strong>{catalogLive?'LIVE':'inactif / non observé'}</strong></p>{catalogLive&&<><p>Phase : <strong>{stage(catalogLive)}</strong></p><p>{catalogLive.objective||catalogLive.message}</p><div className="v5pk-actions"><button onClick={()=>choose(catalogLive)}>Voir la session</button><button onClick={()=>workspace(catalogLive)}>Workspace</button></div></>}<button onClick={()=>focus('agent:'+catalogSelected)}>Partager ce contexte</button></>:<><h2>Sélectionne un agent</h2><p>La fiche détaillée apparaîtra ici sans quitter Pokémon.</p></>}</aside></div></details>
+  {catalogSelected&&<section className="v5pk-catalog-drawer"><header><div><small>CATALOGUE</small><h2>{catalogSelected}</h2></div><button onClick={()=>setCatalogSelection('')}>Fermer</button></header><div><p>Famille : <strong>{catalogFamily?.label||'non classée'}</strong></p><p>État : <strong>{catalogLive?'LIVE':'inactif / non observé'}</strong></p>{catalogLive&&<><p>Phase : <strong>{stage(catalogLive)}</strong></p><p>{catalogLive.objective||catalogLive.message}</p><div className="v5pk-actions"><button onClick={()=>choose(catalogLive)}>Voir la session</button><button onClick={()=>workspace(catalogLive)}>Workspace</button></div></>}</div></section>}
  </section>
 }
