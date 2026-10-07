@@ -419,3 +419,52 @@ Le réaudit source ne peut pas prouver sans exécution Windows :
 - que build + tests TypeScript passent dans l'environnement local.
 
 Ces points restent réservés au test live final.
+
+
+### Réaudit source — passage 4 (angles alternatifs)
+
+Angles audités :
+- dérive par rapport au freeze runtime ;
+- code legacy encore compilé par TypeScript ;
+- readonly réel du bridge ;
+- vérité des chemins externes ;
+- coût du polling source ;
+- états périmés silencieux ;
+- cohérence du runbook opérateur.
+
+Constats / corrections :
+
+- `FREEZE_TERMINAL_DRIFT` : AUCUNE
+  - `server/native-terminal.mjs` et `scripts/start-service-colored.ps1` ne font pas partie du diff depuis `freeze/monde-runtime-raccord-20261007`.
+
+- `BRIDGE_READONLY_WRITES` : COHERENT
+  - les écritures du bridge/observer vont vers `.obsidia-live` et les rapports d'observation, pas vers la source canonique X108.
+
+- `VITE_PREVIEW_RUNTIME` : DOCUMENTE
+  - `DEMARRER.cmd` utilise bien `npm run dev` et charge le bridge.
+  - `vite preview` n'implémente pas `configurePreviewServer` et ne doit donc pas être utilisé comme launcher runtime.
+  - README corrigé.
+
+- `README_ARCHITECTURE_DRIFT` : CORRIGE
+  - l'ancien modèle « launchers dans Pokémon / Brody démarre son API » a été remplacé par la V5 réelle.
+
+- `QWEN_MANUAL_DOWNLOAD_RACE` : CORRIGE
+  - si `curl.exe` écrit encore le GGUF local, Jarjar refuse de démarrer Qwen au lieu de lancer un second téléchargement Hugging Face.
+
+- `EXTERNAL_REPO_FALSE_ABSENT` : CORRIGE
+  - GPS et Trading utilisent désormais plusieurs candidats locaux + `OBSIDIA_GPS_ROOT` / `OBSIDIA_TRADING_ROOT`.
+
+- `SNAPSHOT_DUPLICATE_WORK` : CORRIGE
+  - `/snapshot` et `/state` appelaient tous deux les scans Git/source dans le même cycle UI.
+  - cache court 3 s ajouté pour éviter les doubles `git ls-files`, `git worktree list`, `git status` et scans evidence.
+
+- `STALE_UI_ON_POLL_FAILURE` : CORRIGE
+  - Pokémon et Lancements affichent maintenant explicitement une perte d'observation runtime au lieu de conserver silencieusement le dernier état.
+
+Checks source de ce passage : `16/16`.
+
+### Point restant notable
+
+`tsconfig.app.json` inclut tout `src`.
+Les anciennes vues non actives restent donc compilées par TypeScript même si `main.tsx` charge uniquement `V5Root.tsx`.
+Aucune erreur source évidente n'a été identifiée dans les fichiers legacy inspectés, mais seule l'exécution de `npm run build` sur le fixe ferme définitivement ce risque.
