@@ -377,8 +377,40 @@ async function awaitObserver(id,p){
  }
  throw Error('Le terminal a été demandé, mais aucun signal Python n’est arrivé. Vérifie la fenêtre Windows et la commande Python.');
 }
+async function startInterfaceChild(session,p){
+ const child=spawn(pythonFor(p.root),p.args,{cwd:p.root,stdio:['pipe','pipe','pipe'],windowsHide:true,env:{...process.env,PYTHONUNBUFFERED:'1',PYTHONIOENCODING:'utf-8'}})
+ p.child=child
+ p.active=true
+ p.exitCode=null
+ const append=chunk=>{p.output=(p.output+chunk.toString('utf8')).slice(-32000)}
+ child.stdout.on('data',append)
+ child.stderr.on('data',append)
+ child.stdin.on('error',e=>append('Entrée du processus fermée : '+e.message))
+ child.on('error',e=>{p.active=false;append('Erreur de lancement : '+e.message)})
+ child.on('close',code=>{
+  p.active=false
+  p.exitCode=code
+  try{
+   const log=resolve(liveDirectory,session+'.jsonl')
+   const lines=readFileSync(log,'utf8').trim().split('\n')
+   const last=JSON.parse(lines.at(-1))
+   if(last.kind!=='session_end')appendFileSync(log,JSON.stringify({...last,timestamp:new Date().toISOString(),kind:'session_end',phase:'PROCESS_EXIT',status:'error',exitCode:code,message:'Processus interrompu'})+'\n')
+  }catch{}
+  if(!p.stopRequested&&!p.native&&p.surface==='interface'){
+   const delay=Math.min(5000,500+(p.restartCount||0)*500)
+   p.restartCount=(p.restartCount||0)+1
+   p.restartTimer=setTimeout(()=>{
+    if(p.stopRequested)return
+    startInterfaceChild(session,p).catch(e=>append('Relance interface échouée : '+e.message))
+   },delay)
+  }
+ })
+ await new Promise((ok,no)=>{child.once('spawn',ok);child.once('error',no)})
+ return child
+}
+
 async function body(req){let value='';for await(const chunk of req){value+=chunk;if(value.length>8192)throw Error('Requête trop grande')}return value?JSON.parse(value):{}}
-export function localBridge(){return {name:'obsidia-local-bridge',configureServer(server){server.httpServer?.once('close',()=>{closeOwnedBrodyApi();for(const p of processes.values())if(p.active&&!p.native)p.child.kill()});server.middlewares.use('/obsidia-local',async(req,res)=>{
+export function localBridge(){return {name:'obsidia-local-bridge',configureServer(server){server.httpServer?.once('close',()=>{closeOwnedBrodyApi();for(const p of processes.values())if(!p.native){p.stopRequested=true;if(p.restartTimer)clearTimeout(p.restartTimer);if(p.active)p.child.kill()}});server.middlewares.use('/obsidia-local',async(req,res)=>{
  let launchKey;
  const url=new URL(req.url,'http://localhost');res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');
  try{
@@ -398,7 +430,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  const data=await body(req);
  if(url.pathname!=='/run'){
  const id=url.pathname.split('/').pop(),p=processes.get(id);if(!p?.active)throw Error('Session arrêtée ou non gérée');
- if(url.pathname.startsWith('/focus/')){if(!p.native)throw Error('Session intégrée : son terminal est dans la page');await focusTerminal(p.title,p.pid)}else if(url.pathname.startsWith('/stop/')){if(p.native){await stopTerminal(p.pid);p.active=false;markEnd(id,'Terminal fermé depuis la page')}else p.child.kill()}else{if(p.native)throw Error('Saisis ta demande dans le terminal Windows');if(liveSnapshot().sessions.find(s=>s.sessionId===id)?.phase!=='WAITING_INPUT')throw Error('Ce processus n’attend pas de saisie');if(typeof data.text!=='string'||data.text.length>4096||/[\r\n]/.test(data.text))throw Error('Saisie invalide');await new Promise((ok,no)=>p.child.stdin.write(data.text+'\n',e=>e?no(e):ok()))}
+ if(url.pathname.startsWith('/focus/')){if(!p.native)throw Error('Session intégrée : son terminal est dans la page');await focusTerminal(p.title,p.pid)}else if(url.pathname.startsWith('/stop/')){if(p.native){await stopTerminal(p.pid);p.active=false;markEnd(id,'Terminal fermé depuis la page')}else{p.stopRequested=true;if(p.restartTimer)clearTimeout(p.restartTimer);p.child.kill()}}else{if(p.native)throw Error('Saisis ta demande dans le terminal Windows');if(liveSnapshot().sessions.find(s=>s.sessionId===id)?.phase!=='WAITING_INPUT')throw Error('Ce processus n’attend pas de saisie');if(typeof data.text!=='string'||data.text.length>4096||/[\r\n]/.test(data.text))throw Error('Saisie invalide');await new Promise((ok,no)=>p.child.stdin.write(data.text+'\n',e=>e?no(e):ok()))}
  res.end(JSON.stringify({ok:true}));return
  }
  const tool=data.tool||'obsidure';if(!['obsidure','brody','cli'].includes(tool))throw Error('Outil inconnu');const mode=data.mode;if(!['audit','audit-long','interactive'].includes(mode)|| (tool!=='obsidure'&&mode!=='interactive'))throw Error('Mission inconnue');
@@ -409,11 +441,8 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  contained(root,launchers[tool]);
  const args=[observer,'--repo',root,'--output',liveDirectory,'--agent',tool,'--session',session,'--surface','interface'];
  if(mode!=='interactive')args.push('--audit','--audit-cycles',mode==='audit-long'?'20':'1','--audit-interval',mode==='audit-long'?'4':'0');
- const child=spawn(pythonFor(root),args,{cwd:root,stdio:['pipe','pipe','pipe'],windowsHide:true,env:{...process.env,PYTHONUNBUFFERED:'1',PYTHONIOENCODING:'utf-8'}});
- const p={child,active:true,output:'',exitCode:null,tool,native:false,surface:'interface'};processes.set(session,p);
- const append=c=>{p.output=(p.output+c.toString('utf8')).slice(-32000)};child.stdout.on('data',append);child.stderr.on('data',append);child.stdin.on('error',e=>append('Entrée du processus fermée : '+e.message));
- child.on('error',e=>{p.active=false;append('Erreur de lancement : '+e.message)});child.on('close',code=>{p.active=false;p.exitCode=code;try{const log=resolve(liveDirectory,session+'.jsonl');const lines=readFileSync(log,'utf8').trim().split('\n');const last=JSON.parse(lines.at(-1));if(last.kind!=='session_end')appendFileSync(log,JSON.stringify({...last,timestamp:new Date().toISOString(),kind:'session_end',phase:'PROCESS_EXIT',status:'error',exitCode:code,message:'Processus interrompu'})+'\n')}catch{}});
- await new Promise((ok,no)=>{child.once('spawn',ok);child.once('error',no)});
+ const p={child:null,active:false,output:'',exitCode:null,tool,native:false,surface:'interface',root,args,stopRequested:false,restartCount:0,restartTimer:null};processes.set(session,p);
+ await startInterfaceChild(session,p);
  for(const [id,v] of processes)if(processes.size>50&&!v.active)processes.delete(id);
  await awaitObserver(session,p);res.end(JSON.stringify({sessionId:session,started:true}));return
  }
