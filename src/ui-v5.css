@@ -55,3 +55,134 @@ button{cursor:pointer}
 @media(max-width:1300px){.v5-space-grid{grid-template-columns:repeat(2,1fr)}.v5-dashboard-grid{grid-template-columns:1fr 1fr}.v5-dashboard-grid>.v5-panel:last-child{grid-column:1/-1}.v5-bottom-grid{grid-template-columns:1fr}.v5-layer-cards{grid-template-columns:repeat(2,1fr)}.v5pk-launch-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:980px){.v5{grid-template-columns:1fr}.v5-sidebar{position:static;height:auto}.v5-primary-nav{grid-template-columns:repeat(4,1fr)}.v5-sidebar-foot{display:none}.v5-topbar{position:static;grid-template-columns:1fr}.v5-welcome{align-items:flex-start;flex-direction:column}.v5-kpis{justify-content:flex-start}.v5-dashboard-grid{grid-template-columns:1fr}.v5-dashboard-grid>.v5-panel:last-child{grid-column:auto}.v5pk-now,.v5pk-split{grid-template-columns:1fr}.v5pk-inspector{position:static}.v5pk-pipeline>div:last-child{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.v5-main{padding:12px}.v5-primary-nav{grid-template-columns:repeat(2,1fr)}.v5-space-grid,.v5-work-list,.v5-recent,.v5pk-status,.v5pk-agent-grid,.v5pk-launch-grid,.v5pk-pipeline>div:last-child{grid-template-columns:1fr}.v5-layer-cards{grid-template-columns:1fr}.v5-files{grid-template-columns:1fr}.v5-search-results>button{grid-template-columns:1fr}.v5-topbar{height:auto;padding:10px 12px}.v5-system,.v5-core{display:none}}
+
+
+/* Accessibility / contrast pass */
+button, select, input, textarea {
+  color: var(--text);
+}
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  filter: grayscale(.15);
+}
+button[aria-pressed="false"],
+.v5-subnav button:not([aria-pressed="true"]),
+.v5-zonebar button:not([aria-pressed="true"]),
+.v5-search nav button:not([aria-pressed="true"]) {
+  color: #b8c8d8;
+}
+.v5-primary-nav a {
+  color: #c4d3e2;
+}
+.v5-primary-nav a small {
+  color: #7f96aa;
+}
+.v5-primary-nav a[aria-current="page"] strong,
+.v5-primary-nav a[aria-current="page"] small {
+  color: #f2f7ff;
+}
+.v5-space-card,
+.v5-panel,
+.v5-work-list article,
+.v5-tool,
+.v5-files>div,
+.v5-search,
+.v5-recent,
+.v5-archive,
+.v5pk-panel,
+.v5pk-inspector,
+.v5pk-launch,
+.v5pk-pipeline,
+.v5pk-archive {
+  color: var(--text);
+}
+.v5-space-card footer,
+.v5-space-card .head span,
+.v5-space-card .metrics small,
+.v5-list small,
+.v5-panel header small,
+.v5-layer-cards small,
+.v5-work-list article>span,
+.v5pk-agent-grid small,
+.v5pk-agent-grid em,
+.v5pk-family-grid span,
+.v5pk-family-grid small,
+.v5pk-registry small {
+  color: #9db0c2;
+}
+.v5-list>button,
+.v5-search-results>button,
+.v5-recent button,
+.v5-layer-cards button,
+.v5pk-agent-grid>button,
+.v5pk-launch-grid article,
+.v5pk-family-grid button,
+.v5pk-registry button {
+  color: var(--text);
+}
+.v5-list>button:hover,
+.v5-search-results>button:hover,
+.v5-recent button:hover,
+.v5-layer-cards button:hover,
+.v5pk-agent-grid>button:hover,
+.v5pk-family-grid button:hover,
+.v5pk-registry button:hover {
+  background: #12253a;
+}
+.v5-list em {
+  color: #72efa7;
+}
+.v5-list em.blocked {
+  color: #ff929a;
+}
+.v5-system,
+.v5-core,
+.v5-kpis article,
+.v5-space-card,
+.v5-panel,
+.v5-search,
+.v5-tool,
+.v5-files>div,
+.v5pk-panel,
+.v5pk-inspector,
+.v5pk-launch,
+.v5pk-pipeline,
+.v5pk-archive {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.015);
+}
+.v5-top-search input::placeholder,
+.v5-search>input::placeholder,
+.v5-composer textarea::placeholder,
+.v5-composer input::placeholder {
+  color: #7f95a9;
+}
+.v5-top-search input,
+.v5-search>input,
+.v5-composer textarea,
+.v5-composer input,
+.v5pk-title select {
+  color: #eef5ff;
+  background: #081522;
+}
+.v5pk-title select option {
+  background: #0b1725;
+  color: #eef5ff;
+}
+.v5-layer-list pre,
+.v5-tool-output pre,
+.v5-files pre {
+  color: #dce8f4;
+  background: #08121d;
+}
+a, button {
+  -webkit-tap-highlight-color: transparent;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #6aaeff;
+  outline-offset: 2px;
+}
