@@ -135,7 +135,7 @@ function Start-OptionalService([int]$Port, [string]$Name, $Server, [int]$ProbeSe
         }
         Start-Sleep -Milliseconds 500
     }
-    Write-Host "[$Name] STARTING :$Port - Jarjar continue pendant le chargement." -ForegroundColor Cyan
+    Write-Host "[$Name] STARTING :$Port - attente du chargement avant Jarjar." -ForegroundColor Cyan
     return 'STARTING'
 }
 
@@ -229,6 +229,13 @@ $qwenTextLog = Join-Path $obsidiaLocal 'jarjar_qwen_text.log'
 $qwenNativeLog = Join-Path $obsidiaLocal 'jarjar_qwen_text_llama.log'
 $qwenRepo = 'Qwen/Qwen2.5-3B-Instruct-GGUF'
 $qwenFile = 'qwen2.5-3b-instruct-q4_k_m.gguf'
+$qwenLocalCandidates = @(
+    $env:OBSIDIA_QWEN_TEXT_MODEL,
+    (Join-Path $env:USERPROFILE 'Desktop\MODELS\QWEN\qwen2.5-3b-instruct-q4_k_m.gguf')
+) | Where-Object { $_ } | Select-Object -Unique
+$qwenLocalModel = $qwenLocalCandidates | Where-Object {
+    (Test-Path -LiteralPath $_) -and ((Get-Item -LiteralPath $_).Length -gt 1000000000)
+} | Select-Object -First 1
 $qwenHfBlobDir = Join-Path $env:USERPROFILE '.cache\huggingface\hub\models--Qwen--Qwen2.5-3B-Instruct-GGUF\blobs'
 
 function Clear-QwenBrokenDownload {
@@ -245,18 +252,30 @@ if (-not (Port-Open 8080)) {
     if (-not $LlamaExecutable) { throw 'llama-server introuvable pour Qwen texte.' }
     Remove-Item -LiteralPath $qwenTextLog -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $qwenNativeLog -Force -ErrorAction SilentlyContinue
-    Clear-QwenBrokenDownload
-
-    $qwenArgs = @(
-        '-hfr', $qwenRepo,
-        '-hff', $qwenFile,
-        '--host', '127.0.0.1',
-        '--port', '8080',
-        '-c', '4096',
-        '--log-file', $qwenNativeLog,
-        '--log-verbosity', '5',
-        '--log-colors', 'off'
-    )
+    if ($qwenLocalModel) {
+        Write-Host "[QWEN TEXT] Modele local detecte: $qwenLocalModel" -ForegroundColor Green
+        $qwenArgs = @(
+            '-m', $qwenLocalModel,
+            '--host', '127.0.0.1',
+            '--port', '8080',
+            '-c', '4096',
+            '--log-file', $qwenNativeLog,
+            '--log-verbosity', '5',
+            '--log-colors', 'off'
+        )
+    } else {
+        Clear-QwenBrokenDownload
+        $qwenArgs = @(
+            '-hfr', $qwenRepo,
+            '-hff', $qwenFile,
+            '--host', '127.0.0.1',
+            '--port', '8080',
+            '-c', '4096',
+            '--log-file', $qwenNativeLog,
+            '--log-verbosity', '5',
+            '--log-colors', 'off'
+        )
+    }
     $qwenServer = Start-Server 'QWEN TEXT' $LlamaExecutable $qwenArgs $Jarjar
 } else { Write-Host '[4/6] Qwen texte deja actif.' -ForegroundColor DarkGray }
 $qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 12
@@ -279,17 +298,29 @@ if ($qwenState -eq 'OFFLINE' -and -not (Port-Open 8080)) {
     }
     Start-Sleep -Seconds 1
     Remove-Item -LiteralPath $qwenNativeLog -Force -ErrorAction SilentlyContinue
-    Clear-QwenBrokenDownload
-    $qwenRetryArgs = @(
-        '-hfr', $qwenRepo,
-        '-hff', $qwenFile,
-        '--host', '127.0.0.1',
-        '--port', '8080',
-        '-c', '4096',
-        '--log-file', $qwenNativeLog,
-        '--log-verbosity', '5',
-        '--log-colors', 'off'
-    )
+    if ($qwenLocalModel) {
+        $qwenRetryArgs = @(
+            '-m', $qwenLocalModel,
+            '--host', '127.0.0.1',
+            '--port', '8080',
+            '-c', '4096',
+            '--log-file', $qwenNativeLog,
+            '--log-verbosity', '5',
+            '--log-colors', 'off'
+        )
+    } else {
+        Clear-QwenBrokenDownload
+        $qwenRetryArgs = @(
+            '-hfr', $qwenRepo,
+            '-hff', $qwenFile,
+            '--host', '127.0.0.1',
+            '--port', '8080',
+            '-c', '4096',
+            '--log-file', $qwenNativeLog,
+            '--log-verbosity', '5',
+            '--log-colors', 'off'
+        )
+    }
     $qwenServer = Start-Server 'QWEN TEXT RETRY CLEAN' $LlamaExecutable $qwenRetryArgs $Jarjar
     try {
         Wait-Service 8080 'QWEN TEXT' $qwenServer 180
