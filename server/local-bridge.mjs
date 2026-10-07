@@ -430,7 +430,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  const data=await body(req);
  if(url.pathname!=='/run'){
  const id=url.pathname.split('/').pop(),p=processes.get(id);if(!p?.active)throw Error('Session arrêtée ou non gérée');
- if(url.pathname.startsWith('/focus/')){if(!p.native)throw Error('Session intégrée : son terminal est dans la page');await focusTerminal(p.title,p.pid)}else if(url.pathname.startsWith('/stop/')){if(p.native){await stopTerminal(p.pid);p.active=false;markEnd(id,'Terminal fermé depuis la page')}else{p.stopRequested=true;if(p.restartTimer)clearTimeout(p.restartTimer);p.child.kill()}}else{if(p.native)throw Error('Saisis ta demande dans le terminal Windows');if(liveSnapshot().sessions.find(s=>s.sessionId===id)?.phase!=='WAITING_INPUT')throw Error('Ce processus n’attend pas de saisie');if(typeof data.text!=='string'||data.text.length>4096||/[\r\n]/.test(data.text))throw Error('Saisie invalide');await new Promise((ok,no)=>p.child.stdin.write(data.text+'\n',e=>e?no(e):ok()))}
+ if(url.pathname.startsWith('/focus/')){if(!p.native)throw Error('Session intégrée : son terminal est dans la page');try{await focusTerminal(p.title,p.pid)}catch{} }else if(url.pathname.startsWith('/stop/')){if(p.native){await stopTerminal(p.pid);p.active=false;markEnd(id,'Terminal fermé depuis la page')}else{p.stopRequested=true;if(p.restartTimer)clearTimeout(p.restartTimer);p.child.kill()}}else{if(p.native)throw Error('Saisis ta demande dans le terminal Windows');if(liveSnapshot().sessions.find(s=>s.sessionId===id)?.phase!=='WAITING_INPUT')throw Error('Ce processus n’attend pas de saisie');if(typeof data.text!=='string'||data.text.length>4096||/[\r\n]/.test(data.text))throw Error('Saisie invalide');await new Promise((ok,no)=>p.child.stdin.write(data.text+'\n',e=>e?no(e):ok()))}
  res.end(JSON.stringify({ok:true}));return
  }
  const tool=data.tool||'obsidure';if(!['obsidure','brody','cli'].includes(tool))throw Error('Outil inconnu');const mode=data.mode;if(!['audit','audit-long','interactive'].includes(mode)|| (tool!=='obsidure'&&mode!=='interactive'))throw Error('Mission inconnue');
@@ -472,7 +472,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   if(!spec)throw Error('Service non raccordé')
   for(const [session,p] of processes){
    if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}
-   if(p.active&&p.tool===id){await focusTerminal(p.title,p.pid);res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return}
+   if(p.active&&p.tool===id){try{await focusTerminal(p.title,p.pid)}catch{}res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return}
   }
   if(id==='obsidia-api')await releaseFrozenServicePort(id)
   const session=randomUUID(),title='OBSIDIA · '+spec.title+' · '+session.slice(0,8)
@@ -504,7 +504,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}
   if(p.active&&p.native&&p.tool===id){
    const live=liveSnapshot().sessions.find(s=>s.sessionId===session);if(live?.presence==='ended')continue
-   await focusTerminal(p.title,p.pid);res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return
+   try{await focusTerminal(p.title,p.pid)}catch{}res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return
   }
  }
  const wrapper=observer,session=randomUUID(),title='OBSIDIA · '+id+' · '+session.slice(0,8);
