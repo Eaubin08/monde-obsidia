@@ -67,6 +67,9 @@ export default function V5Root(){
 
  const live=shared?.sessions.filter(s=>s.presence==='live'&&!s.nativeService)||[]
  const systemServices=shared?.sessions.filter(s=>s.presence==='live'&&s.nativeService)||[]
+ const kernelReady=systemServices.some(s=>s.agentId==='kernel-x108'&&s.observedState==='READY')
+ const apiReady=systemServices.some(s=>s.agentId==='obsidia-api'&&s.observedState==='READY')
+ const coreRuntimeReady=kernelReady&&apiReady
  const contextEntity=shared?.entities.find(e=>e.id===contextId)
  const selectedSession=shared?.sessions.find(s=>s.id===contextId)||shared?.sessions.find(s=>'session:'+s.sessionId===contextId)
  const contextLabel=selectedSession?.name||contextEntity?.label||'Aucun contexte sélectionné'
@@ -169,7 +172,7 @@ export default function V5Root(){
   <section className="v5-app">
    <header className="v5-topbar">
     <div className="v5-top-search"><span>⌕</span><input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} onFocus={()=>{if(view!=='search')go('search')}} placeholder="Rechercher un agent, une mission, un fichier, un domaine…" /></div>
-    <div className="v5-system"><span className={snap?.available?'on':''}/><div><strong>{snap?.available?'Système LIVE':'Hors ligne'}</strong><small>{snap?.available?'Services observés':'Connexion indisponible'}</small></div></div>
+    <div className="v5-system"><span className={coreRuntimeReady?'on':''}/><div><strong>{coreRuntimeReady?'Core LIVE':snap?.available?'Sources disponibles':'Hors ligne'}</strong><small>{coreRuntimeReady?'Kernel + API observés':snap?.available?'Runtime core non prêt':'Connexion indisponible'}</small></div></div>
     <div className="v5-core"><strong>Obsidia Core</strong><small>{snap?.branch||'branche inconnue'} · {snap?.sha?.slice(0,7)||'—'}</small></div>
    </header>
    {message&&<p className="v5-message">{message}</p>}
@@ -179,7 +182,7 @@ export default function V5Root(){
     <header className="v5-welcome">
      <div><h1>Bienvenue sur Obsidia</h1><p>Un écosystème d’agents, de connaissances et d’actions autour de tes projets.</p></div>
      <div className="v5-kpis">
-      <article className="live"><strong>{snap?.available?'Système opérationnel':'Système hors ligne'}</strong><small>{snap?.available?'runtime observé':'connexion indisponible'}</small></article>
+      <article className={coreRuntimeReady?'live':'warn'}><strong>{coreRuntimeReady?'Core opérationnel':snap?.available?'Sources chargées · core non prêt':'Système hors ligne'}</strong><small>{coreRuntimeReady?'Kernel 3001 + API 8000 observés':snap?.available?'repo accessible, runtime à lancer':'connexion indisponible'}</small></article>
       <article><strong>{live.length}</strong><small>agents actifs</small></article><article><strong>{systemServices.length}</strong><small>services système</small></article>
       <article><strong>{shared?.missions.length||0}</strong><small>missions</small></article>
       <article className="warn"><strong>{shared?.missions.filter(m=>m.primaryBlocker).length||0}</strong><small>blocages</small></article>
