@@ -1,0 +1,25 @@
+name: native-enterprise-read-model-v0
+on:
+  push:
+    branches:
+      - feat/native-enterprise-read-model-v0
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  monde-native-readonly:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify existing Monde and new read-only bridge tests
+        run: npm test
+      - name: Verify TypeScript production build
+        run: npm run build
