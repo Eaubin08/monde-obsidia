@@ -95,7 +95,7 @@ function nativeServicesObservedStatus(){
   {id:'gps-defense',label:'GPS / Defense / Aviation',ready:hasProcess(/connectors[\\/]aviation_robo\.py/i),evidence:'PROCESS_AVIATION_ROBO'},
   {id:'trading-x108',label:'Trading → X108',ready:hasProcess(/connectors[\\/]trading_live\.py/i),evidence:'PROCESS_TRADING_LIVE'},
   {id:'brody-enriched',label:'Brody Enriched',ready:hasProcess(/run_brody_terminal_enriched\.ps1/i),evidence:'PROCESS_BRODY_ENRICHED'},
-  {id:'obsidure-dry',label:'Obsidure DryRun',ready:hasProcess(/run_agent_obsidure\.ps1/i),evidence:'PROCESS_OBSIDURE_DRY'}
+  {id:'obsidure-dry',label:'Obsidure DryRun',ready:commandLines.some(p=>/run_agent_obsidure\.ps1/i.test(String(p?.CommandLine||''))&&/-DryRun\b/i.test(String(p?.CommandLine||''))),evidence:'PROCESS_OBSIDURE_DRY'}
  ]
  const value=definitions.map(s=>{
   const managed=managedFor(s.id)
@@ -111,7 +111,7 @@ function jarjarObservedStatus(){
  const portOpen=port=>new RegExp('127\\.0\\.0\\.1:'+port+'\\s+.*LISTENING','i').test(listening)||new RegExp('0\\.0\\.0\\.0:'+port+'\\s+.*LISTENING','i').test(listening)||new RegExp('\\[::\\]:'+port+'\\s+.*LISTENING','i').test(listening)
  let jarjarProcess=false
  try{
-  const ps=execFileSync('powershell.exe',['-NoProfile','-Command',"$p=Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'scripts[\\\\/.]run_jarjar_live' }; if($p){'1'}else{'0'}"],{encoding:'utf8',timeout:5000,windowsHide:true}).trim()
+  const ps=execFileSync('powershell.exe',['-NoProfile','-Command',"$self=$PID; $p=Get-CimInstance Win32_Process | Where-Object { $_.ProcessId -ne $self -and $_.CommandLine -match 'scripts[\\\\/.]run_jarjar_live' }; if($p){'1'}else{'0'}"],{encoding:'utf8',timeout:5000,windowsHide:true}).trim()
   jarjarProcess=ps.endsWith('1')
  }catch{}
  const managed=[...processes.entries()].find(([,p])=>p.tool==='jarjar'&&p.active)
