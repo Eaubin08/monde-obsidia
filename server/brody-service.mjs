@@ -31,7 +31,7 @@ async function probe(timeout=1500){
 export async function brodyServiceStatus(){
  const state=await probe()
  const listening=state.ready||await portOpen()
- return {...state,ready:listening,endpoint,managed:false,pid:null,output:'',error:null}
+ return {...state,ready:state.ready,reachable:listening,foreign:listening&&!state.ready,endpoint,managed:false,pid:null,output:'',error:null}
 }
 
 export async function ensureBrodyApi(root){
@@ -39,7 +39,7 @@ export async function ensureBrodyApi(root){
 
  const state=await probe()
  if(state.ready)return {ready:true,reused:true,endpoint}
- if(await portOpen())return {ready:true,reused:true,endpoint,probe:'PORT_8000'}
+ if(await portOpen())throw Error('Port 8000 occupé par un service non reconnu comme obsidia-api.')
 
  throw Error('API Obsidia/Brody non prête sur 8000. Lance d’abord API depuis Monde > Workspace > Lancements.')
 }
