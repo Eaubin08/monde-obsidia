@@ -18,10 +18,11 @@ export default function V5Launchers(){
  const [jarjar,setJarjar]=useState<JarjarStatus|null>(null)
  const [launching,setLaunching]=useState('')
  const [message,setMessage]=useState('')
+ const [runtimeError,setRuntimeError]=useState('')
 
  useEffect(()=>{
   const c=new AbortController()
-  const poll=async()=>{try{const [s,j]=await Promise.all([fetch('/obsidia-local/state',{signal:c.signal}),fetch('/obsidia-local/jarjar/status',{signal:c.signal})]);if(s.ok)setState(await s.json());if(j.ok)setJarjar(await j.json())}catch{}}
+  const poll=async()=>{try{const [s,j]=await Promise.all([fetch('/obsidia-local/state',{signal:c.signal}),fetch('/obsidia-local/jarjar/status',{signal:c.signal})]);if(!s.ok||!j.ok)throw Error('state='+s.status+' jarjar='+j.status);setState(await s.json());setJarjar(await j.json());setRuntimeError('')}catch(e){if(!c.signal.aborted)setRuntimeError('Observation runtime indisponible · '+String(e))}}
   void poll();const t=setInterval(poll,1200);return()=>{c.abort();clearInterval(t)}
  },[])
 
@@ -43,6 +44,7 @@ export default function V5Launchers(){
  }
  const stopJarjar=async()=>{setLaunching('jarjar');try{const r=await fetch('/obsidia-local/jarjar/stop',{method:'POST'});if(!r.ok)throw Error('Arrêt impossible');setMessage('Jarjar arrêté')}catch(e){setMessage(String(e))}finally{setLaunching('')}}
  return <section className="v5-launchers">
+  {runtimeError&&<p className="v5-message">{runtimeError}</p>}
   <header className="v5-launchers-head"><div><small>WORKSPACE / RUNTIME</small><h2>Lancements</h2><p>Démarrer les agents, outils et services sans mélanger le runtime avec leur travail dans Pokémon.</p></div>{message&&<strong>{message}</strong>}</header>
 
   <article className="v5pk-jarjar">
