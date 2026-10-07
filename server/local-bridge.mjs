@@ -85,9 +85,13 @@ function nativeServicesObservedStatus(){
  }catch{}
  const hasProcess=(pattern)=>commandLines.some(p=>pattern.test(String(p?.CommandLine||'')))
  const managedFor=id=>[...processes.entries()].find(([,p])=>p.tool===id&&p.active)
+ const kernelPid=listeningPid(3001)
+ const apiPid=listeningPid(8000)
+ const kernelReady=!!kernelPid&&canonicalPortOwner('kernel-x108',kernelPid)
+ const apiReady=!!apiPid&&canonicalPortOwner('obsidia-api',apiPid)
  const definitions=[
-  {id:'kernel-x108',label:'Kernel X108',ready:portOpen(3001),evidence:'PORT_3001'},
-  {id:'obsidia-api',label:'API Obsidia + Brody + Native Memory',ready:portOpen(8000),evidence:'PORT_8000'},
+  {id:'kernel-x108',label:'Kernel X108',ready:kernelReady,evidence:kernelReady?'PORT_3001_CANONICAL_PROCESS':kernelPid?'PORT_3001_FOREIGN_PROCESS':'PORT_3001'},
+  {id:'obsidia-api',label:'API Obsidia + Brody + Native Memory',ready:apiReady,evidence:apiReady?'PORT_8000_CANONICAL_PROCESS':apiPid?'PORT_8000_FOREIGN_PROCESS':'PORT_8000'},
   {id:'gps-defense',label:'GPS / Defense / Aviation',ready:hasProcess(/connectors[\\/]aviation_robo\.py/i),evidence:'PROCESS_AVIATION_ROBO'},
   {id:'trading-x108',label:'Trading → X108',ready:hasProcess(/connectors[\\/]trading_live\.py/i),evidence:'PROCESS_TRADING_LIVE'},
   {id:'brody-enriched',label:'Brody Enriched',ready:hasProcess(/run_brody_terminal_enriched\.ps1/i),evidence:'PROCESS_BRODY_ENRICHED'},
@@ -111,9 +115,11 @@ function jarjarObservedStatus(){
   jarjarProcess=ps.endsWith('1')
  }catch{}
  const managed=[...processes.entries()].find(([,p])=>p.tool==='jarjar'&&p.active)
+ const kernelPid=listeningPid(3001)
+ const apiPid=listeningPid(8000)
  const components={
-  kernel:{port:3001,ready:portOpen(3001)},
-  brodyApi:{port:8000,ready:portOpen(8000)},
+  kernel:{port:3001,ready:!!kernelPid&&canonicalPortOwner('kernel-x108',kernelPid)},
+  brodyApi:{port:8000,ready:!!apiPid&&canonicalPortOwner('obsidia-api',apiPid)},
   qwenText:{port:8080,ready:portOpen(8080)},
   qwenVL:{port:8081,ready:portOpen(8081)},
   hud:{port:null,ready:jarjarProcess}
@@ -339,7 +345,12 @@ async function waitLocalPort(port,label,timeoutMs=20000){
 async function ensureJarjarPrerequisite(id,root){
  const port=id==='kernel-x108'?3001:id==='obsidia-api'?8000:null
  if(!port)throw Error('Pré-requis Jarjar inconnu : '+id)
- if(listeningPid(port))return {reused:true,port}
+ const existingPid=listeningPid(port)
+ if(existingPid){
+  const recognized=id==='obsidia-api'?(canonicalPortOwner(id,existingPid)||await canonicalApiEndpoint()):canonicalPortOwner(id,existingPid)
+  if(!recognized)throw Error(`Pré-requis Jarjar refusé : port ${port} occupé par un processus non canonique.`)
+  return {reused:true,port,pid:existingPid}
+ }
 
  for(const [session,p] of processes){
   if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}
