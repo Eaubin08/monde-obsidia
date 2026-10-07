@@ -226,39 +226,59 @@ $obsidiaLocal = Join-Path $env:LOCALAPPDATA 'Obsidia'
 New-Item -ItemType Directory -Path $obsidiaLocal -Force | Out-Null
 $qwenTextLog = Join-Path $obsidiaLocal 'jarjar_qwen_text.log'
 
+$qwenNativeLog = Join-Path $obsidiaLocal 'jarjar_qwen_text_llama.log'
+$qwenRepo = 'Qwen/Qwen2.5-3B-Instruct-GGUF'
+$qwenFile = 'qwen2.5-3b-instruct-q4_k_m.gguf'
+
 if (-not (Port-Open 8080)) {
     Write-Host '[4/6] Demarrage Qwen texte :8080...' -ForegroundColor Cyan
-    $launcher = Join-Path $Jarjar 'scripts\start_qwen_text.ps1'
-    if (-not (Test-Path $launcher)) { throw "Launcher Qwen texte absent: $launcher" }
+    if (-not $LlamaExecutable) { throw 'llama-server introuvable pour Qwen texte.' }
     Remove-Item -LiteralPath $qwenTextLog -Force -ErrorAction SilentlyContinue
-    $launchCommand = "& '" + $launcher.Replace("'","''") + "' *>> '" + $qwenTextLog.Replace("'","''") + "'"
-    $qwenServer = Start-Server 'QWEN TEXT' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-Command',$launchCommand) $Jarjar
+    Remove-Item -LiteralPath $qwenNativeLog -Force -ErrorAction SilentlyContinue
+
+    $qwenArgs = @(
+        '-hfr', $qwenRepo,
+        '-hff', $qwenFile,
+        '--host', '127.0.0.1',
+        '--port', '8080',
+        '-c', '4096',
+        '--log-file', $qwenNativeLog,
+        '--log-verbosity', '5',
+        '--log-colors', 'off'
+    )
+    $qwenServer = Start-Server 'QWEN TEXT' $LlamaExecutable $qwenArgs $Jarjar
 } else { Write-Host '[4/6] Qwen texte deja actif.' -ForegroundColor DarkGray }
-$qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 4
+$qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 12
 
 if ($qwenState -eq 'OFFLINE' -and -not (Port-Open 8080)) {
-    Write-Host '[QWEN TEXT] Premier lancement echoue. Nouvelle tentative unique...' -ForegroundColor Yellow
-    if (Test-Path -LiteralPath $qwenTextLog) {
-        Get-Content -LiteralPath $qwenTextLog -Tail 12 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
+    Write-Host '[QWEN TEXT] Premier lancement echoue. Retry CPU direct...' -ForegroundColor Yellow
+    if (Test-Path -LiteralPath $qwenNativeLog) {
+        Get-Content -LiteralPath $qwenNativeLog -Tail 20 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
     }
     Start-Sleep -Seconds 1
-    $launcher = Join-Path $Jarjar 'scripts\start_qwen_text.ps1'
-    $nativeLog = Join-Path $obsidiaLocal 'jarjar_qwen_text_llama.log'
-    Remove-Item -LiteralPath $nativeLog -Force -ErrorAction SilentlyContinue
-    $launchCommand = "& '" + $launcher.Replace("'","''") + "' -CpuOnly -LogFile '" + $nativeLog.Replace("'","''") + "' *>> '" + $qwenTextLog.Replace("'","''") + "'"
-    $qwenServer = Start-Server 'QWEN TEXT RETRY CPU' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-Command',$launchCommand) $Jarjar
-    $qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 20
+    Remove-Item -LiteralPath $qwenNativeLog -Force -ErrorAction SilentlyContinue
+    $qwenCpuArgs = @(
+        '-hfr', $qwenRepo,
+        '-hff', $qwenFile,
+        '--host', '127.0.0.1',
+        '--port', '8080',
+        '-c', '4096',
+        '--gpu-layers', '0',
+        '--log-file', $qwenNativeLog,
+        '--log-verbosity', '5',
+        '--log-colors', 'off'
+    )
+    $qwenServer = Start-Server 'QWEN TEXT RETRY CPU' $LlamaExecutable $qwenCpuArgs $Jarjar
+    $qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 25
 }
 
 if ($qwenState -eq 'OFFLINE') {
     Write-Host '[QWEN TEXT] Dernieres lignes du diagnostic :' -ForegroundColor Yellow
-    if (Test-Path -LiteralPath $qwenTextLog) {
-        Get-Content -LiteralPath $qwenTextLog -Tail 20 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
-    }
-    $nativeLog = Join-Path $obsidiaLocal 'jarjar_qwen_text_llama.log'
-    if (Test-Path -LiteralPath $nativeLog) {
+    if (Test-Path -LiteralPath $qwenNativeLog) {
         Write-Host '[QWEN TEXT] Diagnostic llama.cpp :' -ForegroundColor Yellow
-        Get-Content -LiteralPath $nativeLog -Tail 30 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
+        Get-Content -LiteralPath $qwenNativeLog -Tail 30 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
+    } else {
+        Write-Host '  Aucun log llama.cpp produit.' -ForegroundColor DarkYellow
     }
 }
 
