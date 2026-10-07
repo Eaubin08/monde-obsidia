@@ -57,14 +57,19 @@ export default function V5Pokemon(){
   const sync=()=>{
    const focus=sessionStorage.getItem('obsidia-focus-entity')||''
    const selectedSession=sessionStorage.getItem('obsidia-selected-session')||''
+   if(focus.startsWith('session:')){setSelected(focus.slice(8));return}
+   const entity=state?.entities.find(e=>e.id===focus)
+   if(entity?.agentId){
+    const liveSession=state?.sessions.find(s=>s.presence==='live'&&!s.nativeService&&s.agentId===entity.agentId)
+    if(liveSession){setSelected(liveSession.sessionId);return}
+   }
    if(selectedSession)setSelected(selectedSession)
-   if(focus.startsWith('session:'))setSelected(focus.slice(8))
   }
   const onContext=()=>sync()
   window.addEventListener('obsidia-context',onContext)
   sync()
   return()=>window.removeEventListener('obsidia-context',onContext)
- },[])
+ },[state])
 
  const sessions=state?.sessions||[]
  const live=sessions.filter(s=>s.presence==='live'&&!s.nativeService&&s.agentId!=='cli')
