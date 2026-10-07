@@ -222,13 +222,37 @@ $null = Wait-Service 8000 'OBSIDIA API/BRODY' $null 10
 
 $qwenServer = $null
 $qwenReady = $true
+$obsidiaLocal = Join-Path $env:LOCALAPPDATA 'Obsidia'
+New-Item -ItemType Directory -Path $obsidiaLocal -Force | Out-Null
+$qwenTextLog = Join-Path $obsidiaLocal 'jarjar_qwen_text.log'
+
 if (-not (Port-Open 8080)) {
     Write-Host '[4/6] Demarrage Qwen texte :8080...' -ForegroundColor Cyan
     $launcher = Join-Path $Jarjar 'scripts\start_qwen_text.ps1'
     if (-not (Test-Path $launcher)) { throw "Launcher Qwen texte absent: $launcher" }
-    $qwenServer = Start-Server 'QWEN TEXT' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher) $Jarjar
+    Remove-Item -LiteralPath $qwenTextLog -Force -ErrorAction SilentlyContinue
+    $launchCommand = "& '" + $launcher.Replace("'","''") + "' *>> '" + $qwenTextLog.Replace("'","''") + "'"
+    $qwenServer = Start-Server 'QWEN TEXT' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-Command',$launchCommand) $Jarjar
 } else { Write-Host '[4/6] Qwen texte deja actif.' -ForegroundColor DarkGray }
 $qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 4
+
+if ($qwenState -eq 'OFFLINE' -and -not (Port-Open 8080)) {
+    Write-Host '[QWEN TEXT] Premier lancement echoue. Nouvelle tentative unique...' -ForegroundColor Yellow
+    if (Test-Path -LiteralPath $qwenTextLog) {
+        Get-Content -LiteralPath $qwenTextLog -Tail 12 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
+    }
+    Start-Sleep -Seconds 1
+    $launcher = Join-Path $Jarjar 'scripts\start_qwen_text.ps1'
+    $launchCommand = "& '" + $launcher.Replace("'","''") + "' *>> '" + $qwenTextLog.Replace("'","''") + "'"
+    $qwenServer = Start-Server 'QWEN TEXT RETRY' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-Command',$launchCommand) $Jarjar
+    $qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 12
+}
+
+if ($qwenState -eq 'OFFLINE' -and (Test-Path -LiteralPath $qwenTextLog)) {
+    Write-Host '[QWEN TEXT] Dernieres lignes du diagnostic :' -ForegroundColor Yellow
+    Get-Content -LiteralPath $qwenTextLog -Tail 20 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
+}
+
 $qwenReady = ($qwenState -eq 'READY')
 
 $visionServer = $null
