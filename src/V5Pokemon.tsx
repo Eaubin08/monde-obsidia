@@ -1,12 +1,11 @@
 import {useEffect,useMemo,useState} from 'react'
 
 type Event={kind:string;timestamp:string;status:string;phase:string;message:string;objective?:string;result?:Record<string,unknown>}
-type Session={sessionId:string;agentId:string;name:string;repository:string;status:string;phase:string;message:string;objective:string|null;timestamp:string;presence:'live'|'unknown'|'ended';events:Event[]}
+type Session={sessionId:string;agentId:string;name:string;repository:string;status:string;phase:string;message:string;objective:string|null;timestamp:string;presence:'live'|'unknown'|'ended';nativeService?:boolean;observedState?:'READY'|'STARTING'|'OFFLINE';source?:string;events:Event[]}
 type Entity={id:string;kind:string;label:string;agentId?:string;domainId?:string}
 type Mission={id:string;actionId:string;agentId:string|null;status:string;traceabilityStatus:string;sessionRefs:string[];resultRefs:string[];primaryBlocker?:string}
 type Family={id:string;label:string;kind:string;agents:string[];localPresent:boolean}
-type NativeService={id:string;label:string;state:'READY'|'STARTING'|'OFFLINE';managed:boolean;sessionId?:string|null}
-type State={entities:Entity[];relations:{from:string;type:string;to:string}[];sessions:Session[];missions:Mission[];agentFamilies?:Family[];live?:{nativeServices?:NativeService[]}}
+type State={entities:Entity[];relations:{from:string;type:string;to:string}[];sessions:Session[];missions:Mission[];agentFamilies?:Family[]}
 type JarjarStatus={state:'OFFLINE'|'STARTING'|'READY'|'DEGRADED';managed:boolean;decisionAuthority:string;inputMode:string|null;hudState:string|null;cognitionSource:string;governanceSource:string;governancePhase:string;humanConfirmationRequired:boolean;lastUserInput:string;lastResult:string;components:{kernel:{ready:boolean};brodyApi:{ready:boolean};qwenText:{ready:boolean};qwenVL:{ready:boolean};hud:{ready:boolean}}}
 type Filter='all'|'live'|'ready'|'planned'|'blocked'|'inactive'
 
@@ -38,7 +37,8 @@ export default function V5Pokemon(){
  },[])
 
  const sessions=state?.sessions||[]
- const live=sessions.filter(s=>s.presence==='live'&&s.agentId!=='cli')
+ const serviceSessions=sessions.filter(s=>s.presence==='live'&&s.nativeService)
+ const live=sessions.filter(s=>s.presence==='live'&&!s.nativeService&&s.agentId!=='cli')
  const current=sessions.find(s=>s.sessionId===selected)
  const currentMission=current?state?.missions.find(m=>m.sessionRefs.includes('session:'+current.sessionId)):undefined
  const organFamily:Family={id:'organs',label:'Organes / outils',kind:'launcher',localPresent:true,agents:launchable.map(x=>x[0]) as string[]}
@@ -56,7 +56,7 @@ export default function V5Pokemon(){
  const visible=live.filter(s=>(filter==='all'||filter==='live'||(filter==='blocked'&&(s.status==='blocked'||s.status==='error')))&&(!family||families.find(f=>f.id===family)?.agents.includes(s.agentId)))
  const teams=(state?.missions||[]).map(m=>({m,sessions:live.filter(s=>m.sessionRefs.includes('session:'+s.sessionId))})).filter(x=>x.sessions.length)
  const ungrouped=live.filter(s=>!teams.some(t=>t.sessions.some(x=>x.sessionId===s.sessionId)))
- const nativeServices=state?.live?.nativeServices||[]
+ const nativeServices=serviceSessions.map(s=>({id:s.agentId,label:s.name,state:s.observedState||s.phase as 'READY'|'STARTING'|'OFFLINE',managed:!s.sessionId.startsWith('observed-'),sessionId:s.sessionId}))
  const catalogSelected=catalogSelection?catalog.has(catalogSelection)?catalogSelection:'':selected?current?.agentId||'':''
  const catalogLive=catalogSelected?live.find(s=>s.agentId===catalogSelected):undefined
  const catalogFamily=catalogSelected?families.find(f=>f.agents.includes(catalogSelected)):undefined
@@ -68,7 +68,7 @@ export default function V5Pokemon(){
  const stopJarjar=async()=>{setLaunching('jarjar');try{const r=await fetch('/obsidia-local/jarjar/stop',{method:'POST'});if(!r.ok)throw Error('Arrêt impossible');setMessage('Jarjar arrêté')}catch(e){setMessage(String(e))}finally{setLaunching('')}}
 
  return <section className="v5pk">
-  <header className="v5-page-head"><div><small>QUI ?</small><h1>Pokémon</h1><p>Les agents, leurs états et leurs actions au même endroit.</p></div><strong>{live.length} live</strong></header>
+  <header className="v5-page-head"><div><small>QUI ?</small><h1>Pokémon</h1><p>Les agents, leurs états et leurs actions au même endroit.</p></div><div className="v5pk-head-counts"><strong>{live.length} agent(s) live</strong><small>{serviceSessions.length} service(s) système actif(s)</small></div></header>
 
   <section className="v5pk-status">{counts.map(c=><button key={c.id} aria-pressed={filter===c.id} onClick={()=>setFilter(c.id)}><strong>{c.value}</strong><span>{c.label}</span></button>)}</section>
 
@@ -86,7 +86,7 @@ export default function V5Pokemon(){
   <section className="v5pk-launch">
    <div className="v5pk-title"><div><small>COMMANDER</small><h2>Lancer un agent ou un service</h2></div>{message&&<span>{message}</span>}</div>
    <article className="v5pk-jarjar"><div><div><small>ASSISTANT TERRAIN</small><h3>Jarjar</h3></div><strong>{jarjar?.state||'OFFLINE'}</strong></div><p>Autorité {jarjar?.decisionAuthority||'KX108_ONLY'} · entrée {jarjar?.inputMode||'non observée'} · cognition {jarjar?.cognitionSource||'en attente'}</p><div className="v5pk-components">{[['Kernel',jarjar?.components.kernel.ready],['API/Brody',jarjar?.components.brodyApi.ready],['Qwen',jarjar?.components.qwenText.ready],['Qwen-VL',jarjar?.components.qwenVL.ready],['HUD',jarjar?.components.hud.ready]].map(([n,ok])=><span key={String(n)} className={ok?'ok':''}>{String(n)} · {ok?'READY':'OFFLINE'}</span>)}</div><div className="v5pk-actions">{jarjar?.state==='OFFLINE'?<button disabled={launching==='jarjar'} onClick={()=>launch('jarjar',true)}>Lancer Jarjar</button>:jarjar?.managed?<button disabled={launching==='jarjar'} onClick={stopJarjar}>Arrêter Jarjar</button>:<button disabled>Lancé hors Monde</button>}</div></article>
-   <div className="v5pk-launch-grid">{launchable.filter(x=>x[0]!=='jarjar').map(([id,label,ready])=>{const active=live.find(s=>s.agentId===id);const native=nativeServices.find(s=>s.id===id);const serviceState=native?.state;const observedLive=!!active||serviceState==='READY';return <article key={id} className={observedLive?'active':serviceState==='STARTING'?'starting':ready?'ready':'future'}><div><strong>{label}</strong><span>{active?'LIVE':serviceState|| (ready?'PRÊT':'FUTUR')}</span></div><p>{active?.objective||active?.message||(serviceState==='READY'?'Service observé et prêt':serviceState==='STARTING'?'Démarrage en cours':ready?'Disponible':'Activation à venir')}</p><div className="v5pk-actions">{active?<><button onClick={()=>choose(active)}>Voir</button><button onClick={()=>workspace(active)}>Workspace</button></>:ready?<button disabled={launching===id||serviceState==='STARTING'} onClick={()=>launch(id,terminalOnly.has(id)||id==='brody'||id==='obsidure'||id==='cli')}>{serviceState==='STARTING'?'Démarrage…':'Lancer'}</button>:<button disabled>À venir</button>}{(id==='brody'||id==='obsidure'||id==='cli')&&<button onClick={()=>{sessionStorage.setItem('obsidia-workspace-area',id);location.hash='workspace'}}>Workspace</button>}<button onClick={()=>{setCatalogSelection(id);focus(active?'session:'+active.sessionId:'agent:'+id)}}>Détails</button></div></article>})}</div>
+   <div className="v5pk-launch-grid">{launchable.filter(x=>x[0]!=='jarjar').map(([id,label,ready])=>{const active=live.find(s=>s.agentId===id);const native=nativeServices.find(s=>s.id===id);const serviceState=native?.state;const isNative=terminalOnly.has(id);const observedLive=!!active||serviceState==='READY';return <article key={id} className={observedLive?'active':serviceState==='STARTING'?'starting':ready?'ready':'future'}><div><strong>{label}</strong><span>{active?'LIVE':serviceState|| (ready?'PRÊT':'FUTUR')}</span></div><p>{active?.objective||active?.message||(serviceState==='READY'?'Service système déjà actif':serviceState==='STARTING'?'Démarrage en cours':ready?'Disponible':'Activation à venir')}</p><div className="v5pk-actions">{active?<><button onClick={()=>choose(active)}>Voir</button><button onClick={()=>workspace(active)}>Workspace</button></>:serviceState==='READY'?<>{native?.managed?<button onClick={()=>launch(id,true)}>Ouvrir terminal</button>:<button disabled>Déjà actif</button>}</>:ready?<button disabled={launching===id||serviceState==='STARTING'} onClick={()=>launch(id,isNative||id==='brody'||id==='obsidure'||id==='cli')}>{serviceState==='STARTING'?'Démarrage…':'Lancer'}</button>:<button disabled>À venir</button>}{(id==='brody'||id==='obsidure'||id==='cli')&&<button onClick={()=>{sessionStorage.setItem('obsidia-workspace-area',id);location.hash='workspace'}}>Workspace</button>}<button onClick={()=>{setCatalogSelection(id);focus(active?'session:'+active.sessionId:'agent:'+id)}}>Détails</button></div></article>})}</div>
   </section>
 
   <section className="v5pk-pipeline">
