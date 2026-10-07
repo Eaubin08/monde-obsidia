@@ -134,3 +134,19 @@ body{background:var(--v4-bg)}
   .v4-content .pokemon-launch-grid,
   .v4-content .pokemon-scale-bar{grid-template-columns:1fr}
 }
+
+
+/* V4 circulation simplification */
+.v4-context .context-bridge{grid-template-columns:minmax(220px,1.4fr) minmax(320px,1fr);align-items:center}
+.v4-context .context-bridge-nav{display:none!important}
+.v4-context .context-bridge-facts{grid-template-columns:repeat(3,minmax(0,1fr))}
+.obs-quick-links{grid-template-columns:minmax(220px,.7fr) minmax(0,1.3fr)}
+.obs-quick-links nav{justify-content:flex-end}
+.obs-quick-links button{min-width:170px}
+.obs-quick-links>small{display:none}
+@media(max-width:760px){
+ .v4-context .context-bridge{grid-template-columns:1fr}
+ .v4-context .context-bridge-facts{grid-template-columns:1fr}
+ .obs-quick-links{grid-template-columns:1fr}
+ .obs-quick-links nav{justify-content:flex-start}
+}
