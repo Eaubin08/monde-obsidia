@@ -1,68 +1,76 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
+import {createHash} from 'node:crypto'
 import {mkdtempSync,mkdirSync,writeFileSync,rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {readNativeEnterpriseView} from '../server/native-enterprise-read.mjs'
 
-test('missing local canonical module never fabricates a runtime',()=>{
- const result=readNativeEnterpriseView({repoRoot:'/nonexistent/obsidia',env:{}})
- assert.equal(result.available,false)
- assert.equal(result.readonly,true)
- assert.equal(result.entities.length,0)
- assert.equal(result.reason,'NATIVE_READ_MODEL_MODULE_NOT_PRESENT')
-})
-
-test('present module without configured native roots remains unavailable',()=>{
- const root=mkdtempSync(join(tmpdir(),'monde-enterprise-'))
+const canonical=value=>Array.isArray(value)?'['+value.map(canonical).join(',')+']':
+ value!==null&&typeof value==='object'?
+ '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+canonical(value[k])).join(',')+'}':
+ JSON.stringify(value)
+function fixture(){
+ const data={
+  schema:'MONDE_OBSIDIA_NATIVE_READ_MODEL_V0',readonly:true,canonical_truth:false,
+  allowed_to_decide:false,allowed_to_act:false,emits_act:false,
+  decision_authority:'KX108_ONLY',observation_scope:'LOCAL_PERSISTED_ONLY',
+  availability:{task:'UNAVAILABLE'},entities:[],relations:[]
+ }
+ return {...data,projection_hash:createHash('sha256').update(canonical(data)).digest('hex')}
+}
+function local(consumer){
+ const root=mkdtempSync(join(tmpdir(),'monde-native-'))
  try{
   mkdirSync(join(root,'periphery','native_ops'),{recursive:true})
-  writeFileSync(join(root,'periphery','native_ops','monde_native_read_model_v0.py'),'# test\n')
-  let calls=0
-  const r=readNativeEnterpriseView({repoRoot:root,env:{},run:()=>{calls++}})
-  assert.equal(r.reason,'NATIVE_ENTERPRISE_ROOTS_NOT_CONFIGURED')
-  assert.equal(calls,0)
- }finally{rmSync(root,{recursive:true,force:true})}
-})
-
-test('configured local native path uses source read-only CLI without mutation',()=>{
- const root=mkdtempSync(join(tmpdir(),'monde-enterprise-'))
- try{
-  mkdirSync(join(root,'periphery','native_ops'),{recursive:true})
-  writeFileSync(join(root,'periphery','native_ops','monde_native_read_model_v0.py'),'# test\n')
+  writeFileSync(join(root,'periphery','native_ops','monde_native_read_model_v0.py'),'')
   const store=join(root,'native');mkdirSync(store)
-  let called=0
-  const data={schema:'MONDE_OBSIDIA_NATIVE_READ_MODEL_V0',readonly:true,decision_authority:'KX108_ONLY',canonical_truth:false,entities:[],relations:[],availability:{task:'UNAVAILABLE'},projection_hash:'a'.repeat(64)}
-  const result=readNativeEnterpriseView({
-    repoRoot:root,env:{OBSIDIA_ENTERPRISE_NATIVE_STORE_ROOT:store},
-    run:(python,args,opts)=>{
-      called++
-      assert.deepEqual(args.slice(0,2),['-m','periphery.native_ops.monde_native_read_model_v0'])
-      assert.deepEqual(args.slice(-2),['--native-store-root',store])
-      assert.equal(opts.cwd,root)
-      return JSON.stringify(data)
-    }
-  })
-  assert.equal(called,1)
-  assert.equal(result.available,true)
-  assert.equal(result.readonly,true)
-  assert.equal(result.canonical_truth,false)
-  assert.equal(result.entities.length,0)
+  return consumer(root,store)
  }finally{rmSync(root,{recursive:true,force:true})}
+}
+
+test('no native module returns unavailable, never fabricated',()=>{
+ const r=readNativeEnterpriseView({repoRoot:'/nonexistent/obsidia',env:{}})
+ assert.equal(r.available,false)
+ assert.equal(r.entities.length,0)
+ assert.equal(r.readonly,true)
 })
 
-test('invalid or failing canonical reads never return invented objects',()=>{
- const root=mkdtempSync(join(tmpdir(),'monde-enterprise-'))
- try{
-  mkdirSync(join(root,'periphery','native_ops'),{recursive:true})
-  writeFileSync(join(root,'periphery','native_ops','monde_native_read_model_v0.py'),'# test\n')
-  const store=join(root,'native');mkdirSync(store)
-  const r=readNativeEnterpriseView({
-   repoRoot:root,env:{OBSIDIA_ENTERPRISE_NATIVE_STORE_ROOT:store},
-   run:()=>JSON.stringify({schema:'WRONG',readonly:false,entities:[{id:'fabricated'}],relations:[]})
-  })
-  assert.equal(r.available,false)
-  assert.equal(r.entities.length,0)
-  assert.equal(r.reason,'NATIVE_READ_MODEL_CONTRACT_INVALID')
- }finally{rmSync(root,{recursive:true,force:true})}
-})
+test('no configured roots never invokes Python',()=>local(root=>{
+ let calls=0
+ const r=readNativeEnterpriseView({repoRoot:root,env:{},run:()=>{calls++}})
+ assert.equal(r.reason,'NATIVE_ENTERPRISE_ROOTS_NOT_CONFIGURED')
+ assert.equal(calls,0)
+}))
+
+test('signed canonical read is accepted on exact read-only CLI',()=>local((root,store)=>{
+ let calls=0
+ const r=readNativeEnterpriseView({
+  repoRoot:root,env:{OBSIDIA_ENTERPRISE_NATIVE_STORE_ROOT:store},
+  run:(python,args,options)=>{
+   calls++
+   assert.deepEqual(args.slice(0,2),['-m','periphery.native_ops.monde_native_read_model_v0'])
+   assert.deepEqual(args.slice(-2),['--native-store-root',store])
+   assert.equal(options.cwd,root)
+   return JSON.stringify(fixture())
+  }
+ })
+ assert.equal(calls,1)
+ assert.equal(r.available,true)
+ assert.equal(r.canonical_truth,false)
+ assert.equal(r.readonly,true)
+}))
+
+test('altered, malformed or non-sovereign contract violations refuse data',()=>local((root,store)=>{
+ const read=data=>readNativeEnterpriseView({
+  repoRoot:root,env:{OBSIDIA_ENTERPRISE_NATIVE_STORE_ROOT:store},
+  run:()=>JSON.stringify(data)
+ })
+ const good=fixture()
+ assert.equal(read(good).available,true)
+ assert.equal(read({...good,availability:{task:'OBSERVED'}}).available,false)
+ assert.equal(read({...good,allowed_to_act:true}).available,false)
+ assert.equal(read({...good,decision_authority:'PROVIDER'}).available,false)
+ assert.equal(read({...good,entities:[{id:'task:unverified'}]}).available,false)
+ assert.equal(read({schema:'WRONG',entities:[],relations:[]}).available,false)
+}))
