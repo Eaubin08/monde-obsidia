@@ -2,7 +2,7 @@ import {useEffect,useState} from 'react'
 
 type Session={sessionId:string;agentId:string;name:string;presence:'live'|'unknown'|'ended';nativeService?:boolean;observedState?:'READY'|'STARTING'|'OFFLINE';objective?:string|null;message?:string;source?:string}
 type State={sessions:Session[]}
-type JarjarStatus={state:'OFFLINE'|'STARTING'|'READY'|'DEGRADED';managed:boolean;decisionAuthority:string;inputMode:string|null;cognitionSource:string;components:{kernel:{ready:boolean};brodyApi:{ready:boolean};qwenText:{ready:boolean};qwenVL:{ready:boolean};hud:{ready:boolean}}}
+type JarjarStatus={state:'OFFLINE'|'STARTING'|'READY'|'DEGRADED';managed:boolean;decisionAuthority:string;inputMode:string|null;cognitionSource:string;qwenTextDiagnostic?:string;components:{kernel:{ready:boolean};brodyApi:{ready:boolean};qwenText:{ready:boolean};qwenVL:{ready:boolean};hud:{ready:boolean}}}
 
 const launchable=[
  ['brody','Brody','agent'],['obsidure','Obsidure','agent'],['cli','CLI Obsidia','agent'],
@@ -49,6 +49,7 @@ export default function V5Launchers(){
    <div><div><small>ASSISTANT TERRAIN</small><h3>Jarjar</h3></div><strong>{jarjar?.state||'OFFLINE'}</strong></div>
    <p>Autorité {jarjar?.decisionAuthority||'KX108_ONLY'} · entrée {jarjar?.inputMode||'non observée'} · cognition {jarjar?.cognitionSource||'en attente'}</p>
    <div className="v5pk-components">{[['Kernel',jarjar?.components.kernel.ready],['API/Brody',jarjar?.components.brodyApi.ready],['Qwen',jarjar?.components.qwenText.ready],['Qwen-VL',jarjar?.components.qwenVL.ready],['HUD',jarjar?.components.hud.ready]].map(([n,ok])=><span key={String(n)} className={ok?'ok':''}>{String(n)} · {ok?'READY':'OFFLINE'}</span>)}</div>
+   {jarjar&&!jarjar.components.qwenText.ready&&jarjar.qwenTextDiagnostic&&<details className="v5pk-diagnostic"><summary>Diagnostic Qwen texte</summary><pre>{jarjar.qwenTextDiagnostic}</pre></details>}
    <div className="v5pk-actions">{jarjar?.state==='OFFLINE'?<button disabled={launching==='jarjar'} onClick={()=>launch('jarjar')}>Lancer Jarjar</button>:jarjar?.managed?<><button onClick={()=>launch('jarjar')}>Ouvrir / réutiliser</button><button disabled={launching==='jarjar'} onClick={stopJarjar}>Arrêter Jarjar</button></>:<button onClick={()=>launch('jarjar')}>Lancer / ouvrir</button>}</div>
   </article>
 
