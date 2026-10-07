@@ -261,6 +261,17 @@ if (-not (Port-Open 8080)) {
 } else { Write-Host '[4/6] Qwen texte deja actif.' -ForegroundColor DarkGray }
 $qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 12
 
+if ($qwenState -eq 'STARTING') {
+    Write-Host '[QWEN TEXT] Attente activation reelle :8080 avant Jarjar...' -ForegroundColor Cyan
+    try {
+        Wait-Service 8080 'QWEN TEXT' $qwenServer 180
+        $qwenState = 'READY'
+    } catch {
+        $qwenState = 'OFFLINE'
+        Write-Host "[QWEN TEXT] Echec activation initiale: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
 if ($qwenState -eq 'OFFLINE' -and -not (Port-Open 8080)) {
     Write-Host '[QWEN TEXT] Premier lancement echoue. Nettoyage du resume HF puis retry propre...' -ForegroundColor Yellow
     if (Test-Path -LiteralPath $qwenNativeLog) {
@@ -280,7 +291,13 @@ if ($qwenState -eq 'OFFLINE' -and -not (Port-Open 8080)) {
         '--log-colors', 'off'
     )
     $qwenServer = Start-Server 'QWEN TEXT RETRY CLEAN' $LlamaExecutable $qwenRetryArgs $Jarjar
-    $qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 30
+    try {
+        Wait-Service 8080 'QWEN TEXT' $qwenServer 180
+        $qwenState = 'READY'
+    } catch {
+        $qwenState = 'OFFLINE'
+        Write-Host "[QWEN TEXT] Echec activation apres retry: $($_.Exception.Message)" -ForegroundColor Red
+    }
 }
 
 if ($qwenState -eq 'OFFLINE') {
@@ -294,6 +311,9 @@ if ($qwenState -eq 'OFFLINE') {
 }
 
 $qwenReady = ($qwenState -eq 'READY')
+if (-not $qwenReady) {
+    throw 'Qwen texte :8080 non READY. Jarjar ne demarre pas tant que le provider local texte est indisponible.'
+}
 
 $visionServer = $null
 $visionReady = $true
