@@ -46,10 +46,11 @@ export default function V5Pokemon(){
  const [selected,setSelected]=useState(sessionStorage.getItem('obsidia-selected-session')||'')
  const [family,setFamily]=useState('')
  const [catalogSelection,setCatalogSelection]=useState('')
+ const [runtimeError,setRuntimeError]=useState('')
 
  useEffect(()=>{
   const c=new AbortController()
-  const poll=async()=>{try{const s=await fetch('/obsidia-local/state',{signal:c.signal});if(s.ok)setState(await s.json())}catch{}}
+  const poll=async()=>{try{const s=await fetch('/obsidia-local/state',{signal:c.signal});if(!s.ok)throw Error('HTTP '+s.status);setState(await s.json());setRuntimeError('')}catch(e){if(!c.signal.aborted)setRuntimeError('État runtime indisponible · '+String(e))}}
   void poll();const t=setInterval(poll,1200);return()=>{c.abort();clearInterval(t)}
  },[])
 
@@ -112,6 +113,7 @@ export default function V5Pokemon(){
  const workspace=(s:Session)=>{choose(s);sessionStorage.setItem('obsidia-workspace-area',s.agentId==='brody'?'brody':s.agentId==='obsidure'?'obsidure':s.agentId==='cli'?'cli':'home');location.hash='workspace'}
 
  return <section className="v5pk v5pk-world">
+  {runtimeError&&<p className="v5-message">{runtimeError}</p>}
   <header className="v5pk-hero-head">
    <div><small>QUI ?</small><h1>Pokémon</h1><p>Un village vivant d’agents : qui travaille, où, avec qui et jusqu’à quelle preuve.</p></div>
    <div className="v5pk-head-counts"><strong>{live.length} agent(s) live</strong><small>services système dans Workspace</small></div>
