@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useState} from 'react'
+import {useEffect,useMemo,useState,type KeyboardEvent} from 'react'
 import V5Pokemon from './V5Pokemon'
 import V5Launchers from './V5Launchers'
 import {sessionAction} from './SessionControls'
@@ -84,7 +84,7 @@ export default function V5Root(){
  const sendTool=async(tool:'brody'|'obsidure'|'cli')=>{if(!toolText.trim())return;setToolBusy(true);try{let s=activeTool(tool);let id=s?.presence==='live'?s.sessionId:'';if(!id){const d=await sessionAction('run',{mode:'interactive',tool});id=d.sessionId;sessionStorage.setItem('obsidia-selected-session',id);for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,150));const lr=await fetch('/obsidia-local/live');const ld=await lr.json();s=ld.sessions?.find((x:Session)=>x.sessionId===id);if(s?.phase==='WAITING_INPUT')break}}await sessionAction('input/'+id,{text:toolText.trim()});setToolText('')}catch(e){setMessage(String(e))}finally{setToolBusy(false)}}
  const stopTool=async(tool:'brody'|'obsidure'|'cli')=>{const s=activeTool(tool);if(!s)return;setToolBusy(true);try{await sessionAction('stop/'+s.sessionId);setMessage(tool+' arrêté')}catch(e){setMessage(String(e))}finally{setToolBusy(false)}}
 
- const composerKeyDown=(e:React.KeyboardEvent<HTMLInputElement|HTMLTextAreaElement>,tool:'brody'|'obsidure'|'cli')=>{
+ const composerKeyDown=(e:KeyboardEvent<HTMLInputElement|HTMLTextAreaElement>,tool:'brody'|'obsidure'|'cli')=>{
   if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){
    e.preventDefault()
    if(toolText.trim()&&!toolBusy)void sendTool(tool)
