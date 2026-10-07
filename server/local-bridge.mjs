@@ -369,7 +369,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  if(launching.has(interfaceLaunchKey))throw Error('Cette session interface est déjà en cours de lancement');launchKey=interfaceLaunchKey;launching.add(interfaceLaunchKey);
  const root=realpathSync(repository());const session=randomUUID();
  contained(root,launchers[tool]);
- const args=[observer,'--repo',root,'--output',liveDirectory,'--agent',tool,'--session',session];
+ const args=[observer,'--repo',root,'--output',liveDirectory,'--agent',tool,'--session',session,'--surface','interface'];
  if(mode!=='interactive')args.push('--audit','--audit-cycles',mode==='audit-long'?'20':'1','--audit-interval',mode==='audit-long'?'4':'0');
  const child=spawn(pythonFor(root),args,{cwd:root,stdio:['pipe','pipe','pipe'],windowsHide:true,env:{...process.env,PYTHONUNBUFFERED:'1',PYTHONIOENCODING:'utf-8'}});
  const p={child,active:true,output:'',exitCode:null,tool,native:false,surface:'interface'};processes.set(session,p);
@@ -438,7 +438,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   }
  }
  const wrapper=observer,session=randomUUID(),title='OBSIDIA · '+id+' · '+session.slice(0,8);
- const pythonArgs=[wrapper,'--repo',root,'--output',liveDirectory,'--agent',id,'--session',session];
+ const pythonArgs=[wrapper,'--repo',root,'--output',liveDirectory,'--agent',id,'--session',session,'--surface','terminal'];
  const command=terminalCommand(root,title,pythonFor(root),pythonArgs);
  const pid=await launchTerminal(command);
  const p={pid,active:true,output:'',exitCode:null,native:true,surface:'terminal',tool:id,title};processes.set(session,p);await awaitObserver(session,p);res.end(JSON.stringify({opened:true,tool:id,sessionId:session,pid}));return
