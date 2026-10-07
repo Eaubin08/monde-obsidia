@@ -135,6 +135,7 @@ linear-gradient(90deg,rgba(69,104,77,.08) 1px,transparent 1px),
 .zone-agents{left:5%;top:22%}
 .zone-governance{right:5%;top:22%}
 .zone-knowledge{left:5%;bottom:12%}
+.zone-operations{right:5%;top:48%}
 .zone-domains{right:5%;bottom:12%}
 .zone-layers{left:50%;bottom:4%;transform:translateX(-50%)}
 .zone-activity:hover,.zone-activity.selected,.zone-layers:hover,.zone-layers.selected{transform:translateX(-50%) translateY(-2px)}
@@ -160,7 +161,7 @@ linear-gradient(90deg,rgba(69,104,77,.08) 1px,transparent 1px),
 .world-focus-actions{display:flex;gap:8px;flex-wrap:wrap}
 .world-focus-v2 details{margin-top:12px;border-top:1px solid #34563f;padding-top:10px}
 .world-layer-reader pre{max-height:520px;overflow:auto}
-@media(max-width:950px){.world-map-v2{min-height:780px}.world-zone{width:165px}.zone-agents,.zone-knowledge{left:3%}.zone-governance,.zone-domains{right:3%}.world-object-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:950px){.world-map-v2{min-height:780px}.world-zone{width:165px}.zone-agents,.zone-knowledge{left:3%}.zone-governance,.zone-operations,.zone-domains{right:3%}.world-object-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:650px){.world-v2-header{flex-direction:column}.world-map-v2{min-height:auto;display:grid;grid-template-columns:1fr;gap:8px;padding:12px}.world-core,.world-zone,.world-live-token{position:static;transform:none!important;width:auto;max-width:none;height:auto;min-height:0;border-radius:0}.world-core{padding:18px}.world-map-v2:before,.world-map-v2:after{display:none}.world-object-grid{grid-template-columns:1fr}.world-zone-title,.world-focus-head{flex-direction:column}}
 
 /* Pokémon Launch & Presence V1 */
