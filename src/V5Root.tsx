@@ -1,9 +1,6 @@
 import {useEffect,useMemo,useState} from 'react'
-import LivePokemon from './LivePokemon'
-import ToolWorkspace from './ToolWorkspace'
-import GlobalSearch from './GlobalSearch'
-import ResearchOffice from './ResearchOffice'
-import LayerExplorer from './LayerExplorer'
+import V5Pokemon from './V5Pokemon'
+import {sessionAction} from './SessionControls'
 import './App.css'
 import './Office.css'
 import './SourceOffice.css'
@@ -96,7 +93,7 @@ export default function V5Root(){
      {!worldItems.length&&<p className="v5-empty">Aucun objet observé dans cette zone.</p>}
     </section>
     {contextEntity&&<aside className="v5-focus"><small>OBJET SÉLECTIONNÉ</small><h2>{contextEntity.label}</h2><p>{contextEntity.kind} · {contextEntity.id}</p><div><button onClick={()=>go('workspace')}>Workspace</button><button onClick={()=>go('agents')}>Pokémon</button></div><details><summary>Relations · {shared?.relations.filter(r=>r.from===contextEntity.id||r.to===contextEntity.id).length||0}</summary>{shared?.relations.filter(r=>r.from===contextEntity.id||r.to===contextEntity.id).map((r,i)=><p key={i}><code>{r.from}</code> → {r.type} → <code>{r.to}</code></p>)}</details></aside>}
-    {worldZone==='layers'&&<details className="v5-archive"><summary>Recherche complète dans les couches</summary><LayerExplorer/></details>}
+    {worldZone==='layers'&&<details className="v5-archive"><summary>Couches documentaires · {layers.length}</summary><div className="v5-layer-list">{layers.map(l=><article key={l.id}><strong>{l.title}</strong><small>{l.path}</small><pre>{l.content.slice(0,900)}</pre></article>)}</div></details>}
    </section>}
 
    {view==='workspace'&&<section className="v5-page">
@@ -109,7 +106,7 @@ export default function V5Root(){
     {workspaceArea==='files'&&<section className="v5-files"><div><h2>Fichiers</h2><div className="v5-file-list">{files.slice(0,250).map(p=><button key={p} onClick={()=>openFile(p)}>{p}</button>)}</div></div><div><h2>Résultats / receipts</h2>{snap?.proposals.map(p=><article key={p.id}><strong>{p.id}</strong><button onClick={()=>openFile(p.path)}>Résultat</button>{p.receipt&&<button onClick={()=>openFile(p.receipt!)}>Receipt</button>}</article>)}{selectedFile&&<><h3>{selectedFile}</h3><pre>{fileContent}</pre></>}</div></section>}
    </section>}
 
-   {view==='agents'&&<section className="v5-page v5-pokemon"><LivePokemon/><details className="v5-archive"><summary>Registre R&D historique</summary><ResearchOffice/></details></section>}
+   {view==='agents'&&<section className="v5-page v5-pokemon"><V5Pokemon/></section>}
 
    {view==='search'&&<section className="v5-page">
     <header className="v5-page-head"><div><small>TROUVER</small><h1>Recherche</h1><p>Un seul endroit pour retrouver agents, missions, domaines, fichiers et preuves.</p></div></header>
