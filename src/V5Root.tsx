@@ -98,26 +98,80 @@ export default function V5Root(){
   return out.slice(0,80)
  },[searchQuery,searchKind,agents,layers,files,shared])
 
+ const domainCount=shared?.entities.filter(e=>e.kind==='domain').length||0
+ const allResultEntities=shared?.entities.filter(e=>['result','artifact'].includes(e.kind))||[]
+ const resultEntities=allResultEntities.slice(-5).reverse()
+ const proofCount=shared?.entities.filter(e=>['decision_record','sealed_receipt','rollback_evidence','impact'].includes(e.kind)).length||0
+ const currentMissions=(shared?.missions||[]).slice(-4).reverse()
+ const activeAgents=live.slice(0,5)
+
  return <div className="v5">
-  <header className="v5-top">
-   <a className="v5-logo" href="#world">◈ OBSIDIA</a>
-   <nav>{nav.map(([id,label])=><a key={id} href={'#'+id} aria-current={view===id?'page':undefined}>{label}</a>)}</nav>
-   <div className="v5-runtime"><span className={snap?.available?'on':''}/><strong>{snap?.available?'Connecté':'Hors ligne'}</strong><small>{shared?.decisionAuthority||'KX108_ONLY'}</small></div>
-  </header>
+  <aside className="v5-sidebar">
+   <a className="v5-brand" href="#world"><span>◈</span><div><strong>OBSIDIA</strong><small>Écosystème IA</small></div></a>
+   <nav className="v5-primary-nav">
+    {nav.map(([id,label])=><a key={id} href={'#'+id} aria-current={view===id?'page':undefined}><span>{id==='world'?'◎':id==='workspace'?'▦':id==='agents'?'◇':'⌕'}</span><div><strong>{label}</strong><small>{id==='world'?'Vue globale':id==='workspace'?'Projets et outils':id==='agents'?'Agents IA':'Connaissances'}</small></div></a>)}
+   </nav>
+   <div className="v5-sidebar-foot">
+    <div className="v5-context-mini"><span>Contexte</span><strong>{contextLabel}</strong></div>
+    <small>{shared?.decisionAuthority||'KX108_ONLY'}</small>
+   </div>
+  </aside>
 
-  <div className="v5-context"><span>Contexte</span><strong>{contextLabel}</strong>{contextId&&<small>{contextId}</small>}</div>
-  {message&&<p className="v5-message">{message}</p>}
+  <section className="v5-app">
+   <header className="v5-topbar">
+    <div className="v5-top-search"><span>⌕</span><input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} onFocus={()=>{if(view!=='search')go('search')}} placeholder="Rechercher un agent, une mission, un fichier, un domaine…" /></div>
+    <div className="v5-system"><span className={snap?.available?'on':''}/><div><strong>{snap?.available?'Système LIVE':'Hors ligne'}</strong><small>{snap?.available?'Services observés':'Connexion indisponible'}</small></div></div>
+    <div className="v5-core"><strong>Obsidia Core</strong><small>{snap?.branch||'branche inconnue'} · {snap?.sha?.slice(0,7)||'—'}</small></div>
+   </header>
+   {message&&<p className="v5-message">{message}</p>}
 
-  <main className="v5-main">
-   {view==='world'&&<section className="v5-page">
-    <header className="v5-page-head"><div><small>OÙ ?</small><h1>Monde</h1><p>Voir l’écosystème, ses zones et ses objets.</p></div><strong>{live.length} live</strong></header>
-    <div className="v5-zonebar">{zones.map(([id,label])=><button key={id} aria-pressed={worldZone===id} onClick={()=>setWorldZone(id)}>{label}</button>)}</div>
-    <section className="v5-grid">
-     {worldItems.map(item=><button className="v5-object" key={item.id} onClick={()=>{if(item.id.startsWith('layer:'))setWorldZone('layers');else focus(item.id)}}><small>{item.kind}</small><strong>{item.label}</strong><span>{item.meta}</span></button>)}
-     {!worldItems.length&&<p className="v5-empty">Aucun objet observé dans cette zone.</p>}
+   <main className="v5-main">
+   {view==='world'&&<section className="v5-page v5-dashboard">
+    <header className="v5-welcome">
+     <div><h1>Bienvenue sur Obsidia</h1><p>Un écosystème d’agents, de connaissances et d’actions autour de tes projets.</p></div>
+     <div className="v5-kpis">
+      <article className="live"><strong>{snap?.available?'Système opérationnel':'Système hors ligne'}</strong><small>{snap?.available?'runtime observé':'connexion indisponible'}</small></article>
+      <article><strong>{live.length}</strong><small>agents actifs</small></article>
+      <article><strong>{shared?.missions.length||0}</strong><small>missions</small></article>
+      <article className="warn"><strong>{shared?.missions.filter(m=>m.primaryBlocker).length||0}</strong><small>blocages</small></article>
+      <article><strong>{allResultEntities.length}</strong><small>résultats</small></article>
+     </div>
+    </header>
+
+    <section className="v5-space-grid">
+     <button className="v5-space-card world" onClick={()=>{setWorldZone('domains');go('world')}}><div className="icon">◎</div><div className="head"><h2>Monde</h2><span>Explorer l’écosystème</span></div><div className="metrics"><strong>{domainCount}<small>domaines</small></strong><strong>{snap?.worktrees?.length||0}<small>worktrees</small></strong><strong>{shared?.entities.length||0}<small>objets</small></strong></div><div className="spark bars blue">{Array.from({length:12},(_,i)=><i key={i} style={{height:(18+((i*13)%42))+'px'}}/> )}</div><footer>Terrains · R&D · Gouvernance · Couches</footer></button>
+     <button className="v5-space-card workspace" onClick={()=>go('workspace')}><div className="icon">▦</div><div className="head"><h2>Workspace</h2><span>Construire et collaborer</span></div><div className="metrics"><strong>{live.length}<small>agents</small></strong><strong>{files.length}<small>fichiers</small></strong><strong>{proofCount}<small>preuves</small></strong></div><div className="spark line purple"/><footer>Brody · Obsidure · CLI · Fichiers</footer></button>
+     <button className="v5-space-card pokemon" onClick={()=>go('agents')}><div className="icon">◇</div><div className="head"><h2>Pokémon</h2><span>Agents et leurs actions</span></div><div className="metrics"><strong>{shared?.entities.filter(e=>e.kind==='agent').length||0}<small>agents</small></strong><strong>{shared?.missions.length||0}<small>missions</small></strong><strong>{live.length}<small>live</small></strong></div><div className="spark bars green">{Array.from({length:12},(_,i)=><i key={i} style={{height:(14+((i*17)%46))+'px'}}/> )}</div><footer>Agents · Pipeline · Population · Missions</footer></button>
+     <button className="v5-space-card search" onClick={()=>go('search')}><div className="icon">⌕</div><div className="head"><h2>Recherche</h2><span>Connaissances et preuves</span></div><div className="metrics"><strong>{agents.length}<small>agents</small></strong><strong>{files.length}<small>fichiers</small></strong><strong>{proofCount}<small>preuves</small></strong></div><div className="spark line violet"/><footer>Domaines · Missions · Fichiers · Couches</footer></button>
     </section>
-    {contextEntity&&<aside className="v5-focus"><small>OBJET SÉLECTIONNÉ</small><h2>{contextEntity.label}</h2><p>{contextEntity.kind} · {contextEntity.id}</p><div><button onClick={()=>go('workspace')}>Workspace</button><button onClick={()=>go('agents')}>Pokémon</button></div><details><summary>Relations · {shared?.relations.filter(r=>r.from===contextEntity.id||r.to===contextEntity.id).length||0}</summary>{shared?.relations.filter(r=>r.from===contextEntity.id||r.to===contextEntity.id).map((r,i)=><p key={i}><code>{r.from}</code> → {r.type} → <code>{r.to}</code></p>)}</details></aside>}
-    {worldZone==='layers'&&<details className="v5-archive"><summary>Couches documentaires · {layers.length}</summary><div className="v5-layer-list">{layers.map(l=><article key={l.id}><strong>{l.title}</strong><small>{l.path}</small><pre>{l.content.slice(0,900)}</pre></article>)}</div></details>}
+
+    <section className="v5-dashboard-grid">
+     <article className="v5-panel">
+      <header><div><h2>Agents actifs</h2><small>{live.length} en cours</small></div><button onClick={()=>go('agents')}>Voir tous</button></header>
+      <div className="v5-list">{activeAgents.map(s=><button key={s.sessionId} onClick={()=>{focus('session:'+s.sessionId);go('agents')}}><span className="avatar">{s.name?.slice(0,1)||'A'}</span><div><strong>{s.name||s.agentId}</strong><small>{s.objective||s.message||s.phase}</small></div><em>LIVE</em></button>)}{!activeAgents.length&&<p className="v5-empty">Aucun agent actif.</p>}</div>
+     </article>
+
+     <article className="v5-panel">
+      <header><div><h2>Missions en cours</h2><small>{shared?.missions.length||0} mission(s)</small></div><button onClick={()=>{setWorldZone('activity');go('world')}}>Voir toutes</button></header>
+      <div className="v5-list missions">{currentMissions.map(m=><button key={m.id} onClick={()=>focus(m.id)}><span className="avatar mission">◆</span><div><strong>{m.actionId}</strong><small>{m.agentId||'agent non relié'} · {m.status}</small></div><em className={m.primaryBlocker?'blocked':''}>{m.primaryBlocker?'BLOQUÉ':m.traceabilityStatus}</em></button>)}{!currentMissions.length&&<p className="v5-empty">Aucune mission observée.</p>}</div>
+     </article>
+
+     <article className="v5-panel">
+      <header><div><h2>Dernières preuves et résultats</h2><small>{resultEntities.length} récent(s)</small></div><button onClick={()=>{setWorkspaceArea('files');go('workspace')}}>Voir tout</button></header>
+      <div className="v5-list results">{resultEntities.map(e=><button key={e.id} onClick={()=>focus(e.id)}><span className="avatar result">▤</span><div><strong>{e.label}</strong><small>{e.kind} · {e.path||e.source||'objet partagé'}</small></div><em>OK</em></button>)}{!resultEntities.length&&<p className="v5-empty">Aucun résultat récent.</p>}</div>
+     </article>
+    </section>
+
+    <section className="v5-bottom-grid">
+     <article className="v5-panel layers">
+      <header><div><h2>Couches et connaissances</h2><small>{layers.length} couche(s)</small></div><button onClick={()=>{setWorldZone('layers');go('world')}}>Voir toutes</button></header>
+      <div className="v5-layer-cards">{layers.slice(0,4).map((l,i)=><button key={l.id} onClick={()=>{setWorldZone('layers');go('world')}}><span>{['Terrains','R&D / Build','Gouvernance','Documentaires'][i]||'Couche'}</span><strong>{l.title}</strong><small>{l.path}</small></button>)}</div>
+     </article>
+     <article className="v5-panel ecosystem">
+      <header><div><h2>Répartition de l’écosystème</h2><small>Vue synthétique</small></div></header>
+      <div className="v5-eco"><div className="donut"><strong>{shared?.entities.filter(e=>e.kind==='agent').length||0}</strong><small>agents</small></div><ul><li><span className="g"/>Live <strong>{live.length}</strong></li><li><span className="b"/>Domaines <strong>{domainCount}</strong></li><li><span className="p"/>Fichiers <strong>{files.length}</strong></li><li><span className="a"/>Preuves <strong>{proofCount}</strong></li></ul></div>
+     </article>
+    </section>
    </section>}
 
    {view==='workspace'&&<section className="v5-page">
@@ -136,5 +190,6 @@ export default function V5Root(){
     <section className="v5-recent"><h2>Activité récente</h2>{recent.map((e,i)=><button key={e.sessionId+e.timestamp+i} onClick={()=>{focus('session:'+e.sessionId);go('world')}}><strong>{e.name||e.agentId}</strong><span>{e.phase}</span><small>{e.message}</small></button>)}</section>
    </section>}
   </main>
+  </section>
  </div>
 }
