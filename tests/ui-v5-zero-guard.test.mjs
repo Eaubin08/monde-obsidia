@@ -6,6 +6,7 @@ import {resolve} from 'node:path'
 const root=readFileSync(resolve(process.cwd(),'src/V5Root.tsx'),'utf8')
 const main=readFileSync(resolve(process.cwd(),'src/main.tsx'),'utf8')
 const pokemon=readFileSync(resolve(process.cwd(),'src/V5Pokemon.tsx'),'utf8')
+const launchers=readFileSync(resolve(process.cwd(),'src/V5Launchers.tsx'),'utf8')
 const bridge=readFileSync(resolve(process.cwd(),'server/local-bridge.mjs'),'utf8')
 const state=readFileSync(resolve(process.cwd(),'server/obsidia-state.mjs'),'utf8')
 
@@ -23,17 +24,24 @@ test('V5 reuses canonical data endpoints',()=>{
 })
 
 test('V5 preserves functional capabilities without legacy renderers',()=>{
- for(const x of ['<V5Pokemon/>',"workspaceArea==='brody'","workspaceArea==='obsidure'","workspaceArea==='cli'","workspaceArea==='files'","view==='search'","worldZone==='layers'"])assert.ok(root.includes(x),x)
+ for(const x of ['<V5Pokemon/>','<V5Launchers/>',"workspaceArea==='launchers'","workspaceArea==='brody'","workspaceArea==='obsidure'","workspaceArea==='cli'","workspaceArea==='files'","view==='search'","worldZone==='layers'"])assert.ok(root.includes(x),x)
  for(const x of ['sessionAction(\'run\'','sessionAction(\'input/\'','sessionAction(\'stop/\''])assert.ok(root.includes(x),x)
 })
 
-test('Pokemon block keeps its existing capabilities',()=>{
+test('Pokemon stays focused on agent life and organization',()=>{
  for(const x of [
-  'Total','Agents actifs','Lancer un agent ou un service','Lancer Jarjar',
-  'Kernel X108','API Obsidia + Brody + Native Memory','GPS / Defense / Aviation',
-  'Trading → X108','Brody Enriched','Obsidure DryRun','PARCOURS VIVANT',
-  'MISSIONS / ÉQUIPES','POPULATION CONNUE','Village visuel','Registre détaillé du catalogue'
+  'Total','Agents actifs','PARCOURS VIVANT','MISSIONS / ÉQUIPES',
+  'POPULATION CONNUE','Village visuel','Registre détaillé du catalogue'
  ])assert.ok(pokemon.includes(x),x)
+ for(const x of ['Lancer un agent ou un service','Kernel X108','API Obsidia + Brody + Native Memory'])assert.ok(!pokemon.includes(x),x)
+})
+
+test('Workspace owns launchers and native services',()=>{
+ for(const x of [
+  'Lancements','Lancer Jarjar','Kernel X108','API Obsidia + Brody + Native Memory',
+  'GPS / Defense / Aviation','Trading → X108','Brody Enriched','Obsidure DryRun',
+  'Ouvrir / lancer'
+ ])assert.ok(launchers.includes(x),x)
 })
 
 test('V5 keeps World Workspace Search categories',()=>{
