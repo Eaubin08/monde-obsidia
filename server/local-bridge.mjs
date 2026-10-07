@@ -364,14 +364,14 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  res.end(JSON.stringify({ok:true}));return
  }
  const tool=data.tool||'obsidure';if(!['obsidure','brody','cli'].includes(tool))throw Error('Outil inconnu');const mode=data.mode;if(!['audit','audit-long','interactive'].includes(mode)|| (tool!=='obsidure'&&mode!=='interactive'))throw Error('Mission inconnue');
- if([...processes.entries()].some(([sid,p])=>p.active&&p.tool===tool&&liveSnapshot().sessions.find(s=>s.sessionId===sid)?.presence!=='ended'))throw Error('Une session est déjà en cours : arrête-la ou attends sa fin');
+ if([...processes.entries()].some(([sid,p])=>p.active&&!p.native&&p.tool===tool&&liveSnapshot().sessions.find(s=>s.sessionId===sid)?.presence!=='ended'))throw Error('Une session interface est déjà en cours : arrête-la ou attends sa fin');
  if(launching.has(tool))throw Error('Cet outil est déjà en cours de lancement');launchKey=tool;launching.add(tool);
  const root=realpathSync(repository());const session=randomUUID();
  contained(root,launchers[tool]);
  const args=[observer,'--repo',root,'--output',liveDirectory,'--agent',tool,'--session',session];
  if(mode!=='interactive')args.push('--audit','--audit-cycles',mode==='audit-long'?'20':'1','--audit-interval',mode==='audit-long'?'4':'0');
  const child=spawn(pythonFor(root),args,{cwd:root,stdio:['pipe','pipe','pipe'],windowsHide:true,env:{...process.env,PYTHONUNBUFFERED:'1',PYTHONIOENCODING:'utf-8'}});
- const p={child,active:true,output:'',exitCode:null,tool};processes.set(session,p);
+ const p={child,active:true,output:'',exitCode:null,tool,native:false,surface:'interface'};processes.set(session,p);
  const append=c=>{p.output=(p.output+c.toString('utf8')).slice(-32000)};child.stdout.on('data',append);child.stderr.on('data',append);child.stdin.on('error',e=>append('Entrée du processus fermée : '+e.message));
  child.on('error',e=>{p.active=false;append('Erreur de lancement : '+e.message)});child.on('close',code=>{p.active=false;p.exitCode=code;try{const log=resolve(liveDirectory,session+'.jsonl');const lines=readFileSync(log,'utf8').trim().split('\n');const last=JSON.parse(lines.at(-1));if(last.kind!=='session_end')appendFileSync(log,JSON.stringify({...last,timestamp:new Date().toISOString(),kind:'session_end',phase:'PROCESS_EXIT',status:'error',exitCode:code,message:'Processus interrompu'})+'\n')}catch{}});
  await new Promise((ok,no)=>{child.once('spawn',ok);child.once('error',no)});
