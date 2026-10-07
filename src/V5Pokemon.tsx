@@ -83,8 +83,9 @@ export default function V5Pokemon(){
  const catalog=new Set(families.flatMap(f=>f.agents))
  const liveIds=new Set(live.map(s=>s.agentId))
  const blocked=live.filter(s=>stage(s)==='Bloqué')
- const availableIds=[...catalog].filter(id=>!liveIds.has(id))
  const inactiveIds=declaredFamilies.filter(f=>!f.localPresent).flatMap(f=>f.agents).filter(id=>!liveIds.has(id))
+ const inactiveSet=new Set(inactiveIds)
+ const availableIds=[...catalog].filter(id=>!liveIds.has(id)&&!inactiveSet.has(id))
  const counts:{id:Filter;label:string;value:number}[]=[
   {id:'all',label:'Population',value:catalog.size},
   {id:'live',label:'Agents vivants',value:live.length},
