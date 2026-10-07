@@ -443,3 +443,20 @@ select:focus-visible {
  .v5-instance-strip{grid-template-columns:1fr 1fr}
  .v5pk-head-counts{align-items:flex-start}
 }
+
+
+/* Workspace launchers */
+.v5-launchers{display:grid;gap:14px}
+.v5-launchers-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
+.v5-launchers-head h2{margin:2px 0;font-size:1.35rem}
+.v5-launchers-head p{margin:0;color:#9fb2c4}
+.v5-launchers-head>strong{color:#b8c9da;font-size:.78rem;max-width:460px;text-align:right}
+.v5-launcher-groups{display:grid;gap:14px}
+.v5-launcher-groups>section{border:1px solid var(--line);background:#0d1a29;border-radius:10px;padding:12px}
+.v5-launcher-groups>section>header{margin-bottom:8px}
+.v5-launcher-groups h3{margin:2px 0}
+.v5-launcher-groups header small{color:#7f96aa;letter-spacing:.08em}
+.v5-launcher-future{display:grid;grid-template-columns:auto auto 1fr;gap:10px;align-items:center;border:1px dashed #384d61;background:#0a1522;border-radius:9px;padding:10px;color:#94a8ba}
+.v5-launcher-future small{color:#748a9d}
+.v5pk-village-block,.v5pk-registry-block{width:100%}
+.v5pk-village-block>summary,.v5pk-registry-block>summary{font-weight:800;cursor:pointer;padding-bottom:8px}
