@@ -60,7 +60,7 @@ export default function V5Launchers(){
 
    <section>
     <header><small>SERVICES SYSTÈME</small><h3>Runtime et domaines</h3></header>
-    <div className="v5pk-launch-grid">{launchable.filter(x=>x[2]==='service').map(([id,label])=>{const svc=native.find(s=>s.agentId===id);const status=svc?.observedState||'OFFLINE';const frozenDirect=id==='kernel-x108'||id==='obsidia-api';return <article key={id} className={status==='READY'?'active':status==='STARTING'?'starting':'ready'}><div><strong>{label}</strong><span>{status}</span></div><p>{frozenDirect?'Lancement terminal validé · freeze 2026-10-06':status==='READY'?'Service observé actif':status==='STARTING'?'Démarrage en cours':'Arrêté / non observé'}</p><div className="v5pk-actions">{frozenDirect?<button disabled={launching===id} onClick={()=>launch(id)}>Lancer terminal</button>:<button disabled={launching===id||status==='STARTING'} onClick={()=>launch(id)}>{status==='READY'?'Ouvrir / lancer':'Lancer terminal'}</button>}{svc&&<button onClick={()=>focus('session:'+svc.sessionId)}>Contexte</button>}</div></article>})}</div>
+    <div className="v5pk-launch-grid">{launchable.filter(x=>x[2]==='service').map(([id,label])=>{const svc=native.find(s=>s.agentId===id);const status=svc?.observedState||'OFFLINE';return <article key={id} className={status==='READY'?'active':status==='STARTING'?'starting':'ready'}><div><strong>{label}</strong><span>{status}</span></div><p>Terminal natif validé · freeze 2026-10-06</p><div className="v5pk-actions"><button disabled={launching===id} onClick={()=>launch(id)}>Lancer terminal</button>{svc&&<button onClick={()=>focus('session:'+svc.sessionId)}>Contexte</button>}</div></article>})}</div>
    </section>
   </div>
 
