@@ -253,6 +253,52 @@ function snapshot(root=repository()){
  return {available:true,repository:root,sha,branch,worktrees:gitWorktrees(root),observedAt:new Date().toISOString(),files,proposals,sigmaDomains:sigmaDomains(root),agentFamilies:agentFamilies(root),runtimeEvidence:canonicalRuntimeEvidence(),agentSources:files.filter(p=>/^(agents\/prompts\/.*\.md|periphery\/agents\/[^/]+\.py)$/.test(p)),tools:[...Object.entries(launchers).map(([id,path])=>({id,path,available:existsSync(resolve(root,path))&&process.platform==='win32',reason:process.platform!=='win32'?'Terminal Windows requis':!existsSync(resolve(root,path))?'Point d’entrée absent':null})),{id:'jarjar',path:jarjarModule,available:process.platform==='win32'&&existsSync(jarjarRoot())&&existsSync(resolve(jarjarRoot(),jarjarModuleFile))&&existsSync(jarjarPython()),reason:process.platform!=='win32'?'Windows requis':!existsSync(jarjarRoot())?'Repo Jarjar absent':!existsSync(resolve(jarjarRoot(),jarjarModuleFile))?'Launcher Jarjar absent':!existsSync(jarjarPython())?'Python Jarjar canonique absent':null}]}
 }
 const processes=new Map(),launching=new Set();
+
+function listeningPid(port){
+ try{
+  const raw=execFileSync('netstat.exe',['-ano','-p','tcp'],{encoding:'utf8',timeout:4000,windowsHide:true})
+  for(const line of raw.split(/\r?\n/)){
+   if(!line.includes('LISTENING'))continue
+   const parts=line.trim().split(/\s+/)
+   if(parts.length<5)continue
+   const local=parts[1]||''
+   if(local.endsWith(':'+port)){
+    const pid=Number(parts.at(-1))
+    if(Number.isSafeInteger(pid)&&pid>0)return pid
+   }
+  }
+ }catch{}
+ return null
+}
+function processCommandLine(pid){
+ try{
+  const ps=`$p=Get-CimInstance Win32_Process -Filter "ProcessId = ${Number(pid)}"; if($p){$p.CommandLine}`
+  return execFileSync('powershell.exe',['-NoProfile','-Command',ps],{encoding:'utf8',timeout:5000,windowsHide:true}).trim()
+ }catch{return ''}
+}
+function canonicalPortOwner(id,pid){
+ const line=processCommandLine(pid)
+ if(!line)return false
+ if(id==='kernel-x108')return /server\.kernel\.sealed\.cjs/i.test(line)
+ if(id==='obsidia-api')return /uvicorn/i.test(line)&&/apps\.obsidia_api\.main:app/i.test(line)&&/(--port\s+8000|--port=8000)/i.test(line)
+ return false
+}
+async function releaseFrozenServicePort(id){
+ const port=id==='kernel-x108'?3001:id==='obsidia-api'?8000:null
+ if(!port)return
+ if(id==='obsidia-api')closeOwnedBrodyApi()
+ let pid=listeningPid(port)
+ if(!pid)return
+ if(!canonicalPortOwner(id,pid))throw Error(`Port ${port} déjà occupé par un processus non reconnu. Aucun arrêt automatique effectué.`)
+ execFileSync('taskkill.exe',['/PID',String(pid),'/T','/F'],{encoding:'utf8',timeout:10000,windowsHide:true})
+ const deadline=Date.now()+5000
+ while(Date.now()<deadline){
+  await new Promise(r=>setTimeout(r,120))
+  pid=listeningPid(port)
+  if(!pid)return
+ }
+ throw Error(`Le processus Obsidia précédent sur le port ${port} ne s'est pas arrêté.`)
+}
 function markEnd(id,message){try{const log=resolve(liveDirectory,id+'.jsonl'),last=JSON.parse(readFileSync(log,'utf8').trim().split('\n').at(-1));if(last.kind!=='session_end')appendFileSync(log,JSON.stringify({...last,timestamp:new Date().toISOString(),kind:'session_end',phase:'PROCESS_EXIT',status:'error',exitCode:null,message})+'\n')}catch{}}
 
 async function awaitObserver(id,p){
@@ -330,6 +376,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
    if(p.active&&p.native&&p.tool===id&&!await terminalAlive(p.pid)){p.active=false;markEnd(session,'Terminal Windows fermé')}
    if(p.active&&p.tool===id){await focusTerminal(p.title,p.pid);res.end(JSON.stringify({opened:true,reused:true,tool:id,sessionId:session}));return}
   }
+  if(id==='kernel-x108'||id==='obsidia-api')await releaseFrozenServicePort(id)
   const session=randomUUID(),title='OBSIDIA · '+spec.title+' · '+session.slice(0,8)
   emitNativeService(session,id,spec.title,root)
   const command=`$host.UI.RawUI.WindowTitle='${title.replaceAll("'","''")}'; ${spec.command}`
