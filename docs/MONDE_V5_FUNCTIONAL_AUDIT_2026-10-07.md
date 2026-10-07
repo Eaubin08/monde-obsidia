@@ -305,3 +305,50 @@ Le coeur fonctionnel est cohérent, mais le freeze global est prématuré tant q
 - le diagnostic Qwen n'est pas raccordé au vrai log ;
 - le cycle Pokémon ne reflète pas encore exactement le catalogue disponible/inactif ;
 - P4 Jarjar n'a pas été validé avec Qwen :8080 READY.
+
+
+## Correctifs appliqués après audit
+
+État au 2026-10-07 — corrections source posées, validation live globale reportée après disponibilité Qwen :8080.
+
+- `CROSS_VIEW_WORKSPACE_AREA` : CORRIGE_SOURCE
+  - V5Root lit et persiste `obsidia-workspace-area`.
+  - Pokémon peut ouvrir le bon onglet Workspace.
+
+- `CROSS_VIEW_POKEMON_SELECTION` : CORRIGE_SOURCE
+  - V5Pokemon écoute `obsidia-context`.
+  - une entité agent ciblée est résolue vers sa session live quand elle existe.
+
+- `QWEN_DIAGNOSTIC_LOG` : CORRIGE_SOURCE
+  - Monde lit désormais `jarjar_qwen_text_llama.log`.
+
+- `SIGMA_STATUS` : CORRIGE_SEMANTIQUE
+  - l'API 8000 seule ne produit plus un faux `READY` Sigma ;
+  - état projeté : `API_READY_UNVERIFIED` tant qu'une route Sigma réelle n'est pas probée.
+
+- `POKEMON_AVAILABLE_SEMANTICS` : CORRIGE_SOURCE
+  - les agents du catalogue non live sont maintenant comptés comme disponibles.
+
+- `POKEMON_INACTIVE_FILTER` : CORRIGE_SOURCE
+  - le filtre peut rendre les agents inactifs/non observés localement.
+
+- `JARJAR_POKEMON_TELEMETRY` : CORRIGE_SOURCE
+  - entrée, cognition, autorité, gouvernance, confirmation et fraîcheur télémétrie sont exposées dans la fiche Jarjar.
+
+- `UI_PATHS_TEST` : REALIGNE_V5
+  - les assertions legacy V3 ont été remplacées par les chemins V5 actifs.
+
+- `V5_GUARD_TEST` : REALIGNE
+  - attentes textuelles mises en phase avec `CYCLE VIVANT`, `VILLAGE VIVANT`, `Registre détaillé`.
+
+### Quick checks source
+
+13 invariants critiques vérifiés sur les sources de branche : 13/13 présents/cohérents.
+
+Cela ne remplace pas :
+- `npm test`
+- `npm run build`
+- le test Windows live des launchers
+- le test de routage Jarjar avec Qwen :8080 READY
+
+Ces validations restent à exécuter en fin de téléchargement Qwen.
