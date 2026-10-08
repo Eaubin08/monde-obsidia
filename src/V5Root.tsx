@@ -113,9 +113,11 @@ export default function V5Root(){
   const timer=setInterval(refresh,4000)
   const hash=()=>{const next=(location.hash.slice(1)||'world') as View;if(['world','workspace','agents','search'].includes(next)){setView(next);if(next==='workspace'){const saved=sessionStorage.getItem('obsidia-workspace-area');if(['home','launchers','brody','obsidure','cli','files'].includes(saved||''))setWorkspaceArea(saved as WorkspaceArea)}}}
   const context=(e:Event)=>setContextId((e as CustomEvent<string>).detail||sessionStorage.getItem('obsidia-focus-entity')||'')
+  const worldZoneEvent=(e:Event)=>{const zone=(e as CustomEvent<WorldZone>).detail;if(zones.some(([id])=>id===zone))setWorldZone(zone)}
   window.addEventListener('hashchange',hash)
   window.addEventListener('obsidia-context',context as EventListener)
-  return()=>{abort.abort();clearInterval(timer);window.removeEventListener('hashchange',hash);window.removeEventListener('obsidia-context',context as EventListener)}
+  window.addEventListener('obsidia-world-zone',worldZoneEvent as EventListener)
+  return()=>{abort.abort();clearInterval(timer);window.removeEventListener('hashchange',hash);window.removeEventListener('obsidia-context',context as EventListener);window.removeEventListener('obsidia-world-zone',worldZoneEvent as EventListener)}
  },[])
 
  useEffect(()=>{sessionStorage.setItem('obsidia-workspace-area',workspaceArea)},[workspaceArea])
