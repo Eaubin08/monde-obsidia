@@ -101,6 +101,7 @@ export default function V5Root(){
  const [searchQuery,setSearchQuery]=useState('')
  const [searchKind,setSearchKind]=useState<'all'|'agent'|'mission'|'domain'|'file'|'proof'|'layer'>('all')
  const [searchSelection,setSearchSelection]=useState<{id:string;kind:string;label:string;meta:string}|null>(null)
+ const [selectedMechanism,setSelectedMechanism]=useState('')
 
  useEffect(()=>{
   const abort=new AbortController()
@@ -246,6 +247,14 @@ export default function V5Root(){
   return [...counts.entries()].map(([type,count])=>({type,count})).sort((a,b)=>b.count-a.count||a.type.localeCompare(b.type))
  },[shared,worldZone])
 
+ const mechanismRelations=useMemo(()=>{
+  if(!shared||!selectedMechanism)return [] as {from:string;fromLabel:string;type:string;to:string;toLabel:string}[]
+  const label=id=>shared.entities.find(e=>e.id===id)?.label||id
+  return shared.relations.filter(r=>r.type===selectedMechanism).map(r=>({
+   from:r.from,fromLabel:label(r.from),type:r.type,to:r.to,toLabel:label(r.to)
+  }))
+ },[shared,selectedMechanism])
+
  const searchResults=useMemo(()=>{
   const q=searchQuery.trim().toLowerCase()
   if(q.length<2&&searchKind==='all')return [] as {id:string;kind:string;label:string;meta:string;action:()=>void}[]
@@ -342,14 +351,18 @@ export default function V5Root(){
      <div><small>MONDE</small><h1>{zones.find(([id])=>id===worldZone)?.[1]}</h1><p>Explorer cette partie de l’écosystème Obsidia.</p></div>
      <button onClick={()=>setWorldZone('home')}>← Vue globale</button>
     </header>
-    <nav className="v5-zonebar">{zones.map(([id,label])=><button key={id} aria-pressed={worldZone===id} onClick={()=>setWorldZone(id)}>{label}</button>)}</nav>
+    <nav className="v5-zonebar">{zones.map(([id,label])=><button key={id} aria-pressed={worldZone===id} onClick={()=>{setSelectedMechanism('');setWorldZone(id)}}>{label}</button>)}</nav>
     {worldZone!=='territories'&&territorySublayers[worldZone]?.length&&<section className="v5-sublayers">
      <header><div><small>SOUS-COUCHES</small><h2>Organisation du territoire</h2></div><span>projection de navigation</span></header>
      <div>{territorySublayers[worldZone]!.map((x,i)=><article key={x.label}><em>{String(i+1).padStart(2,'0')}</em><strong>{x.label}</strong><p>{x.summary}</p></article>)}</div>
     </section>}
     {worldZone!=='territories'&&territoryRelationTypes[worldZone]&&<section className="v5-mechanisms">
      <header><div><small>LIAISONS OBSERVÉES</small><h2>Mécanismes visibles dans la projection</h2></div><span>{observedMechanisms.length} type(s)</span></header>
-     <div>{observedMechanisms.length?observedMechanisms.map(x=><article key={x.type}><code>{x.type}</code><strong>{x.count}</strong></article>):<p className="v5-empty">Aucune liaison observée pour ce territoire.</p>}</div>
+     <div>{observedMechanisms.length?observedMechanisms.map(x=><button key={x.type} aria-pressed={selectedMechanism===x.type} onClick={()=>setSelectedMechanism(selectedMechanism===x.type?'':x.type)}><code>{x.type}</code><strong>{x.count}</strong></button>):<p className="v5-empty">Aucune liaison observée pour ce territoire.</p>}</div>
+    </section>}
+    {selectedMechanism&&<section className="v5-mechanism-detail">
+     <header><div><small>LIAISON</small><h2>{selectedMechanism}</h2></div><button onClick={()=>setSelectedMechanism('')}>Fermer</button></header>
+     <div>{mechanismRelations.map((r,i)=><article key={r.from+r.to+i}><button onClick={()=>focus(r.from)}><small>DE</small><strong>{r.fromLabel}</strong><code>{r.from}</code></button><span>→ <code>{r.type}</code> →</span><button onClick={()=>focus(r.to)}><small>VERS</small><strong>{r.toLabel}</strong><code>{r.to}</code></button></article>)}</div>
     </section>}
     <section className="v5-grid">
      {worldItems.map(item=><button className="v5-object" key={item.id} onClick={()=>{if(item.id.startsWith('territory:')){setWorldZone(item.id.slice(10) as WorldZone);return}if(item.id.startsWith('layer:')){const lid=item.id.slice(6);const l=layers.find(x=>x.id===lid);if(l){setSelectedFile(l.path);setFileContent(l.content)}}else focus(item.id)}}><small>{item.kind}</small><strong>{item.label}</strong><span>{item.meta}</span></button>)}
