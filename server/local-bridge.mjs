@@ -51,16 +51,20 @@ function emitNativeService(session,id,title,root){
 }
 const jarjarRootCandidates=()=>[
  process.env.OBSIDIA_JARJAR_ROOT,
- 'C:\\Users\\User\\Desktop\\Jarvis-iron-obsidia-',
+ resolve(homedir(),'Desktop','Jarvis-iron-obsidia-github'),
+ 'C:\\Users\\User\\Desktop\\Jarvis-iron-obsidia-github',
+ 'C:\\Users\\Aubin\\Desktop\\Jarvis-iron-obsidia-github',
  resolve(homedir(),'Desktop','Jarvis-iron-obsidia-'),
+ 'C:\\Users\\User\\Desktop\\Jarvis-iron-obsidia-',
  'C:\\Users\\Aubin\\Desktop\\Jarvis-iron-obsidia-'
 ].filter(Boolean)
 const jarjarRoot=()=>jarjarRootCandidates().find(p=>existsSync(p))||jarjarRootCandidates()[0]
 const jarjarPythonCandidates=()=>[
  process.env.OBSIDIA_JARJAR_PYTHON,
+ resolve(jarjarRoot(),'.venv','Scripts','python.exe'),
+ resolve(homedir(),'Desktop','Jarvis-iron-obsidia-','.venv','Scripts','python.exe'),
  'C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe',
- resolve(homedir(),'.cache','codex-runtimes','codex-primary-runtime','dependencies','python','python.exe'),
- resolve(jarjarRoot(),'.venv','Scripts','python.exe')
+ resolve(homedir(),'.cache','codex-runtimes','codex-primary-runtime','dependencies','python','python.exe')
 ].filter(Boolean)
 const jarjarPython=()=>jarjarPythonCandidates().find(p=>existsSync(p))||jarjarPythonCandidates()[0]
 const jarjarModule='scripts.run_jarjar_live'
