@@ -154,17 +154,28 @@ La dernière régression automatisée connue avant le correctif final Workspace 
 - 28 tests / 28 PASS ;
 - build TypeScript + Vite PASS.
 
-## 10. Dernière condition avant clôture totale
+## 10. Validation finale exécutée sur le fixe
 
-Comme le correctif final `05151608` est postérieur à la dernière sortie `npm test` / `npm run build` enregistrée, il reste uniquement à relancer :
+Validation utilisateur du 2026-10-08 :
+
+- `npm.cmd test` : **28/28 PASS**, 0 fail, 0 skipped ;
+- `npm.cmd run build` : **PASS** ;
+- TypeScript : **PASS** ;
+- Vite 8.3.2 : **PASS** ;
+- build produit avec 24 modules transformés ;
+- aucun runtime canonique exécuté par le prebuild.
+
+Verdict final :
 
 ```text
-npm.cmd test
-npm.cmd run build
+MONDE_V5 = FROZEN_GREEN
 ```
 
-Si ces deux commandes restent vertes, verdict final :
+Le freeze de référence reste inchangé :
 
-`MONDE_V5 = FROZEN_GREEN`
+```text
+freeze/monde-v5-20261008
+05151608d0317c5d7d421cf7f3ede71fc4e9c887
+```
 
-Aucune nouvelle modification de Brody / Obsidure / CLI / Jarjar / Qwen dans cette V5 sans preuve explicite de régression.
+Règle de suite : aucune modification de Brody / Obsidure / CLI / Jarjar / Qwen dans cette V5 sans preuve explicite de régression. Toute évolution future part d'une nouvelle branche/chantiers séparés.
