@@ -32,6 +32,45 @@ const territories:{id:string;label:string;zone:Exclude<WorldZone,'home'|'territo
  ['knowledge','Objets & résultats','knowledge','Résultats, artefacts, objectifs et dépôts','▤'],
  ['layers','Couches documentaires','layers','Cartes, contrats et documentation des couches','▦'],
 ].map(([id,label,zone,summary,glyph])=>({id,label,zone:zone as Exclude<WorldZone,'home'|'territories'>,summary,glyph}))
+const territorySublayers:Partial<Record<WorldZone,{label:string;summary:string}[]>>={
+ domains:[
+  {label:'Observations / terrain',summary:'Signaux et faits du domaine avant traduction.'},
+  {label:'Traduction domaine',summary:'Adaptateurs qui transforment le terrain en état exploitable.'},
+  {label:'Runtime domaine',summary:'Services et mécanismes réellement présents pour le domaine.'},
+  {label:'Preuves / gouvernance',summary:'Décisions, receipts et limites KX108 liées au domaine.'},
+ ],
+ rnd:[
+  {label:'Chantiers',summary:'Branches, worktrees et travaux isolés.'},
+  {label:'Construction',summary:'Agents et outils mobilisés pour produire.'},
+  {label:'Validation',summary:'Tests, audits et critères de passage.'},
+  {label:'Résultats',summary:'Artefacts produits avant réintégration.'},
+ ],
+ agents:[
+  {label:'Familles',summary:'Population et rôles connus.'},
+  {label:'Sessions',summary:'Présence et activité réellement observées.'},
+  {label:'Missions',summary:'Travail relié à un objectif ou action.'},
+  {label:'Cycle de vie',summary:'Disponible → travail → validation → preuve ou blocage.'},
+ ],
+ governance:[
+  {label:'Décision',summary:'Decision records issus de l’autorité KX108.'},
+  {label:'Receipt',summary:'Trace scellée de ce qui a été autorisé ou refusé.'},
+  {label:'Rollback',summary:'Éléments permettant de revenir sur une action.'},
+  {label:'Impact',summary:'Conséquence mesurée et reliée à la décision.'},
+ ],
+ knowledge:[
+  {label:'Objectifs',summary:'Ce qui doit être compris, produit ou vérifié.'},
+  {label:'Résultats',summary:'Sorties observées des missions et sessions.'},
+  {label:'Artefacts',summary:'Fichiers et objets produits.'},
+  {label:'Dépôts',summary:'Sources et emplacements auxquels les objets sont rattachés.'},
+ ],
+ layers:[
+  {label:'Cartes',summary:'Vue globale des couches et de leurs frontières.'},
+  {label:'Contrats',summary:'Rôles, interfaces et invariants documentés.'},
+  {label:'Méthodes',summary:'Processus et mécanismes décrits par couche.'},
+  {label:'Documentation',summary:'Références lisibles sans devenir une vérité runtime.'},
+ ],
+}
+
 
 export default function V5Root(){
  const initial=(location.hash.slice(1)||'world') as View
@@ -284,6 +323,10 @@ export default function V5Root(){
      <button onClick={()=>setWorldZone('home')}>← Vue globale</button>
     </header>
     <nav className="v5-zonebar">{zones.map(([id,label])=><button key={id} aria-pressed={worldZone===id} onClick={()=>setWorldZone(id)}>{label}</button>)}</nav>
+    {worldZone!=='territories'&&territorySublayers[worldZone]?.length&&<section className="v5-sublayers">
+     <header><div><small>SOUS-COUCHES</small><h2>Organisation du territoire</h2></div><span>projection de navigation</span></header>
+     <div>{territorySublayers[worldZone]!.map((x,i)=><article key={x.label}><em>{String(i+1).padStart(2,'0')}</em><strong>{x.label}</strong><p>{x.summary}</p></article>)}</div>
+    </section>}
     <section className="v5-grid">
      {worldItems.map(item=><button className="v5-object" key={item.id} onClick={()=>{if(item.id.startsWith('territory:')){setWorldZone(item.id.slice(10) as WorldZone);return}if(item.id.startsWith('layer:')){const lid=item.id.slice(6);const l=layers.find(x=>x.id===lid);if(l){setSelectedFile(l.path);setFileContent(l.content)}}else focus(item.id)}}><small>{item.kind}</small><strong>{item.label}</strong><span>{item.meta}</span></button>)}
      {!worldItems.length&&<p className="v5-empty">Aucun objet observé dans cette zone.</p>}
