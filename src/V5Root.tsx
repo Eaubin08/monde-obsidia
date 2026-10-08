@@ -276,6 +276,83 @@ export default function V5Root(){
  const proofCount=shared?.entities.filter(e=>['decision_record','sealed_receipt','rollback_evidence','impact'].includes(e.kind)).length||0
  const currentMissions=(shared?.missions||[]).slice(-4).reverse()
  const activeAgents=live.slice(0,5)
+ const territoryCards=useMemo(()=>{
+  const entities=shared?.entities||[]
+  const relations=shared?.relations||[]
+  const missions=shared?.missions||[]
+  const countKind=(...kinds:string[])=>entities.filter(e=>kinds.includes(e.kind)).length
+  const relCount=(...types:string[])=>relations.filter(r=>types.includes(r.type)).length
+  const domainTotal=countKind('domain')
+  const domainRuntime=entities.filter(e=>e.kind==='domain'&&e.runtimeFilePresent).length
+  const domainMissing=Math.max(0,domainTotal-domainRuntime)
+  const worktrees=snap?.worktrees||[]
+  const agentTotal=countKind('agent')
+  const liveAgents=live.length
+  const blockedAgents=live.filter(s=>s.status==='blocked'||s.status==='error').length
+  const missionBlockers=missions.filter(m=>m.primaryBlocker).length
+  const completeMissions=missions.filter(m=>m.traceabilityStatus==='COMPLETE').length
+  const knowledgeTotal=countKind('repository','objective','result','artifact')
+  const resultTotal=countKind('result','artifact')
+  const governanceTotal=countKind('decision_record','sealed_receipt','rollback_evidence','impact')
+  const cards:Record<string,{status:string;facts:{label:string;value:string|number}[]}>={
+   domains:{
+    status:domainRuntime>0?'OBSERVÉ':domainTotal>0?'PARTIEL':'NON OBSERVÉ',
+    facts:[
+     {label:'domaines',value:domainTotal},
+     {label:'runtime présent',value:domainRuntime},
+     {label:'runtime non confirmé',value:domainMissing},
+     {label:'liaisons domaine',value:relCount('HAS_DOMAIN','RUNS_IN_DOMAIN','IN_DOMAIN','DECIDES_IN_DOMAIN')},
+    ],
+   },
+   rnd:{
+    status:worktrees.length?'OBSERVÉ':'NON OBSERVÉ',
+    facts:[
+     {label:'worktrees',value:worktrees.length},
+     {label:'modifiés',value:worktrees.filter(w=>w.dirty).length},
+     {label:'résultats / artefacts',value:resultTotal},
+     {label:'propositions',value:countKind('proposal')},
+    ],
+   },
+   agents:{
+    status:liveAgents?'LIVE':agentTotal?'DISPONIBLE':'NON OBSERVÉ',
+    facts:[
+     {label:'agents connus',value:agentTotal},
+     {label:'live',value:liveAgents},
+     {label:'bloqués observés',value:blockedAgents},
+     {label:'sessions',value:countKind('session')},
+    ],
+   },
+   governance:{
+    status:governanceTotal?'OBSERVÉ':'NON OBSERVÉ',
+    facts:[
+     {label:'preuves gouvernance',value:governanceTotal},
+     {label:'missions bloquées',value:missionBlockers},
+     {label:'missions complètes',value:completeMissions},
+     {label:'chaînes preuve',value:relCount('AUTHORIZES_RECEIPT','PROVES_IMPACT','HAS_ROLLBACK_EVIDENCE')},
+    ],
+   },
+   knowledge:{
+    status:knowledgeTotal?'OBSERVÉ':'NON OBSERVÉ',
+    facts:[
+     {label:'objets',value:knowledgeTotal},
+     {label:'résultats / artefacts',value:resultTotal},
+     {label:'objectifs',value:countKind('objective')},
+     {label:'dépôts',value:countKind('repository')},
+    ],
+   },
+   layers:{
+    status:layers.length?'DOCUMENTÉ':'NON OBSERVÉ',
+    facts:[
+     {label:'couches',value:layers.length},
+     {label:'fichiers exposés',value:files.length},
+     {label:'runtime canonique',value:'non revendiqué'},
+     {label:'rôle',value:'navigation'},
+    ],
+   },
+  }
+  return territories.map(t=>({...t,...cards[t.zone]}))
+ },[shared,snap,live,layers,files])
+
 
  return <div className="v5">
   <aside className="v5-sidebar">
@@ -364,10 +441,18 @@ export default function V5Root(){
      <header><div><small>LIAISON</small><h2>{selectedMechanism}</h2></div><button onClick={()=>setSelectedMechanism('')}>Fermer</button></header>
      <div>{mechanismRelations.map((r,i)=><article key={r.from+r.to+i}><button onClick={()=>focus(r.from)}><small>DE</small><strong>{r.fromLabel}</strong><code>{r.from}</code></button><span>→ <code>{r.type}</code> →</span><button onClick={()=>focus(r.to)}><small>VERS</small><strong>{r.toLabel}</strong><code>{r.to}</code></button></article>)}</div>
     </section>}
-    <section className="v5-grid">
-     {worldItems.map(item=><button className="v5-object" key={item.id} onClick={()=>{if(item.id.startsWith('territory:')){setWorldZone(item.id.slice(10) as WorldZone);return}if(item.id.startsWith('layer:')){const lid=item.id.slice(6);const l=layers.find(x=>x.id===lid);if(l){setSelectedFile(l.path);setFileContent(l.content)}}else focus(item.id)}}><small>{item.kind}</small><strong>{item.label}</strong><span>{item.meta}</span></button>)}
+    {worldZone==='territories'?<section className="v5-territory-map">
+     {territoryCards.map(t=><button key={t.id} className="v5-territory-card" onClick={()=>{setSelectedMechanism('');setWorldZone(t.zone)}}>
+      <header><span>{t.glyph}</span><div><small>TERRITOIRE</small><h2>{t.label}</h2></div><em>{t.status}</em></header>
+      <p>{t.summary}</p>
+      <div className="v5-territory-facts">{t.facts.map(f=><span key={f.label}><strong>{f.value}</strong><small>{f.label}</small></span>)}</div>
+      <div className="v5-territory-sublayers">{(territorySublayers[t.zone]||[]).map(x=><i key={x.label}>{x.label}</i>)}</div>
+      <footer>Ouvrir le territoire →</footer>
+     </button>)}
+    </section>:<section className="v5-grid">
+     {worldItems.map(item=><button className="v5-object" key={item.id} onClick={()=>{if(item.id.startsWith('layer:')){const lid=item.id.slice(6);const l=layers.find(x=>x.id===lid);if(l){setSelectedFile(l.path);setFileContent(l.content)}}else focus(item.id)}}><small>{item.kind}</small><strong>{item.label}</strong><span>{item.meta}</span></button>)}
      {!worldItems.length&&<p className="v5-empty">Aucun objet observé dans cette zone.</p>}
-    </section>
+    </section>}
     {contextEntity&&<aside className="v5-focus"><small>OBJET SÉLECTIONNÉ</small><h2>{contextEntity.label}</h2><p>{contextEntity.kind} · {contextEntity.id}</p><div><button onClick={openContextWorkspace}>Workspace</button><button onClick={()=>go('agents')}>Pokémon</button></div><details><summary>Relations · {shared?.relations.filter(r=>r.from===contextEntity.id||r.to===contextEntity.id).length||0}</summary>{shared?.relations.filter(r=>r.from===contextEntity.id||r.to===contextEntity.id).map((r,i)=><p key={i}><code>{r.from}</code> → {r.type} → <code>{r.to}</code></p>)}</details></aside>}
     {worldZone==='layers'&&selectedFile&&<section className="v5-layer-reader"><header><strong>{selectedFile}</strong><button onClick={()=>{setSelectedFile('');setFileContent('')}}>Fermer</button></header><pre>{fileContent}</pre></section>}
    </section>}
