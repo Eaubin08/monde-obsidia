@@ -194,3 +194,17 @@ test('Monde territory cards summarize only observed state and expose sublayers',
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Monde supports micro macro navigation between territory and concrete object',()=>{
+ for(const invariant of [
+  "const zoneForEntity",
+  "const openWorldObject",
+  "const backToTerritories",
+  "aria-label=\"Navigation micro macro\"",
+  "← Territoires",
+  "Son territoire",
+  "openWorldObject(r.from)",
+  "openWorldObject(r.to)",
+  "openWorldObject(item.id)",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
