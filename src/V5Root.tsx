@@ -446,7 +446,6 @@ export default function V5Root(){
    if(r.from===entity.id)relatedIds.add(r.to)
    if(r.to===entity.id)relatedIds.add(r.from)
   }
-  const related=(shared?.entities||[]).filter(e=>relatedIds.has(e.id))
   const missionRefs=[
    ...(mission?.resultRefs||[]),
    ...(mission?.decisionRecordRefs||[]),
