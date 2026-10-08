@@ -287,3 +287,17 @@ test('Workspace groups the current mission results proofs and linked tool in one
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Workspace exposes only context-aware actions backed by existing views and tools',()=>{
+ for(const invariant of [
+  "const workspaceActions=useMemo",
+  "ACTIONS DISPONIBLES",
+  "Continuer depuis ce contexte",
+  "Session de travail reliée au contexte",
+  "Fichiers & preuves",
+  "Revenir à l’objet dans son territoire",
+  "Voir l’agent ou la session dans sa vue dédiée",
+  "Ces actions réutilisent uniquement les vues, outils et liaisons déjà présents dans Workspace.",
+  "className=\"v5-work-actions-panel\"",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
