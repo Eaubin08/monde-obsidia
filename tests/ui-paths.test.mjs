@@ -224,3 +224,20 @@ test('Monde territories expose observed state blocker proof and advisory next ac
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Monde connects observed mission routines to territory mechanisms without inventing chronology',()=>{
+ for(const invariant of [
+  "const observedRoutines=useMemo",
+  "const territoryRoutines=useMemo",
+  "Projection de traçabilité",
+  "Aucun ordre temporel supplémentaire n’est inféré.",
+  "USES_AGENT",
+  "HAS_SESSION",
+  "HAS_RESULT",
+  "HAS_DECISION",
+  "HAS_RECEIPT",
+  "HAS_IMPACT",
+  "className=\"v5-routines\"",
+  "openWorldObject(s.ref)",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
