@@ -273,3 +273,17 @@ test('Workspace exposes the selected Monde context as a workbench summary',()=>{
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Workspace groups the current mission results proofs and linked tool in one dossier',()=>{
+ for(const invariant of [
+  "missionRefs",
+  "DOSSIER DE TRAVAIL",
+  "Mission, résultats et preuves liés",
+  "Aucun résultat lié.",
+  "Aucune preuve liée.",
+  "Outil relié au contexte",
+  "Continuer dans l’outil",
+  "className=\"v5-work-dossier\"",
+  "workspaceContext.toolArea",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
