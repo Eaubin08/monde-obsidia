@@ -829,3 +829,7 @@ select:focus-visible {
 .v5pk-agent-context-grid article strong{margin-top:3px;font-size:.72rem;overflow-wrap:anywhere}
 .v5pk-agent-context>p{margin:8px 0 0;font-size:.64rem;color:#7f94a7}
 
+.v5pk-agent-context-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}
+.v5pk-agent-context-actions button{padding:7px!important;border-radius:7px!important;font-size:.68rem;text-align:left}
+@media(max-width:620px){.v5pk-agent-context-actions{grid-template-columns:1fr}}
+
