@@ -53,13 +53,16 @@ test('Jarjar runtime is shared across state and views',()=>{
  ]) assert.ok(pokemon.includes(invariant),invariant)
 })
 
-test('Qwen text uses direct local llama launch and current diagnostic log',()=>{
+test('Qwen text uses the frozen local GGUF without automatic network fallback',()=>{
  for(const invariant of [
-  "'-hfr', $qwenRepo",
-  "'-hff', $qwenFile",
+  "Desktop\\MODELS\\QWEN\\qwen2.5-3b-instruct-q4_k_m.gguf",
+  "Desktop\\llama-b11193\\llama-server.exe",
+  "Aucun telechargement automatique",
+  "'-m', $qwenLocalModel",
   "Wait-Service 8080 'QWEN TEXT'",
   "Qwen texte :8080 non READY",
  ]) assert.ok(jarjarLauncher.includes(invariant),invariant)
+ for(const forbidden of ["'-hfr'", "'-hff'", "Clear-QwenBrokenDownload", "downloadInProgress"]) assert.ok(!jarjarLauncher.includes(forbidden),forbidden)
  assert.ok(bridge.includes("jarjar_qwen_text_llama.log"))
  assert.ok(!bridge.includes("const log=resolve(local,'Obsidia','jarjar_qwen_text.log')"))
 })
