@@ -418,3 +418,22 @@ test('Pokemon shows only observed mission teammates and direct agent relations',
  ]) assert.ok(pokemon.includes(invariant),invariant)
 })
 
+test('Pokemon summarizes only observed agent operational state and gaps',()=>{
+ for(const invariant of [
+  "const agentOperational=useMemo",
+  "SYNTHÈSE OPÉRATIONNELLE",
+  "Aucun blocage observé",
+  "Aucun manque observé",
+  "Aucune prochaine action observée",
+  "mission?.recommendedNextStep||null",
+  "mission?.traceabilityStatus==='COMPLETE'",
+  "Synthèse calculée uniquement depuis la session, la mission et les preuves déjà observées.",
+  "className=\"v5pk-agent-operational\"",
+ ]) assert.ok(pokemon.includes(invariant),invariant)
+ for(const forbidden of [
+  "pokemonDecisionAuthority",
+  "pokemonCanonicalTruth",
+  "pokemon_execute",
+ ]) assert.equal(pokemon.includes(forbidden),false,forbidden)
+})
+
