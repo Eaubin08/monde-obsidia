@@ -191,7 +191,9 @@ if (-not $Obsidia) { throw "Repo Obsidia introuvable. Candidats: $($ObsidiaCandi
 
 $JarjarCandidates = @(
     $env:OBSIDIA_JARJAR_ROOT,
+    (Join-Path $env:USERPROFILE 'Desktop\Jarvis-iron-obsidia-github'),
     (Join-Path $env:USERPROFILE 'Desktop\Jarvis-iron-obsidia-'),
+    'C:\Users\User\Desktop\Jarvis-iron-obsidia-github',
     'C:\Users\User\Desktop\Jarvis-iron-obsidia-'
 ) | Where-Object { $_ } | Select-Object -Unique
 $Jarjar = $JarjarCandidates | Where-Object { Test-Path -LiteralPath (Join-Path $_ 'scripts\run_jarjar_live.py') } | Select-Object -First 1
@@ -200,6 +202,7 @@ if (-not $Jarjar) { throw "Repo Jarjar introuvable. Candidats: $($JarjarCandidat
 $JarjarPythonCandidates = @(
     $env:OBSIDIA_JARJAR_PYTHON,
     (Join-Path $Jarjar '.venv\Scripts\python.exe'),
+    (Join-Path $env:USERPROFILE 'Desktop\Jarvis-iron-obsidia-\.venv\Scripts\python.exe'),
     (Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe')
 ) | Where-Object { $_ } | Select-Object -Unique
 $JarjarPython = $JarjarPythonCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
