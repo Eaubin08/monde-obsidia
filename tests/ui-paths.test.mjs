@@ -151,3 +151,17 @@ test('Monde territories expose sublayers as navigation projection only',()=>{
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Monde territories project only observed relation mechanisms',()=>{
+ for(const invariant of [
+  "const territoryRelationTypes",
+  "HAS_DOMAIN",
+  "RUNS_IN_DOMAIN",
+  "AUTHORIZES_RECEIPT",
+  "PROVES_IMPACT",
+  "const observedMechanisms",
+  "shared.relations",
+  "LIAISONS OBSERVÉES",
+  "Mécanismes visibles dans la projection",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
