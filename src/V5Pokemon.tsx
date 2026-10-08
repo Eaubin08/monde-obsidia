@@ -139,6 +139,30 @@ export default function V5Pokemon(){
   return [...(current.events||[])].sort((a,b)=>String(b.timestamp||'').localeCompare(String(a.timestamp||''))).slice(0,6)
  },[current])
 
+ const agentNetwork=useMemo(()=>{
+  if(!current||!state)return null
+  const mission=currentMission
+  const missionSessions=mission?.sessionRefs
+   .map(ref=>state.sessions.find(s=>'session:'+s.sessionId===ref))
+   .filter((s):s is Session=>Boolean(s))||[]
+  const teammates=missionSessions.filter(s=>s.sessionId!==current.sessionId)
+  const anchors=new Set([
+   'session:'+current.sessionId,
+   ...(agentContext?.agentEntity?[agentContext.agentEntity.id]:[]),
+   ...(mission?[mission.id]:[]),
+  ])
+  const relations=state.relations.filter(r=>anchors.has(r.from)||anchors.has(r.to)).slice(0,8)
+  const label=(id:string)=>{
+   const entity=state.entities.find(e=>e.id===id)
+   if(entity)return entity.label
+   const session=state.sessions.find(s=>'session:'+s.sessionId===id)
+   if(session)return session.name
+   const linkedMission=state.missions.find(m=>m.id===id)
+   return linkedMission?.actionId||id
+  }
+  return {missionSessions,teammates,relations,label}
+ },[current,currentMission,state,agentContext])
+
  const focus=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
  const choose=(s:Session)=>{setSelected(s.sessionId);sessionStorage.setItem('obsidia-selected-session',s.sessionId);focus('session:'+s.sessionId)}
  const openWorld=(id:string,zone:'agents'|'activity'|'domains'|'knowledge'|'governance')=>{focus(id);window.dispatchEvent(new CustomEvent('obsidia-world-zone',{detail:zone}));location.hash='world'}
@@ -199,6 +223,20 @@ export default function V5Pokemon(){
        <button onClick={()=>workspace(current)}>Continuer dans Workspace</button>
       </div>
       <p>Projection readonly des liaisons déjà observées pour cet agent.</p>
+     </section>}
+     {agentNetwork&&<section className="v5pk-agent-network">
+      <header><div><small>ÉQUIPE & LIENS</small><strong>Relations réellement observées</strong></div><span>{agentNetwork.teammates.length} coéquipier(s) · {agentNetwork.relations.length} lien(s)</span></header>
+      <div className="v5pk-agent-network-grid">
+       <div>
+        <small>SESSIONS DE LA MISSION</small>
+        {agentNetwork.missionSessions.length?agentNetwork.missionSessions.map(s=><button key={s.sessionId} className={s.sessionId===current.sessionId?'current':''} onClick={()=>choose(s)}><span className="v5pk-stream-symbol">{roleMeta(s).glyph}</span><div><strong>{s.name}</strong><small>{s.sessionId===current.sessionId?'Agent sélectionné':stage(s)}</small></div></button>):<p>Aucune autre session reliée à cette mission.</p>}
+       </div>
+       <div>
+        <small>RELATIONS OBSERVÉES</small>
+        {agentNetwork.relations.length?agentNetwork.relations.map((r,i)=><article key={r.from+r.type+r.to+i}><strong>{agentNetwork.label(r.from)}</strong><code>{r.type}</code><span>{agentNetwork.label(r.to)}</span></article>):<p>Aucune relation directe observée autour de cet agent.</p>}
+       </div>
+      </div>
+      <p>Aucune collaboration n’est déduite : seuls les sessionRefs de mission et les relations présentes dans l’état partagé sont projetés.</p>
      </section>}
      <section className="v5pk-agent-evidence">
       <header><div><small>PREUVES & HISTORIQUE</small><strong>Traces récentes liées à l’agent</strong></div><span>{agentContext?.results.length||0} résultat(s) · {agentContext?.proofs.length||0} preuve(s)</span></header>
