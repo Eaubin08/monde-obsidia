@@ -208,3 +208,19 @@ test('Monde supports micro macro navigation between territory and concrete objec
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Monde territories expose observed state blocker proof and advisory next action',()=>{
+ for(const invariant of [
+  "const currentTerritory",
+  "Aucun blocage observé",
+  "Aucune action dérivée de la projection.",
+  "runtime(s) domaine non confirmé(s)",
+  "mission(s) avec blocage de traçabilité",
+  "recommendedNextStep",
+  "className=\"v5-territory-health\"",
+  "BLOCAGE",
+  "PREUVE",
+  "PROCHAINE ACTION",
+  "sans autorité d’action",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
