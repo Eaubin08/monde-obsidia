@@ -35,6 +35,44 @@ function Port-Open([int]$Port) {
     } catch { return $false }
 }
 
+function Get-ListeningPid([int]$Port) {
+    try {
+        $line = netstat.exe -ano -p tcp | Where-Object {
+            $_ -match 'LISTENING' -and $_ -match (':' + $Port + '\s+')
+        } | Select-Object -First 1
+        if (-not $line) { return $null }
+        $parts = ($line -split '\s+') | Where-Object { $_ }
+        return [int]$parts[-1]
+    } catch {
+        return $null
+    }
+}
+
+function Stop-QwenTextIfCanonical {
+    $pidValue = Get-ListeningPid 8080
+    if (-not $pidValue) { return }
+
+    $processName = ''
+    try {
+        $processName = (Get-Process -Id $pidValue -ErrorAction Stop).ProcessName
+    } catch {}
+
+    if ($processName -ne 'llama-server') {
+        throw "Port 8080 occupe par un processus non reconnu. PID=$pidValue process=$processName"
+    }
+
+    Write-Host "[QWEN TEXT] Redemarrage propre PID=$pidValue" -ForegroundColor Yellow
+    taskkill.exe /PID $pidValue /T /F | Out-Null
+
+    $deadline = (Get-Date).AddSeconds(10)
+    while ((Get-Date) -lt $deadline -and (Port-Open 8080)) {
+        Start-Sleep -Milliseconds 200
+    }
+    if (Port-Open 8080) {
+        throw 'Impossible de liberer le port 8080.'
+    }
+}
+
 function Resolve-Executable([string]$FilePath) {
     if (Test-Path -LiteralPath $FilePath) { return (Resolve-Path -LiteralPath $FilePath).Path }
     $command = Get-Command $FilePath -ErrorAction SilentlyContinue
@@ -53,6 +91,9 @@ function Quote-Arg([string]$Value) {
 }
 
 function Resolve-LlamaExecutable {
+    $frozen = Join-Path $env:USERPROFILE 'Desktop\llama-b11193\llama-server.exe'
+    if (Test-Path -LiteralPath $frozen) { return (Resolve-Path -LiteralPath $frozen).Path }
+
     foreach ($name in @('llama-server','llama')) {
         $cmd = Get-Command $name -ErrorAction SilentlyContinue
         if ($cmd -and $cmd.Source) { return $cmd.Source }
@@ -135,7 +176,7 @@ function Start-OptionalService([int]$Port, [string]$Name, $Server, [int]$ProbeSe
         }
         Start-Sleep -Milliseconds 500
     }
-    Write-Host "[$Name] STARTING :$Port - Jarjar continue pendant le chargement." -ForegroundColor Cyan
+    Write-Host "[$Name] STARTING :$Port - attente du chargement avant Jarjar." -ForegroundColor Cyan
     return 'STARTING'
 }
 
@@ -150,7 +191,9 @@ if (-not $Obsidia) { throw "Repo Obsidia introuvable. Candidats: $($ObsidiaCandi
 
 $JarjarCandidates = @(
     $env:OBSIDIA_JARJAR_ROOT,
+    (Join-Path $env:USERPROFILE 'Desktop\Jarvis-iron-obsidia-github'),
     (Join-Path $env:USERPROFILE 'Desktop\Jarvis-iron-obsidia-'),
+    'C:\Users\User\Desktop\Jarvis-iron-obsidia-github',
     'C:\Users\User\Desktop\Jarvis-iron-obsidia-'
 ) | Where-Object { $_ } | Select-Object -Unique
 $Jarjar = $JarjarCandidates | Where-Object { Test-Path -LiteralPath (Join-Path $_ 'scripts\run_jarjar_live.py') } | Select-Object -First 1
@@ -159,6 +202,7 @@ if (-not $Jarjar) { throw "Repo Jarjar introuvable. Candidats: $($JarjarCandidat
 $JarjarPythonCandidates = @(
     $env:OBSIDIA_JARJAR_PYTHON,
     (Join-Path $Jarjar '.venv\Scripts\python.exe'),
+    (Join-Path $env:USERPROFILE 'Desktop\Jarvis-iron-obsidia-\.venv\Scripts\python.exe'),
     (Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe')
 ) | Where-Object { $_ } | Select-Object -Unique
 $JarjarPython = $JarjarPythonCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
@@ -195,10 +239,12 @@ if (-not (Test-Path -LiteralPath (Join-Path $KernelDir 'node_modules\express')))
 } else { Write-Host '[1/6] Dependances Kernel deja presentes.' -ForegroundColor DarkGray }
 
 if (-not (Port-Open 3001)) {
-    Write-Host '[2/6] Demarrage Kernel X108 :3001...' -ForegroundColor Cyan
-    $kernelServer = Start-Server 'KERNEL X108' 'node.exe' @('.\server.kernel.sealed.cjs') $KernelDir
-} else { Write-Host '[2/6] Kernel X108 deja actif.' -ForegroundColor DarkGray }
-$null = Wait-Service 3001 'KERNEL X108' $kernelServer 60
+    Write-Host '[2/6] Kernel X108 OFFLINE :3001' -ForegroundColor Red
+    Write-Host 'Lance Kernel depuis Monde > Workspace > Lancements pour ouvrir le terminal colore valide.' -ForegroundColor Yellow
+    throw 'Kernel X108 doit etre lance depuis Monde avant Jarjar.'
+}
+Write-Host '[2/6] Kernel X108 deja actif. Reutilisation de :3001.' -ForegroundColor Green
+$null = Wait-Service 3001 'KERNEL X108' $null 10
 
 $ObsidiaPython = @(
     (Join-Path $Obsidia '.venv\Scripts\python.exe'),
@@ -211,23 +257,107 @@ if (-not $ObsidiaPython) {
 }
 
 if (-not (Port-Open 8000)) {
-    Write-Host '[3/6] Demarrage API Obsidia/Brody :8000...' -ForegroundColor Cyan
-    $env:PYTHONPATH = $Obsidia
-    $env:OBSIDIA_KERNEL_URL = 'http://127.0.0.1:3001/kernel/ragnarok'
-    $apiServer = Start-Server 'OBSIDIA API/BRODY' $ObsidiaPython @('-m','uvicorn','apps.obsidia_api.main:app','--host','127.0.0.1','--port','8000') $Obsidia
-} else { Write-Host '[3/6] API Obsidia/Brody deja active.' -ForegroundColor DarkGray }
-$null = Wait-Service 8000 'OBSIDIA API/BRODY' $apiServer 120
+    Write-Host '[3/6] API Obsidia/Brody OFFLINE :8000' -ForegroundColor Red
+    Write-Host 'Lance API depuis Monde > Workspace > Lancements pour ouvrir le terminal colore valide.' -ForegroundColor Yellow
+    throw 'API Obsidia/Brody doit etre lancee depuis Monde avant Jarjar.'
+}
+Write-Host '[3/6] API Obsidia/Brody deja active. Reutilisation de :8000.' -ForegroundColor Green
+$null = Wait-Service 8000 'OBSIDIA API/BRODY' $null 10
 
 $qwenServer = $null
 $qwenReady = $true
+$obsidiaLocal = Join-Path $env:LOCALAPPDATA 'Obsidia'
+New-Item -ItemType Directory -Path $obsidiaLocal -Force | Out-Null
+$qwenTextLog = Join-Path $obsidiaLocal 'jarjar_qwen_text.log'
+
+$qwenNativeLog = Join-Path $obsidiaLocal 'jarjar_qwen_text_llama.log'
+$qwenLocalCandidates = @(
+    $env:OBSIDIA_QWEN_TEXT_MODEL,
+    (Join-Path $env:USERPROFILE 'Desktop\MODELS\QWEN\qwen2.5-3b-instruct-q4_k_m.gguf')
+) | Where-Object { $_ } | Select-Object -Unique
+function Test-QwenLocalModelReady([string]$Path) {
+    if (-not $Path -or -not (Test-Path -LiteralPath $Path)) { return $false }
+    try { return (Get-Item -LiteralPath $Path).Length -gt 1000000000 } catch { return $false }
+}
+$qwenLocalModel = $qwenLocalCandidates | Where-Object { Test-QwenLocalModelReady $_ } | Select-Object -First 1
+if (-not $qwenLocalModel) {
+    throw "Qwen texte local absent. Freeze exige OBSIDIA_QWEN_TEXT_MODEL ou $env:USERPROFILE\Desktop\MODELS\QWEN\qwen2.5-3b-instruct-q4_k_m.gguf. Aucun telechargement automatique."
+}
+
+if ((Port-Open 8080) -and $qwenLocalModel) {
+    Stop-QwenTextIfCanonical
+}
 if (-not (Port-Open 8080)) {
     Write-Host '[4/6] Demarrage Qwen texte :8080...' -ForegroundColor Cyan
-    $launcher = Join-Path $Jarjar 'scripts\start_qwen_text.ps1'
-    if (-not (Test-Path $launcher)) { throw "Launcher Qwen texte absent: $launcher" }
-    $qwenServer = Start-Server 'QWEN TEXT' 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher) $Jarjar
+    if (-not $LlamaExecutable) { throw 'llama-server introuvable pour Qwen texte.' }
+    Remove-Item -LiteralPath $qwenTextLog -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $qwenNativeLog -Force -ErrorAction SilentlyContinue
+    Write-Host "[QWEN TEXT] Freeze local: $qwenLocalModel" -ForegroundColor Green
+    Write-Host "[QWEN TEXT] llama.cpp: $LlamaExecutable" -ForegroundColor DarkGray
+    $qwenArgs = @(
+        '-m', $qwenLocalModel,
+        '--host', '127.0.0.1',
+        '--port', '8080',
+        '-c', '4096',
+        '--log-file', $qwenNativeLog,
+        '--log-verbosity', '5',
+        '--log-colors', 'off'
+    )
+    $qwenServer = Start-Server 'QWEN TEXT' $LlamaExecutable $qwenArgs $Jarjar
 } else { Write-Host '[4/6] Qwen texte deja actif.' -ForegroundColor DarkGray }
-$qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 4
+$qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 12
+
+if ($qwenState -eq 'STARTING') {
+    Write-Host '[QWEN TEXT] Attente activation reelle :8080 avant Jarjar...' -ForegroundColor Cyan
+    try {
+        Wait-Service 8080 'QWEN TEXT' $qwenServer 180
+        $qwenState = 'READY'
+    } catch {
+        $qwenState = 'OFFLINE'
+        Write-Host "[QWEN TEXT] Echec activation initiale: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
+if ($qwenState -eq 'OFFLINE' -and -not (Port-Open 8080)) {
+    Write-Host '[QWEN TEXT] Premier lancement echoue. Retry local unique, sans reseau...' -ForegroundColor Yellow
+    if (Test-Path -LiteralPath $qwenNativeLog) {
+        Get-Content -LiteralPath $qwenNativeLog -Tail 20 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
+    }
+    Start-Sleep -Seconds 1
+    Remove-Item -LiteralPath $qwenNativeLog -Force -ErrorAction SilentlyContinue
+    $qwenRetryArgs = @(
+        '-m', $qwenLocalModel,
+        '--host', '127.0.0.1',
+        '--port', '8080',
+        '-c', '4096',
+        '--log-file', $qwenNativeLog,
+        '--log-verbosity', '5',
+        '--log-colors', 'off'
+    )
+    $qwenServer = Start-Server 'QWEN TEXT RETRY LOCAL' $LlamaExecutable $qwenRetryArgs $Jarjar
+    try {
+        Wait-Service 8080 'QWEN TEXT' $qwenServer 180
+        $qwenState = 'READY'
+    } catch {
+        $qwenState = 'OFFLINE'
+        Write-Host "[QWEN TEXT] Echec activation apres retry local: $($_.Exception.Message)" -ForegroundColor Red
+    }
+}
+
+if ($qwenState -eq 'OFFLINE') {
+    Write-Host '[QWEN TEXT] Dernieres lignes du diagnostic :' -ForegroundColor Yellow
+    if (Test-Path -LiteralPath $qwenNativeLog) {
+        Write-Host '[QWEN TEXT] Diagnostic llama.cpp :' -ForegroundColor Yellow
+        Get-Content -LiteralPath $qwenNativeLog -Tail 30 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
+    } else {
+        Write-Host '  Aucun log llama.cpp produit.' -ForegroundColor DarkYellow
+    }
+}
+
 $qwenReady = ($qwenState -eq 'READY')
+if (-not $qwenReady) {
+    throw 'Qwen texte :8080 non READY. Jarjar ne demarre pas tant que le provider local texte est indisponible.'
+}
 
 $visionServer = $null
 $visionReady = $true
@@ -253,7 +383,7 @@ $env:JARJAR_LOCAL_BRODY='1'
 $env:JARJAR_OBSIDIA_CHAT_URL='http://127.0.0.1:8000/api/brody/chat'
 $env:JARJAR_QWEN_URL='http://127.0.0.1:8080/v1/chat/completions'
 $env:JARJAR_VISION_URL='http://127.0.0.1:8081/v1/chat/completions'
-$env:JARJAR_KERNEL_URL='http://127.0.0.1:8000'
+$env:JARJAR_KERNEL_URL='http://127.0.0.1:3001/kernel/ragnarok'
 $env:PYTHONUTF8='1'
 $env:PYTHONUNBUFFERED='1'
 $env:PYTHONIOENCODING='utf-8'

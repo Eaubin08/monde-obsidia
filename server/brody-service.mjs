@@ -1,30 +1,47 @@
-import {spawn} from 'node:child_process'
 import {existsSync} from 'node:fs'
 import {resolve} from 'node:path'
-import {pythonFor} from './paths.mjs'
+import {Socket} from 'node:net'
+
 const endpoint='http://127.0.0.1:8000'
-let owned=null,starting=null
-async function probe(){try{const r=await fetch(endpoint+'/',{signal:AbortSignal.timeout(1200)});let d={};try{d=await r.json()}catch{}return {ready:r.ok&&d.service==='obsidia-api',reachable:true,foreign:d.service!=='obsidia-api'}}catch{return {ready:false,reachable:false,foreign:false}}}
-export async function brodyServiceStatus(){const state=await probe();return {...state,endpoint,managed:!!owned?.active,pid:owned?.active?owned.child.pid:null,output:owned?.output||'',error:owned?.error||null}}
-export async function ensureBrodyApi(root){
- if(starting)return starting
- starting=(async()=>{
-  const state=await probe();if(state.ready)return {ready:true,reused:true,endpoint};if(state.reachable)throw Error('Le port 8000 répond mais ne correspond pas à l’API Obsidia attendue')
-  if(!existsSync(resolve(root,'apps/obsidia_api/main.py')))throw Error('API Brody absente : apps/obsidia_api/main.py')
-  if(!owned?.active){
-   const child=spawn(pythonFor(root),['-m','uvicorn','apps.obsidia_api.main:app','--host','127.0.0.1','--port','8000'],{cwd:root,windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,PYTHONUNBUFFERED:'1',PYTHONIOENCODING:'utf-8'}})
-   const p={child,active:true,output:'',error:null};owned=p
-   const append=c=>p.output=(p.output+c.toString('utf8')).slice(-16000)
-   child.stdout.on('data',append);child.stderr.on('data',append);child.on('error',e=>{p.active=false;p.error=e.message});child.on('close',code=>{p.active=false;if(code)p.error='API arrêtée — code '+code})
-   await new Promise((ok,no)=>{child.once('spawn',ok);child.once('error',no)})
-  }
-  const deadline=Date.now()+30000
-  while(Date.now()<deadline){
-   if(!owned.active)throw Error('Démarrage API Brody échoué. '+(owned.error||'')+'\n'+owned.output)
-   if((await probe()).ready)return {ready:true,reused:false,endpoint,pid:owned.child.pid}
-   await new Promise(r=>setTimeout(r,250))
-  }
-  owned.child.kill();throw Error('API Brody non prête après 30 secondes.\n'+owned.output)
- })();try{return await starting}finally{starting=null}
+
+function portOpen(port=8000,timeout=700){
+ return new Promise(resolve=>{
+  const socket=new Socket()
+  let done=false
+  const finish=value=>{if(done)return;done=true;socket.destroy();resolve(value)}
+  socket.setTimeout(timeout)
+  socket.once('connect',()=>finish(true))
+  socket.once('timeout',()=>finish(false))
+  socket.once('error',()=>finish(false))
+  socket.connect(port,'127.0.0.1')
+ })
 }
-export function closeOwnedBrodyApi(){if(owned?.active)owned.child.kill()}
+
+async function probe(timeout=1500){
+ try{
+  const r=await fetch(endpoint+'/',{signal:AbortSignal.timeout(timeout)})
+  let d={}
+  try{d=await r.json()}catch{}
+  return {ready:r.ok&&d.service==='obsidia-api',reachable:true,foreign:d.service!=='obsidia-api',data:d}
+ }catch{
+  return {ready:false,reachable:false,foreign:false,data:null}
+ }
+}
+
+export async function brodyServiceStatus(){
+ const state=await probe()
+ const listening=state.ready||await portOpen()
+ return {...state,ready:state.ready,reachable:listening,foreign:listening&&!state.ready,endpoint,managed:false,pid:null,output:'',error:null}
+}
+
+export async function ensureBrodyApi(root){
+ if(!existsSync(resolve(root,'apps/obsidia_api/main.py')))throw Error('API Brody absente : apps/obsidia_api/main.py')
+
+ const state=await probe()
+ if(state.ready)return {ready:true,reused:true,endpoint}
+ if(await portOpen())throw Error('Port 8000 occupé par un service non reconnu comme obsidia-api.')
+
+ throw Error('API Obsidia/Brody non prête sur 8000. Lance d’abord API depuis Monde > Workspace > Lancements.')
+}
+
+export function closeOwnedBrodyApi(){}
