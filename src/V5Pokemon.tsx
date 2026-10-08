@@ -3,7 +3,7 @@ import {useEffect,useMemo,useState} from 'react'
 type Event={kind:string;timestamp:string;status:string;phase:string;message:string;objective?:string;result?:Record<string,unknown>}
 type Session={sessionId:string;agentId:string;name:string;repository:string;status:string;phase:string;message:string;objective:string|null;timestamp:string;presence:'live'|'unknown'|'ended';nativeService?:boolean;observedState?:'READY'|'STARTING'|'OFFLINE';source?:string;events:Event[];jarjarRuntime?:boolean;inputMode?:string|null;cognitionSource?:string;decisionAuthority?:string;governanceSource?:string;governancePhase?:string;humanConfirmationRequired?:boolean;confirmationPrompt?:string;telemetryFresh?:boolean;components?:Record<string,unknown>}
 type Entity={id:string;kind:string;label:string;agentId?:string;domainId?:string}
-type Mission={id:string;actionId:string;agentId:string|null;domainId?:string|null;status:string;traceabilityStatus:string;sessionRefs:string[];resultRefs:string[];decisionRecordRefs?:string[];receiptRefs?:string[];impactRefs?:string[];primaryBlocker?:string}
+type Mission={id:string;actionId:string;agentId:string|null;domainId?:string|null;status:string;traceabilityStatus:string;sessionRefs:string[];resultRefs:string[];decisionRecordRefs?:string[];receiptRefs?:string[];impactRefs?:string[];primaryBlocker?:string;recommendedNextStep?:string}
 type Family={id:string;label:string;kind:string;agents:string[];localPresent:boolean}
 type State={entities:Entity[];relations:{from:string;type:string;to:string}[];sessions:Session[];missions:Mission[];agentFamilies?:Family[]}
 type Filter='all'|'live'|'available'|'preparing'|'blocked'|'inactive'
@@ -163,6 +163,28 @@ export default function V5Pokemon(){
   return {missionSessions,teammates,relations,label}
  },[current,currentMission,state,agentContext])
 
+ const agentOperational=useMemo(()=>{
+  if(!current)return null
+  const mission=currentMission
+  const missing:string[]=[]
+  if(!mission)missing.push('mission')
+  else{
+   if(!(mission.sessionRefs||[]).length)missing.push('session')
+   if(!(mission.resultRefs||[]).length)missing.push('résultat')
+   if(!(mission.decisionRecordRefs||[]).length)missing.push('décision')
+   if(!(mission.receiptRefs||[]).length)missing.push('receipt')
+   if(!(mission.impactRefs||[]).length)missing.push('impact')
+  }
+  return {
+   doing:current.objective||current.message||current.phase,
+   blocker:mission?.primaryBlocker||null,
+   missing,
+   proved:mission?.traceabilityStatus==='COMPLETE'||Boolean(agentContext?.proofs.length),
+   proofCount:agentContext?.proofs.length||0,
+   next:mission?.recommendedNextStep||null,
+  }
+ },[current,currentMission,agentContext])
+
  const focus=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
  const choose=(s:Session)=>{setSelected(s.sessionId);sessionStorage.setItem('obsidia-selected-session',s.sessionId);focus('session:'+s.sessionId)}
  const openWorld=(id:string,zone:'agents'|'activity'|'domains'|'knowledge'|'governance')=>{focus(id);window.dispatchEvent(new CustomEvent('obsidia-world-zone',{detail:zone}));location.hash='world'}
@@ -207,6 +229,17 @@ export default function V5Pokemon(){
       <div><dt>Preuve</dt><dd>{currentMission?.traceabilityStatus||'Non reliée'}</dd></div>
       <div><dt>Statut</dt><dd>{currentMission?.primaryBlocker?'Blocage : '+currentMission.primaryBlocker:'En cours'}</dd></div>
      </dl>
+     {agentOperational&&<section className="v5pk-agent-operational">
+      <header><div><small>SYNTHÈSE OPÉRATIONNELLE</small><strong>{agentOperational.blocker?'ATTENTION':'OBSERVÉ'}</strong></div><span>{stage(current)}</span></header>
+      <div className="v5pk-agent-operational-grid">
+       <article><small>FAIT</small><strong>{agentOperational.doing}</strong></article>
+       <article><small>BLOCAGE</small><strong>{agentOperational.blocker||'Aucun blocage observé'}</strong></article>
+       <article><small>MANQUE</small><strong>{agentOperational.missing.length?agentOperational.missing.join(' · '):'Aucun manque observé'}</strong></article>
+       <article><small>PREUVE</small><strong>{agentOperational.proved?'Présente ('+agentOperational.proofCount+')':'Non observée'}</strong></article>
+       <article><small>PROCHAINE ACTION</small><strong>{agentOperational.next||'Aucune prochaine action observée'}</strong></article>
+      </div>
+      <p>Synthèse calculée uniquement depuis la session, la mission et les preuves déjà observées.</p>
+     </section>}
      {agentContext&&<section className="v5pk-agent-context">
       <header><small>CONTEXTE AGENT</small><span>{agentContext.status}</span></header>
       <div className="v5pk-agent-context-grid">
