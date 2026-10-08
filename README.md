@@ -54,7 +54,7 @@ Le launcher Jarjar préfère un modèle Qwen texte local complet :
 
 ou le chemin défini par `OBSIDIA_QWEN_TEXT_MODEL`.
 
-Si un téléchargement `curl.exe` est encore en cours vers ce fichier, Jarjar refuse de démarrer Qwen texte afin d'éviter un second téléchargement concurrent. Hugging Face n'est utilisé qu'en absence de modèle local prêt.
+Le freeze exige un fichier GGUF local complet. Si aucun modèle local prêt n'est trouvé, Jarjar s'arrête explicitement : aucun téléchargement automatique ni fallback Hugging Face n'est lancé par ce script.
 
 ### Démarrage
 
