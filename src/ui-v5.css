@@ -693,3 +693,21 @@ select:focus-visible {
 @media(max-width:1050px){.v5-territory-health{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.v5-territory-health,.v5-territory-signal{grid-template-columns:1fr}}
 
+.v5-routines{margin:0 0 16px;padding:16px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(255,255,255,.02)}
+.v5-routines>header{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:8px}
+.v5-routines>header small{display:block;opacity:.5;letter-spacing:.1em}
+.v5-routines>header h2{margin:2px 0 0;font-size:18px}
+.v5-routines>header span{font-size:12px;opacity:.5}
+.v5-routines-note{margin:0 0 12px;font-size:11px;line-height:1.45;opacity:.55}
+.v5-routines>div{display:grid;gap:10px}
+.v5-routines article{padding:12px;border:1px solid rgba(255,255,255,.06);border-radius:14px;background:rgba(7,12,24,.34)}
+.v5-routines article>header button{padding:0;border:0;background:none;color:inherit;text-align:left;cursor:pointer}
+.v5-routines article>header strong,.v5-routines article>header small{display:block}
+.v5-routines article>header small{margin-top:3px;opacity:.5}
+.v5-routines article>div{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.v5-routines article>div>button{min-width:180px;flex:1 1 220px;padding:10px;border:1px solid rgba(255,255,255,.06);border-radius:11px;background:rgba(255,255,255,.025);color:inherit;text-align:left;cursor:pointer}
+.v5-routines article>div>button code,.v5-routines article>div>button strong,.v5-routines article>div>button small{display:block}
+.v5-routines article>div>button code{font-size:10px;opacity:.5}
+.v5-routines article>div>button strong{margin-top:4px;font-size:12px}
+.v5-routines article>div>button small{margin-top:3px;font-size:9px;opacity:.42;overflow-wrap:anywhere}
+
