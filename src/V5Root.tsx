@@ -470,6 +470,58 @@ export default function V5Root(){
   }
  },[contextEntity,selectedSession,shared,contextId])
 
+ const workspaceActions=useMemo(()=>{
+  const actions:{id:string;label:string;meta:string;state:string;run:()=>void}[]=[]
+  if(workspaceContext.toolArea!=='home'){
+   const tool=workspaceContext.toolArea as 'brody'|'obsidure'|'cli'
+   const toolSession=activeTool(tool)
+   actions.push({
+    id:'tool',
+    label:tool==='brody'?'Brody':tool==='obsidure'?'Obsidure':'CLI Obsidia',
+    meta:toolSession?.presence==='live'?'Session de travail reliée au contexte':'Outil relié au contexte',
+    state:toolSession?.presence==='live'?'LIVE':'PRÊT',
+    run:()=>setWorkspaceArea(tool),
+   })
+  }
+  if(workspaceContext.results.length||workspaceContext.proofs.length){
+   actions.push({
+    id:'files',
+    label:'Fichiers & preuves',
+    meta:workspaceContext.results.length+' résultat(s) · '+workspaceContext.proofs.length+' preuve(s)',
+    state:'DISPONIBLE',
+    run:()=>setWorkspaceArea('files'),
+   })
+  }
+  if(contextEntity){
+   actions.push({
+    id:'world',
+    label:'Monde',
+    meta:'Revenir à l’objet dans son territoire',
+    state:'NAVIGATION',
+    run:()=>{const zone=zoneForEntity(contextEntity);if(zone)setWorldZone(zone);go('world')},
+   })
+  }
+  if(selectedSession||contextEntity?.kind==='agent'){
+   actions.push({
+    id:'pokemon',
+    label:'Pokémon',
+    meta:'Voir l’agent ou la session dans sa vue dédiée',
+    state:'NAVIGATION',
+    run:()=>go('agents'),
+   })
+  }
+  if(workspaceContext.mission){
+   actions.push({
+    id:'mission',
+    label:'Mission',
+    meta:workspaceContext.mission.traceabilityStatus+' · '+workspaceContext.mission.status,
+    state:workspaceContext.mission.primaryBlocker?'ATTENTION':'OBSERVÉE',
+    run:()=>{focus(workspaceContext.mission!.id);setWorldZone('activity');go('world')},
+   })
+  }
+  return actions
+ },[workspaceContext,contextEntity,selectedSession,processes,shared])
+
  return <div className="v5">
   <aside className="v5-sidebar">
    <a className="v5-brand" href="#world"><span>◈</span><div><strong>OBSIDIA</strong><small>Écosystème IA</small></div></a>
@@ -625,6 +677,11 @@ export default function V5Root(){
       {workspaceContext.next!=='Aucune action dérivée du contexte.'&&<span>{workspaceContext.next}</span>}
      </div>
     </section>
+    {workspaceActions.length>0&&<section className="v5-work-actions-panel">
+     <header><div><small>ACTIONS DISPONIBLES</small><h2>Continuer depuis ce contexte</h2></div><span>{workspaceActions.length} action(s)</span></header>
+     <div>{workspaceActions.map(a=><button key={a.id} onClick={a.run}><div><strong>{a.label}</strong><small>{a.meta}</small></div><em>{a.state}</em></button>)}</div>
+     <p>Ces actions réutilisent uniquement les vues, outils et liaisons déjà présents dans Workspace.</p>
+    </section>}
     {(workspaceContext.mission||workspaceContext.proofs.length||workspaceContext.results.length)&&<section className="v5-work-dossier">
      <header><div><small>DOSSIER DE TRAVAIL</small><h2>Mission, résultats et preuves liés</h2></div><span>projection du contexte</span></header>
      {workspaceContext.mission&&<article className="v5-work-mission">
