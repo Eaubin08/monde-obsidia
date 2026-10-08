@@ -258,3 +258,18 @@ test('Monde operational cockpit derives attention only from observed territory s
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Workspace exposes the selected Monde context as a workbench summary',()=>{
+ for(const invariant of [
+  "const workspaceContext=useMemo",
+  "CONTEXTE DE TRAVAIL",
+  "OBJECTIF",
+  "BLOCAGE",
+  "PREUVES LIÉES",
+  "RÉSULTATS LIÉS",
+  "Voir dans Monde",
+  "Voir dans Pokémon",
+  "Voir la mission",
+  "className=\"v5-work-context\"",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
