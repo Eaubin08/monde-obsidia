@@ -317,3 +317,19 @@ test('Workspace preserves observed session mission result proof continuity for t
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Workspace summarizes current observed work state missing ready proof and resume',()=>{
+ for(const invariant of [
+  "const workspaceSummary=useMemo",
+  "SYNTHÈSE DU CONTEXTE",
+  "État de travail courant",
+  "MANQUE",
+  "PRÊT",
+  "PREUVE",
+  "REPRISE",
+  "Aucun manque de traçabilité observé",
+  "Aucune reprise directe observée",
+  "Synthèse calculée uniquement depuis le contexte, la session, la mission et les preuves déjà observés.",
+  "className=\"v5-work-summary\"",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
