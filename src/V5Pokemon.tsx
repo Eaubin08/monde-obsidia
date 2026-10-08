@@ -136,6 +136,7 @@ export default function V5Pokemon(){
 
  const focus=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
  const choose=(s:Session)=>{setSelected(s.sessionId);sessionStorage.setItem('obsidia-selected-session',s.sessionId);focus('session:'+s.sessionId)}
+ const openWorld=(id:string,zone:'agents'|'activity'|'domains')=>{focus(id);window.dispatchEvent(new CustomEvent('obsidia-world-zone',{detail:zone}));location.hash='world'}
  const workspace=(s:Session)=>{choose(s);sessionStorage.setItem('obsidia-workspace-area',s.agentId==='brody'?'brody':s.agentId==='obsidure'?'obsidure':s.agentId==='cli'?'cli':'home');location.hash='workspace'}
 
  return <section className="v5pk v5pk-world">
@@ -185,6 +186,12 @@ export default function V5Pokemon(){
        <article><small>RÉSULTATS</small><strong>{agentContext.results.length}</strong></article>
        <article><small>PREUVES</small><strong>{agentContext.proofs.length}</strong></article>
        <article><small>RELATIONS</small><strong>{agentContext.relationCount}</strong></article>
+      </div>
+      <div className="v5pk-agent-context-actions">
+       {agentContext.agentEntity&&<button onClick={()=>openWorld(agentContext.agentEntity!.id,'agents')}>Voir l’agent dans Monde</button>}
+       {agentContext.mission&&<button onClick={()=>openWorld(agentContext.mission!.id,'activity')}>Voir la mission</button>}
+       {agentContext.domain&&<button onClick={()=>openWorld(agentContext.domain!.id,'domains')}>Voir le domaine</button>}
+       <button onClick={()=>workspace(current)}>Continuer dans Workspace</button>
       </div>
       <p>Projection readonly des liaisons déjà observées pour cet agent.</p>
      </section>}
