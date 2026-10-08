@@ -852,3 +852,24 @@ select:focus-visible {
 .v5pk-agent-evidence>p{margin:8px 0 0;font-size:.62rem;color:#7f94a7}
 @media(max-width:720px){.v5pk-agent-evidence-grid{grid-template-columns:1fr}}
 
+.v5pk-agent-network{margin-top:10px;padding:10px;border:1px solid #1f3a52;border-radius:10px;background:#0a1724}
+.v5pk-agent-network>header{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:8px}
+.v5pk-agent-network>header small,.v5pk-agent-network>header strong{display:block}
+.v5pk-agent-network>header small{letter-spacing:.09em;color:#7891a8;font-size:.6rem}
+.v5pk-agent-network>header strong{margin-top:2px;font-size:.76rem}
+.v5pk-agent-network>header span{font-size:.64rem;color:#8499ad}
+.v5pk-agent-network-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.v5pk-agent-network-grid>div{display:grid;gap:6px}
+.v5pk-agent-network-grid>div>small{font-size:.58rem;letter-spacing:.08em;color:#758ba0}
+.v5pk-agent-network-grid button{display:grid;grid-template-columns:28px 1fr;align-items:center;gap:8px;padding:8px!important;border:1px solid #1b3145!important;border-radius:8px!important;background:#0d1c2b!important;text-align:left}
+.v5pk-agent-network-grid button.current{border-color:#3c77c9!important;background:#102541!important}
+.v5pk-agent-network-grid button strong,.v5pk-agent-network-grid button small{display:block}
+.v5pk-agent-network-grid button strong{font-size:.7rem}
+.v5pk-agent-network-grid button small{margin-top:2px;font-size:.61rem;color:#8195a8}
+.v5pk-agent-network-grid article{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px;padding:8px;border:1px solid #1b3145;border-radius:8px;background:#0d1c2b}
+.v5pk-agent-network-grid article strong,.v5pk-agent-network-grid article span{font-size:.65rem;overflow-wrap:anywhere}
+.v5pk-agent-network-grid article code{font-size:.57rem;color:#8ba4bb}
+.v5pk-agent-network-grid p{margin:0;font-size:.64rem;color:#7f94a7}
+.v5pk-agent-network>p{margin:8px 0 0;font-size:.62rem;color:#7f94a7}
+@media(max-width:720px){.v5pk-agent-network-grid{grid-template-columns:1fr}.v5pk-agent-network-grid article{grid-template-columns:1fr}}
+
