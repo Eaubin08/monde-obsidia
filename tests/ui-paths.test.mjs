@@ -388,3 +388,18 @@ test('Pokemon navigates observed agent context across World mission domain and W
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Pokemon exposes recent observed agent evidence and session history without duplicating Workspace',()=>{
+ for(const invariant of [
+  "const agentHistory=useMemo",
+  "PREUVES & HISTORIQUE",
+  "Traces récentes liées à l’agent",
+  "RÉSULTATS / PREUVES",
+  "HISTORIQUE SESSION",
+  "Aucune preuve ou résultat lié à la mission courante.",
+  "Aucun événement récent observé.",
+  "sans dupliquer le dossier complet du Workspace",
+  "className=\"v5pk-agent-evidence\"",
+  "openWorld(e.id,['result','artifact'].includes(e.kind)?'knowledge':'governance')",
+ ]) assert.ok(pokemon.includes(invariant),invariant)
+})
+
