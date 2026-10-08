@@ -521,3 +521,20 @@ test('Post V5 new Monde final architecture keeps one readonly projection and pre
  ]) assert.equal((root+'\n'+pokemon+'\n'+stateProjection).includes(forbidden),false,forbidden)
 })
 
+test('Jarjar launchers prefer the canonical source clone and keep legacy venv only as Python fallback',()=>{
+ for(const invariant of [
+  "Desktop\\Jarvis-iron-obsidia-github",
+  "Desktop\\Jarvis-iron-obsidia-\\.venv\\Scripts\\python.exe",
+ ]) assert.ok(jarjarLauncher.includes(invariant),invariant)
+ for(const invariant of [
+  "resolve(homedir(),'Desktop','Jarvis-iron-obsidia-github')",
+  "resolve(homedir(),'Desktop','Jarvis-iron-obsidia-','.venv','Scripts','python.exe')",
+ ]) assert.ok(bridge.includes(invariant),invariant)
+})
+
+test('README documents the frozen Qwen path as local only',()=>{
+ const readme=readFileSync(resolve(process.cwd(),'README.md'),'utf8')
+ assert.ok(readme.includes('aucun téléchargement automatique ni fallback Hugging Face'))
+ assert.ok(!readme.includes("Hugging Face n'est utilisé qu'en absence de modèle local prêt"))
+})
+
