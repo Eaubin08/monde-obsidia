@@ -71,6 +71,15 @@ const territorySublayers:Partial<Record<WorldZone,{label:string;summary:string}[
  ],
 }
 
+const territoryRelationTypes:Partial<Record<WorldZone,string[]>>={
+ domains:['HAS_DOMAIN','DECLARES_DOMAIN','BELONGS_TO_DOMAIN','RUNS_IN_DOMAIN','IN_DOMAIN','DECIDES_IN_DOMAIN'],
+ rnd:['OPERATES_IN','PRODUCES_RESULT','PRODUCES_ARTIFACT','HAS_PROPOSAL','HAS_RECEIPT'],
+ agents:['HAS_AGENT','RUNS','HAS_SESSION','USES_AGENT'],
+ governance:['HAS_DECISION_RECORD','HAS_DECISION','AUTHORIZES_RECEIPT','HAS_ROLLBACK_EVIDENCE','PROTECTS_CHANGE','PROVES_IMPACT','HAS_IMPACT'],
+ knowledge:['HAS_OBJECTIVE','HAS_RESULT','PRODUCES_RESULT','PRODUCES_ARTIFACT','PROVES_IMPACT'],
+ layers:[],
+}
+
 
 export default function V5Root(){
  const initial=(location.hash.slice(1)||'world') as View
@@ -226,6 +235,17 @@ export default function V5Root(){
   return layers.map(l=>({id:'layer:'+l.id,kind:'COUCHE',label:l.title,meta:l.path}))
  },[shared,worldZone,live,snap,layers])
 
+ const observedMechanisms=useMemo(()=>{
+  if(!shared||!territoryRelationTypes[worldZone])return [] as {type:string;count:number}[]
+  const allowed=new Set(territoryRelationTypes[worldZone]||[])
+  const counts=new Map<string,number>()
+  for(const rel of shared.relations){
+   if(!allowed.has(rel.type))continue
+   counts.set(rel.type,(counts.get(rel.type)||0)+1)
+  }
+  return [...counts.entries()].map(([type,count])=>({type,count})).sort((a,b)=>b.count-a.count||a.type.localeCompare(b.type))
+ },[shared,worldZone])
+
  const searchResults=useMemo(()=>{
   const q=searchQuery.trim().toLowerCase()
   if(q.length<2&&searchKind==='all')return [] as {id:string;kind:string;label:string;meta:string;action:()=>void}[]
@@ -326,6 +346,10 @@ export default function V5Root(){
     {worldZone!=='territories'&&territorySublayers[worldZone]?.length&&<section className="v5-sublayers">
      <header><div><small>SOUS-COUCHES</small><h2>Organisation du territoire</h2></div><span>projection de navigation</span></header>
      <div>{territorySublayers[worldZone]!.map((x,i)=><article key={x.label}><em>{String(i+1).padStart(2,'0')}</em><strong>{x.label}</strong><p>{x.summary}</p></article>)}</div>
+    </section>}
+    {worldZone!=='territories'&&territoryRelationTypes[worldZone]&&<section className="v5-mechanisms">
+     <header><div><small>LIAISONS OBSERVÉES</small><h2>Mécanismes visibles dans la projection</h2></div><span>{observedMechanisms.length} type(s)</span></header>
+     <div>{observedMechanisms.length?observedMechanisms.map(x=><article key={x.type}><code>{x.type}</code><strong>{x.count}</strong></article>):<p className="v5-empty">Aucune liaison observée pour ce territoire.</p>}</div>
     </section>}
     <section className="v5-grid">
      {worldItems.map(item=><button className="v5-object" key={item.id} onClick={()=>{if(item.id.startsWith('territory:')){setWorldZone(item.id.slice(10) as WorldZone);return}if(item.id.startsWith('layer:')){const lid=item.id.slice(6);const l=layers.find(x=>x.id===lid);if(l){setSelectedFile(l.path);setFileContent(l.content)}}else focus(item.id)}}><small>{item.kind}</small><strong>{item.label}</strong><span>{item.meta}</span></button>)}
