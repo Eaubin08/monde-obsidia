@@ -241,3 +241,20 @@ test('Monde connects observed mission routines to territory mechanisms without i
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Monde operational cockpit derives attention only from observed territory state',()=>{
+ for(const invariant of [
+  "const worldOperational=useMemo",
+  "territoires en attention",
+  "sessions live",
+  "missions bloquées",
+  "preuves observées",
+  "Runtime domaine non confirmé",
+  "Session ",
+  "recommendedNextStep",
+  "className=\"v5-world-cockpit\"",
+  "À examiner",
+  "projection readonly",
+  "Aucun signal bloquant observé dans la projection.",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
