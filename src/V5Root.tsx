@@ -249,7 +249,7 @@ export default function V5Root(){
 
  const mechanismRelations=useMemo(()=>{
   if(!shared||!selectedMechanism)return [] as {from:string;fromLabel:string;type:string;to:string;toLabel:string}[]
-  const label=id=>shared.entities.find(e=>e.id===id)?.label||id
+  const label=(id:string)=>shared.entities.find(e=>e.id===id)?.label||id
   return shared.relations.filter(r=>r.type===selectedMechanism).map(r=>({
    from:r.from,fromLabel:label(r.from),type:r.type,to:r.to,toLabel:label(r.to)
   }))
