@@ -312,9 +312,14 @@ export default function V5Root(){
   const knowledgeTotal=countKind('repository','objective','result','artifact')
   const resultTotal=countKind('result','artifact')
   const governanceTotal=countKind('decision_record','sealed_receipt','rollback_evidence','impact')
-  const cards:Record<string,{status:string;facts:{label:string;value:string|number}[]}>={
+  const noBlock='Aucun blocage observé'
+  const noAction='Aucune action dérivée de la projection.'
+  const cards:Record<string,{status:string;blocker:string;proof:string;nextAction:string;facts:{label:string;value:string|number}[]}>={
    domains:{
     status:domainRuntime>0?'OBSERVÉ':domainTotal>0?'PARTIEL':'NON OBSERVÉ',
+    blocker:domainMissing?domainMissing+' runtime(s) domaine non confirmé(s)':noBlock,
+    proof:domainRuntime?domainRuntime+' runtime(s) domaine présent(s) · '+relCount('HAS_DOMAIN','RUNS_IN_DOMAIN','IN_DOMAIN','DECIDES_IN_DOMAIN')+' liaison(s) observée(s)':'Aucune preuve runtime domaine observée',
+    nextAction:domainMissing?'Vérifier les runtime(s) domaine non confirmés.':noAction,
     facts:[
      {label:'domaines',value:domainTotal},
      {label:'runtime présent',value:domainRuntime},
@@ -324,6 +329,9 @@ export default function V5Root(){
    },
    rnd:{
     status:worktrees.length?'OBSERVÉ':'NON OBSERVÉ',
+    blocker:noBlock,
+    proof:resultTotal+' résultat(s)/artefact(s) · '+countKind('proposal')+' proposition(s)',
+    nextAction:worktrees.some(w=>w.dirty)?'Examiner les worktrees modifiés observés.':noAction,
     facts:[
      {label:'worktrees',value:worktrees.length},
      {label:'modifiés',value:worktrees.filter(w=>w.dirty).length},
@@ -333,6 +341,9 @@ export default function V5Root(){
    },
    agents:{
     status:liveAgents?'LIVE':agentTotal?'DISPONIBLE':'NON OBSERVÉ',
+    blocker:blockedAgents?blockedAgents+' session(s) bloquée(s) ou en erreur':noBlock,
+    proof:liveAgents?liveAgents+' session(s) live observée(s)':agentTotal?agentTotal+' agent(s) connu(s)':'Aucune présence agent observée',
+    nextAction:blockedAgents?'Examiner les sessions bloquées ou en erreur.':noAction,
     facts:[
      {label:'agents connus',value:agentTotal},
      {label:'live',value:liveAgents},
@@ -342,6 +353,9 @@ export default function V5Root(){
    },
    governance:{
     status:governanceTotal?'OBSERVÉ':'NON OBSERVÉ',
+    blocker:missionBlockers?missionBlockers+' mission(s) avec blocage de traçabilité':noBlock,
+    proof:governanceTotal+' preuve(s) gouvernance · '+completeMissions+' mission(s) complète(s)',
+    nextAction:missions.find(m=>m.primaryBlocker)?.recommendedNextStep||noAction,
     facts:[
      {label:'preuves gouvernance',value:governanceTotal},
      {label:'missions bloquées',value:missionBlockers},
@@ -351,6 +365,9 @@ export default function V5Root(){
    },
    knowledge:{
     status:knowledgeTotal?'OBSERVÉ':'NON OBSERVÉ',
+    blocker:noBlock,
+    proof:resultTotal?resultTotal+' résultat(s)/artefact(s) observé(s)':'Aucun résultat ou artefact observé',
+    nextAction:noAction,
     facts:[
      {label:'objets',value:knowledgeTotal},
      {label:'résultats / artefacts',value:resultTotal},
@@ -360,6 +377,9 @@ export default function V5Root(){
    },
    layers:{
     status:layers.length?'DOCUMENTÉ':'NON OBSERVÉ',
+    blocker:noBlock,
+    proof:layers.length?layers.length+' couche(s) documentaire(s) chargée(s)':'Aucune couche documentaire observée',
+    nextAction:noAction,
     facts:[
      {label:'couches',value:layers.length},
      {label:'fichiers exposés',value:files.length},
@@ -371,6 +391,7 @@ export default function V5Root(){
   return territories.map(t=>({...t,...cards[t.zone]}))
  },[shared,snap,live,layers,files])
 
+ const currentTerritory=worldZone!=='home'&&worldZone!=='territories'?territoryCards.find(t=>t.zone===worldZone):undefined
 
  return <div className="v5">
   <aside className="v5-sidebar">
@@ -453,6 +474,12 @@ export default function V5Root(){
      {contextEntity&&worldZone!=='territories'&&<><span>›</span><strong>{contextEntity.label}</strong></>}
     </nav>
     <nav className="v5-zonebar">{zones.map(([id,label])=><button key={id} aria-pressed={worldZone===id} onClick={()=>{setSelectedMechanism('');setWorldZone(id)}}>{label}</button>)}</nav>
+    {currentTerritory&&<section className="v5-territory-health">
+     <article><small>ÉTAT</small><strong>{currentTerritory.status}</strong><p>Projection readonly du territoire.</p></article>
+     <article className={currentTerritory.blocker==='Aucun blocage observé'?'':'warn'}><small>BLOCAGE</small><strong>{currentTerritory.blocker}</strong><p>Uniquement à partir des signaux observés.</p></article>
+     <article><small>PREUVE</small><strong>{currentTerritory.proof}</strong><p>Aucune preuve supplémentaire n’est inférée.</p></article>
+     <article><small>PROCHAINE ACTION</small><strong>{currentTerritory.nextAction}</strong><p>Conseil de navigation, sans autorité d’action.</p></article>
+    </section>}
     {worldZone!=='territories'&&territorySublayers[worldZone]?.length&&<section className="v5-sublayers">
      <header><div><small>SOUS-COUCHES</small><h2>Organisation du territoire</h2></div><span>projection de navigation</span></header>
      <div>{territorySublayers[worldZone]!.map((x,i)=><article key={x.label}><em>{String(i+1).padStart(2,'0')}</em><strong>{x.label}</strong><p>{x.summary}</p></article>)}</div>
@@ -471,6 +498,7 @@ export default function V5Root(){
       <p>{t.summary}</p>
       <div className="v5-territory-facts">{t.facts.map(f=><span key={f.label}><strong>{f.value}</strong><small>{f.label}</small></span>)}</div>
       <div className="v5-territory-sublayers">{(territorySublayers[t.zone]||[]).map(x=><i key={x.label}>{x.label}</i>)}</div>
+      <div className="v5-territory-signal"><span><small>BLOCAGE</small><strong>{t.blocker}</strong></span><span><small>PREUVE</small><strong>{t.proof}</strong></span></div>
       <footer>Ouvrir le territoire →</footer>
      </button>)}
     </section>:<section className="v5-grid">
