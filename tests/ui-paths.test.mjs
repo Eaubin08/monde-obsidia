@@ -353,3 +353,18 @@ test('Workspace post V5 keeps one shared context and preserves runtime authority
  ]) assert.equal(root.includes(forbidden),false,forbidden)
 })
 
+test('Pokemon projects observed agent context without inventing authority or workflow',()=>{
+ for(const invariant of [
+  "const agentContext=useMemo",
+  "BELONGS_TO_DOMAIN",
+  "CONTEXTE AGENT",
+  "DOMAINE",
+  "MISSION",
+  "RÉSULTATS",
+  "PREUVES",
+  "RELATIONS",
+  "Projection readonly des liaisons déjà observées pour cet agent.",
+  "className=\"v5pk-agent-context\"",
+ ]) assert.ok(pokemon.includes(invariant),invariant)
+})
+
