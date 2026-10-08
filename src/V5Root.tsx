@@ -17,7 +17,7 @@ type Proposal={id:string;path:string;receipt:string|null;observedAt:string;data:
 type Snapshot={available:boolean;repository?:string;sha?:string;branch?:string;files:string[];proposals:Proposal[];worktrees?:{path:string;branch:string;head:string;dirty:boolean}[]}
 type Entity={id:string;kind:string;label:string;agentId?:string;path?:string;source?:string;targetPath?:string;status?:string;gate?:string;reasonCode?:string;decisionAuthority?:string;runtimeFilePresent?:boolean}
 type Session={id:string;sessionId:string;agentId:string;name:string;presence:'live'|'unknown'|'ended';status?:string;phase:string;message:string;objective:string|null;nativeService?:boolean;nativeTerminal?:boolean;surface?:'terminal'|'interface'|null;source?:string;repository?:string;decisionAuthority?:string;observedState?:string;events:{kind:string;phase:string;message:string;timestamp:string;objective?:string;result?:Record<string,unknown>}[]}
-type Mission={id:string;label:string;actionId:string;agentId:string|null;status:string;traceabilityStatus:string;sessionRefs:string[];resultRefs:string[];primaryBlocker?:string;recommendedNextStep?:string}
+type Mission={id:string;label:string;actionId:string;agentId:string|null;domainId?:string|null;status:string;traceabilityStatus:string;sessionRefs:string[];resultRefs:string[];decisionRecordRefs?:string[];receiptRefs?:string[];impactRefs?:string[];primaryBlocker?:string;recommendedNextStep?:string}
 type Shared={decisionAuthority:string;entities:Entity[];relations:{from:string;type:string;to:string}[];sessions:Session[];missions:Mission[]}
 type Process={sessionId:string;active:boolean;runtimeActive:boolean;native:boolean;surface?:'terminal'|'interface';tool:string;output:string}
 type CliRuntime={schema:string;readonly:boolean;canonicalTruth:boolean;decisionAuthority:string;state:string;services:{id:string;label:string;status:string;evidence:string}[];legacy:{graphiti:string;neo4j:string;ui5173:string};observedAt:string}
@@ -393,6 +393,29 @@ export default function V5Root(){
 
  const currentTerritory=worldZone!=='home'&&worldZone!=='territories'?territoryCards.find(t=>t.zone===worldZone):undefined
 
+ const observedRoutines=useMemo(()=>{
+  const entityLabel=(id:string)=>shared?.entities.find(e=>e.id===id)?.label||id
+  return (shared?.missions||[]).map(m=>{
+   const steps:{zone:WorldZone;mechanism:string;ref:string;label:string}[]=[]
+   const add=(zone:WorldZone,mechanism:string,refs:(string|undefined|null)[])=>{
+    for(const ref of refs.filter((x):x is string=>!!x))steps.push({zone,mechanism,ref,label:entityLabel(ref)})
+   }
+   if(m.domainId)add('domains','IN_DOMAIN',['domain:'+m.domainId])
+   if(m.agentId)add('agents','USES_AGENT',['agent:'+m.agentId])
+   add('agents','HAS_SESSION',m.sessionRefs||[])
+   add('knowledge','HAS_RESULT',m.resultRefs||[])
+   add('governance','HAS_DECISION',m.decisionRecordRefs||[])
+   add('governance','HAS_RECEIPT',m.receiptRefs||[])
+   add('governance','HAS_IMPACT',m.impactRefs||[])
+   return {id:m.id,label:m.actionId,status:m.status,traceabilityStatus:m.traceabilityStatus,steps}
+  })
+ },[shared])
+
+ const territoryRoutines=useMemo(()=>{
+  if(!currentTerritory)return []
+  return observedRoutines.map(r=>({...r,steps:r.steps.filter(s=>s.zone===currentTerritory.zone)})).filter(r=>r.steps.length)
+ },[observedRoutines,currentTerritory])
+
  return <div className="v5">
   <aside className="v5-sidebar">
    <a className="v5-brand" href="#world"><span>◈</span><div><strong>OBSIDIA</strong><small>Écosystème IA</small></div></a>
@@ -479,6 +502,14 @@ export default function V5Root(){
      <article className={currentTerritory.blocker==='Aucun blocage observé'?'':'warn'}><small>BLOCAGE</small><strong>{currentTerritory.blocker}</strong><p>Uniquement à partir des signaux observés.</p></article>
      <article><small>PREUVE</small><strong>{currentTerritory.proof}</strong><p>Aucune preuve supplémentaire n’est inférée.</p></article>
      <article><small>PROCHAINE ACTION</small><strong>{currentTerritory.nextAction}</strong><p>Conseil de navigation, sans autorité d’action.</p></article>
+    </section>}
+    {currentTerritory&&<section className="v5-routines">
+     <header><div><small>ROUTINES / PROCESSUS OBSERVÉS</small><h2>Chaînes de mission reliées à ce territoire</h2></div><span>{territoryRoutines.length} chaîne(s)</span></header>
+     <p className="v5-routines-note">Projection de traçabilité : regroupe uniquement les liens déjà observés. Aucun ordre temporel supplémentaire n’est inféré.</p>
+     <div>{territoryRoutines.length?territoryRoutines.map(r=><article key={r.id}>
+      <header><button onClick={()=>openWorldObject(r.id)}><strong>{r.label}</strong><small>{r.status} · {r.traceabilityStatus}</small></button></header>
+      <div>{r.steps.map((s,i)=><button key={s.mechanism+s.ref+i} onClick={()=>openWorldObject(s.ref)}><code>{s.mechanism}</code><strong>{s.label}</strong><small>{s.ref}</small></button>)}</div>
+     </article>):<p className="v5-empty">Aucune chaîne de mission observée dans ce territoire.</p>}</div>
     </section>}
     {worldZone!=='territories'&&territorySublayers[worldZone]?.length&&<section className="v5-sublayers">
      <header><div><small>SOUS-COUCHES</small><h2>Organisation du territoire</h2></div><span>projection de navigation</span></header>
