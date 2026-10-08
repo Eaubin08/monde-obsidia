@@ -326,6 +326,24 @@ async function canonicalApiEndpoint(){
   return d?.service==='obsidia-api'
  }catch{return false}
 }
+async function canonicalSigmaMonitoringStatus(){
+ try{
+  const headers={}
+  if(process.env.OBSIDIA_API_KEY)headers['X-API-Key']=process.env.OBSIDIA_API_KEY
+  const route='/api/periphery/monitoring/sigma/domains'
+  const r=await fetch('http://127.0.0.1:8000'+route,{headers,signal:AbortSignal.timeout(1500)})
+  if(!r.ok)return {ready:false,evidence:'SIGMA_ROUTE_HTTP_'+r.status,route}
+  const d=await r.json()
+  const domains=Array.isArray(d?.domains)?d.domains:[]
+  const canonical=['bank','trading','ecom','gps_defense_aviation']
+  const domainIds=domains.map(x=>typeof x==='string'?x:x?.id||x?.domain).filter(Boolean)
+  const boundaryOk=d?.decision_authority==='KX108_ONLY'&&d?.readonly===true&&d?.emits_act===false&&d?.kernel_mutation===false
+  const domainsOk=canonical.every(x=>domainIds.includes(x))
+  const routeOk=d?.route===route
+  const ready=boundaryOk&&domainsOk&&routeOk
+  return {ready,evidence:ready?'SIGMA_F63_DOMAINS_ROUTE_VERIFIED':'SIGMA_F63_ROUTE_INVALID_PAYLOAD',route,domainIds}
+ }catch{return {ready:false,evidence:'SIGMA_F63_ROUTE_UNREACHABLE',route:'/api/periphery/monitoring/sigma/domains'}}
+}
 async function releaseFrozenServicePort(id){
  const port=id==='kernel-x108'?3001:id==='obsidia-api'?8000:null
  if(!port)return
@@ -490,7 +508,8 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   ]
   const nativeMemoryReady=nativeMemoryCandidates.some(p=>existsSync(p))
   const api=byId('obsidia-api'),kernel=byId('kernel-x108')
-  const sigmaState=api?.ready?'API_READY_UNVERIFIED':'OFFLINE'
+  const sigmaProbe=api?.ready?await canonicalSigmaMonitoringStatus():{ready:false,evidence:'API_8000_OFFLINE',route:'/api/periphery/monitoring/sigma/domains'}
+  const sigmaState=sigmaProbe.ready?'READY':api?.ready?'ROUTE_UNVERIFIED':'OFFLINE'
   const state=(api?.ready&&kernel?.ready&&nativeMemoryReady)?'READY':'DEGRADED'
   res.end(JSON.stringify({
    schema:'MONDE_CLI_RUNTIME_PROJECTION_V1',
@@ -501,7 +520,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
    services:[
     {id:'kernel',label:'Kernel X108',status:kernel?.state||'OFFLINE',evidence:kernel?.evidence||'PORT_3001'},
     {id:'api',label:'API Obsidia / Brody',status:api?.state||'OFFLINE',evidence:api?.evidence||'PORT_8000'},
-    {id:'sigma',label:'Sigma / domaines',status:sigmaState,evidence:'API_8000_PRESENT_ROUTE_NOT_PROBED'},
+    {id:'sigma',label:'Sigma / domaines',status:sigmaState,evidence:sigmaProbe.evidence,route:sigmaProbe.route},
     {id:'native-memory',label:'Native Memory',status:nativeMemoryReady?'READY':'NOT_OBSERVED',evidence:'LOCAL_NATIVE_MEMORY_INDEX'}
    ],
    legacy:{graphiti:'HISTORICAL_NOT_ACTIVE',neo4j:'HISTORICAL_NOT_ACTIVE',ui5173:'LEGACY_SURFACE_NOT_MONDE'},
