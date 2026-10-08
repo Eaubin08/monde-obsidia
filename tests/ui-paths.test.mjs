@@ -333,3 +333,23 @@ test('Workspace summarizes current observed work state missing ready proof and r
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Workspace post V5 keeps one shared context and preserves runtime authority boundaries',()=>{
+ for(const invariant of [
+  "sessionStorage.setItem('obsidia-focus-entity',id)",
+  "window.dispatchEvent(new CustomEvent('obsidia-context'",
+  "sessionStorage.setItem('obsidia-workspace-area',area)",
+  "const workspaceContext=useMemo",
+  "const workspaceContinuity=useMemo",
+  "const workspaceActions=useMemo",
+  "const workspaceSummary=useMemo",
+  "decisionAuthority:'KX108_ONLY'",
+  "projection readonly",
+ ]) assert.ok(root.includes(invariant),invariant)
+ for(const forbidden of [
+  "workspaceDecisionAuthority",
+  "workspaceCanonicalTruth",
+  "workspace_write",
+  "workspace_execute_decision",
+ ]) assert.equal(root.includes(forbidden),false,forbidden)
+})
+
