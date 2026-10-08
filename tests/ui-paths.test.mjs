@@ -437,3 +437,29 @@ test('Pokemon summarizes only observed agent operational state and gaps',()=>{
  ]) assert.equal(pokemon.includes(forbidden),false,forbidden)
 })
 
+test('Pokemon post V5 remains a readonly QUI projection with shared cross-view context',()=>{
+ for(const invariant of [
+  "<small>QUI ?</small><h1>Pokémon</h1>",
+  "fetch('/obsidia-local/state'",
+  "sessionStorage.setItem('obsidia-focus-entity',id)",
+  "window.dispatchEvent(new CustomEvent('obsidia-context'",
+  "window.dispatchEvent(new CustomEvent('obsidia-world-zone'",
+  "sessionStorage.setItem('obsidia-workspace-area'",
+  "current.decisionAuthority||'KX108_ONLY'",
+  "Projection readonly des liaisons déjà observées pour cet agent.",
+  "Synthèse calculée uniquement depuis la session, la mission et les preuves déjà observées.",
+  "Aucune collaboration n’est déduite",
+ ]) assert.ok(pokemon.includes(invariant),invariant)
+ for(const forbidden of [
+  "method:'POST'",
+  "method:\"POST\"",
+  "/obsidia-local/run",
+  "/obsidia-local/stop",
+  "canonicalTruth:true",
+  "decisionAuthority:'POKEMON'",
+  "decisionAuthority:\"POKEMON\"",
+  "pokemonDecisionAuthority",
+  "pokemon_execute",
+ ]) assert.equal(pokemon.includes(forbidden),false,forbidden)
+})
+
