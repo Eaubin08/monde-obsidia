@@ -636,3 +636,20 @@ select:focus-visible {
 .v5-mechanisms article code{font-size:11px;opacity:.72}
 .v5-mechanisms article strong{font-size:12px}
 
+.v5-mechanisms>div>button{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid rgba(255,255,255,.07);border-radius:12px;background:rgba(7,12,24,.38);color:inherit;cursor:pointer}
+.v5-mechanisms>div>button[aria-pressed="true"]{outline:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08)}
+.v5-mechanisms>div>button code{font-size:11px;opacity:.72}
+.v5-mechanisms>div>button strong{font-size:12px}
+.v5-mechanism-detail{margin:0 0 18px;padding:16px;border:1px solid rgba(255,255,255,.09);border-radius:18px;background:rgba(255,255,255,.025)}
+.v5-mechanism-detail>header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px}
+.v5-mechanism-detail>header small{display:block;opacity:.55;letter-spacing:.12em}
+.v5-mechanism-detail>header h2{margin:2px 0 0;font-size:18px}
+.v5-mechanism-detail>div{display:grid;gap:8px}
+.v5-mechanism-detail article{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:10px;border:1px solid rgba(255,255,255,.06);border-radius:12px;background:rgba(7,12,24,.34)}
+.v5-mechanism-detail article>button{text-align:left;padding:10px;border:0;border-radius:10px;background:rgba(255,255,255,.03);color:inherit;cursor:pointer}
+.v5-mechanism-detail article>button small,.v5-mechanism-detail article>button strong,.v5-mechanism-detail article>button code{display:block}
+.v5-mechanism-detail article>button small{opacity:.45}
+.v5-mechanism-detail article>button code{margin-top:4px;font-size:10px;opacity:.5;overflow-wrap:anywhere}
+.v5-mechanism-detail article>span{font-size:11px;opacity:.62;text-align:center}
+@media(max-width:760px){.v5-mechanism-detail article{grid-template-columns:1fr}.v5-mechanism-detail article>span{text-align:left}}
+
