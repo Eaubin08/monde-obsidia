@@ -542,6 +542,33 @@ export default function V5Root(){
   return actions
  },[workspaceContext,contextEntity,selectedSession,processes,shared])
 
+ const workspaceSummary=useMemo(()=>{
+  const mission=workspaceContext.mission
+  const session=workspaceContinuity.session
+  const missing:string[]=[]
+  if(mission){
+   if(!mission.sessionRefs.length)missing.push('session')
+   if(!mission.resultRefs.length)missing.push('résultat')
+   if(!(mission.decisionRecordRefs||[]).length)missing.push('décision')
+   if(!(mission.receiptRefs||[]).length)missing.push('receipt')
+   if((mission.receiptRefs||[]).length&&!(mission.impactRefs||[]).length)missing.push('impact')
+  }
+  const ready:string[]=[]
+  if(session)ready.push(session.presence==='live'?'session live':'session observée')
+  if(workspaceContext.toolArea!=='home')ready.push('outil '+workspaceContext.toolArea)
+  if(workspaceContext.results.length)ready.push(workspaceContext.results.length+' résultat(s)')
+  if(workspaceContext.proofs.length)ready.push(workspaceContext.proofs.length+' preuve(s)')
+  const status=mission?.primaryBlocker?'ATTENTION':session?.presence==='live'?'EN COURS':mission?.traceabilityStatus==='COMPLETE'?'COMPLET':workspaceContext.kind==='aucun'?'AUCUN CONTEXTE':'OBSERVÉ'
+  const resume=session?(session.presence==='live'?'Reprendre la session':'Revoir la session'):workspaceContext.toolArea!=='home'?'Ouvrir '+workspaceContext.toolArea:'Aucune reprise directe observée'
+  return {
+   status,
+   missing:missing.length?missing.join(' · '):'Aucun manque de traçabilité observé',
+   ready:ready.length?ready.join(' · '):'Aucun élément prêt observé',
+   proof:workspaceContext.proofs.length?workspaceContext.proofs.length+' preuve(s) liée(s)':'Aucune preuve liée',
+   resume,
+  }
+ },[workspaceContext,workspaceContinuity])
+
  return <div className="v5">
   <aside className="v5-sidebar">
    <a className="v5-brand" href="#world"><span>◈</span><div><strong>OBSIDIA</strong><small>Écosystème IA</small></div></a>
@@ -696,6 +723,17 @@ export default function V5Root(){
       {workspaceContext.mission&&<button onClick={()=>{focus(workspaceContext.mission!.id);setWorldZone('activity');go('world')}}>Voir la mission</button>}
       {workspaceContext.next!=='Aucune action dérivée du contexte.'&&<span>{workspaceContext.next}</span>}
      </div>
+    </section>
+    <section className="v5-work-summary">
+     <header><div><small>SYNTHÈSE DU CONTEXTE</small><h2>État de travail courant</h2></div><span>{workspaceSummary.status}</span></header>
+     <div>
+      <article><small>ÉTAT</small><strong>{workspaceSummary.status}</strong></article>
+      <article><small>MANQUE</small><strong>{workspaceSummary.missing}</strong></article>
+      <article><small>PRÊT</small><strong>{workspaceSummary.ready}</strong></article>
+      <article><small>PREUVE</small><strong>{workspaceSummary.proof}</strong></article>
+      <article><small>REPRISE</small><strong>{workspaceSummary.resume}</strong></article>
+     </div>
+     <p>Synthèse calculée uniquement depuis le contexte, la session, la mission et les preuves déjà observés.</p>
     </section>
     {(workspaceContinuity.session||workspaceContinuity.mission||workspaceContinuity.result||workspaceContinuity.proof)&&<section className="v5-work-continuity">
      <header><div><small>CONTINUITÉ DE TRAVAIL</small><h2>Reprendre sans perdre le contexte</h2></div><span>liaisons observées uniquement</span></header>
