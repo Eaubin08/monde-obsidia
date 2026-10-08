@@ -137,3 +137,17 @@ test('Monde exposes navigable territories without inventing new runtime truth',(
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Monde territories expose sublayers as navigation projection only',()=>{
+ for(const invariant of [
+  "const territorySublayers",
+  "Observations / terrain",
+  "Traduction domaine",
+  "Runtime domaine",
+  "Preuves / gouvernance",
+  "Chantiers",
+  "Cycle de vie",
+  "projection de navigation",
+  "territorySublayers[worldZone]",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
