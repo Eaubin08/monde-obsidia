@@ -178,3 +178,19 @@ test('Observed Monde mechanisms are clickable and reveal their concrete relation
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Monde territory cards summarize only observed state and expose sublayers',()=>{
+ for(const invariant of [
+  "const territoryCards=useMemo",
+  "runtime non confirmé",
+  "bloqués observés",
+  "missions bloquées",
+  "runtime canonique",
+  "non revendiqué",
+  "className=\"v5-territory-map\"",
+  "className=\"v5-territory-card\"",
+  "className=\"v5-territory-facts\"",
+  "className=\"v5-territory-sublayers\"",
+  "Ouvrir le territoire →",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
