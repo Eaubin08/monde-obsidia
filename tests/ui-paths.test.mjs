@@ -506,9 +506,9 @@ test('Post V5 new Monde final architecture keeps one readonly projection and pre
   "canonicalTruth:false",
   "decisionAuthority:'KX108_ONLY'",
   "views:{",
-  "world:{entityRefs:",
-  "workspace:{entityRefs:",
-  "pokemon:{entityRefs:",
+  "world:{question:'OÙ ?',entityRefs:",
+  "workspace:{question:'QUOI ?',entityRefs:",
+  "pokemon:{question:'QUI ?',entityRefs:",
  ]) assert.ok(stateProjection.includes(invariant),invariant)
  for(const forbidden of [
   "canonicalTruth:true",
