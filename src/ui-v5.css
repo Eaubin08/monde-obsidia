@@ -749,3 +749,27 @@ select:focus-visible {
 @media(max-width:950px){.v5-work-context-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.v5-work-context-grid{grid-template-columns:1fr}}
 
+.v5-work-dossier{margin:0 0 16px;padding:16px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(255,255,255,.02)}
+.v5-work-dossier>header{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:12px}
+.v5-work-dossier>header small{display:block;opacity:.48;letter-spacing:.1em}
+.v5-work-dossier>header h2{margin:2px 0 0;font-size:18px}
+.v5-work-dossier>header span{font-size:11px;opacity:.48}
+.v5-work-mission{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid rgba(255,255,255,.06);border-radius:12px;background:rgba(7,12,24,.36);margin-bottom:10px}
+.v5-work-mission small,.v5-work-mission strong,.v5-work-mission span{display:block}
+.v5-work-mission small{font-size:9px;letter-spacing:.08em;opacity:.45}
+.v5-work-mission strong{margin-top:4px;font-size:13px}
+.v5-work-mission span{margin-top:3px;font-size:10px;opacity:.52}
+.v5-work-dossier-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.v5-work-dossier-grid>section{padding:12px;border:1px solid rgba(255,255,255,.06);border-radius:12px;background:rgba(7,12,24,.3)}
+.v5-work-dossier-grid>section>header{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}
+.v5-work-dossier-grid>section>header small{opacity:.45}
+.v5-work-dossier-grid button{width:100%;padding:9px;border:1px solid rgba(255,255,255,.05);border-radius:10px;background:rgba(255,255,255,.02);color:inherit;text-align:left;cursor:pointer}
+.v5-work-dossier-grid button+button{margin-top:7px}
+.v5-work-dossier-grid button span,.v5-work-dossier-grid button strong,.v5-work-dossier-grid button small{display:block}
+.v5-work-dossier-grid button span{font-size:9px;text-transform:uppercase;opacity:.45}
+.v5-work-dossier-grid button strong{margin-top:3px;font-size:12px}
+.v5-work-dossier-grid button small{margin-top:3px;font-size:9px;opacity:.42;overflow-wrap:anywhere}
+.v5-work-dossier>footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}
+.v5-work-dossier>footer span{font-size:11px;opacity:.6}
+@media(max-width:800px){.v5-work-dossier-grid{grid-template-columns:1fr}}
+
