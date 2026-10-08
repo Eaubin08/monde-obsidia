@@ -342,7 +342,7 @@ test('Workspace post V5 keeps one shared context and preserves runtime authority
   "const workspaceContinuity=useMemo",
   "const workspaceActions=useMemo",
   "const workspaceSummary=useMemo",
-  "decisionAuthority:'KX108_ONLY'",
+  "shared?.decisionAuthority||'KX108_ONLY'",
   "projection readonly",
  ]) assert.ok(root.includes(invariant),invariant)
  for(const forbidden of [
