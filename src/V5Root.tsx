@@ -416,6 +416,27 @@ export default function V5Root(){
   return observedRoutines.map(r=>({...r,steps:r.steps.filter(s=>s.zone===currentTerritory.zone)})).filter(r=>r.steps.length)
  },[observedRoutines,currentTerritory])
 
+ const worldOperational=useMemo(()=>{
+  const attention:{id:string;label:string;meta:string;zone:WorldZone;entityId?:string}[]=[]
+  for(const e of shared?.entities.filter(e=>e.kind==='domain'&&!e.runtimeFilePresent)||[]){
+   attention.push({id:'domain:'+e.id,label:e.label,meta:'Runtime domaine non confirmé',zone:'domains',entityId:e.id})
+  }
+  for(const s of live.filter(s=>s.status==='blocked'||s.status==='error')){
+   attention.push({id:'session:'+s.sessionId,label:s.name||s.agentId,meta:'Session '+(s.status||'à examiner'),zone:'agents',entityId:'session:'+s.sessionId})
+  }
+  for(const m of shared?.missions.filter(m=>m.primaryBlocker)||[]){
+   attention.push({id:'mission:'+m.id,label:m.actionId,meta:m.recommendedNextStep||m.primaryBlocker||'Traçabilité incomplète',zone:'governance',entityId:m.id})
+  }
+  const territoriesAttention=territoryCards.filter(t=>t.blocker!=='Aucun blocage observé').length
+  return {
+   territoriesAttention,
+   liveSessions:live.length,
+   blockedMissions:shared?.missions.filter(m=>m.primaryBlocker).length||0,
+   proofs:proofCount,
+   attention:attention.slice(0,12),
+  }
+ },[shared,live,territoryCards,proofCount])
+
  return <div className="v5">
   <aside className="v5-sidebar">
    <a className="v5-brand" href="#world"><span>◈</span><div><strong>OBSIDIA</strong><small>Écosystème IA</small></div></a>
@@ -522,6 +543,19 @@ export default function V5Root(){
     {selectedMechanism&&<section className="v5-mechanism-detail">
      <header><div><small>LIAISON</small><h2>{selectedMechanism}</h2></div><button onClick={()=>setSelectedMechanism('')}>Fermer</button></header>
      <div>{mechanismRelations.map((r,i)=><article key={r.from+r.to+i}><button onClick={()=>openWorldObject(r.from)}><small>DE</small><strong>{r.fromLabel}</strong><code>{r.from}</code></button><span>→ <code>{r.type}</code> →</span><button onClick={()=>openWorldObject(r.to)}><small>VERS</small><strong>{r.toLabel}</strong><code>{r.to}</code></button></article>)}</div>
+    </section>}
+    {worldZone==='territories'&&<section className="v5-world-cockpit">
+     <header><div><small>COCKPIT MONDE</small><h2>État opérationnel observé</h2></div><span>projection readonly</span></header>
+     <div className="v5-world-cockpit-kpis">
+      <article><strong>{worldOperational.territoriesAttention}</strong><small>territoires en attention</small></article>
+      <article><strong>{worldOperational.liveSessions}</strong><small>sessions live</small></article>
+      <article><strong>{worldOperational.blockedMissions}</strong><small>missions bloquées</small></article>
+      <article><strong>{worldOperational.proofs}</strong><small>preuves observées</small></article>
+     </div>
+     <div className="v5-world-attention">
+      <header><strong>À examiner</strong><small>{worldOperational.attention.length} signal(s) observé(s)</small></header>
+      {worldOperational.attention.length?worldOperational.attention.map(x=><button key={x.id} onClick={()=>{if(x.entityId)openWorldObject(x.entityId);else setWorldZone(x.zone)}}><span>!</span><div><strong>{x.label}</strong><small>{x.meta}</small></div><em>{zones.find(([id])=>id===x.zone)?.[1]}</em></button>):<p className="v5-empty">Aucun signal bloquant observé dans la projection.</p>}
+     </div>
     </section>}
     {worldZone==='territories'?<section className="v5-territory-map">
      {territoryCards.map(t=><button key={t.id} className="v5-territory-card" onClick={()=>{setSelectedMechanism('');setWorldZone(t.zone)}}>
