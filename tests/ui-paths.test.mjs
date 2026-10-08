@@ -301,3 +301,19 @@ test('Workspace exposes only context-aware actions backed by existing views and 
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Workspace preserves observed session mission result proof continuity for task resumption',()=>{
+ for(const invariant of [
+  "const workspaceContinuity=useMemo",
+  "obsidia-selected-session",
+  "const resumeWorkspace",
+  "CONTINUITÉ DE TRAVAIL",
+  "Reprendre sans perdre le contexte",
+  "RÉSULTAT LIÉ",
+  "PREUVE LIÉE",
+  "Reprendre la session",
+  "Revoir la session",
+  "aucun nouvel ordre de workflow",
+  "className=\"v5-work-continuity\"",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
