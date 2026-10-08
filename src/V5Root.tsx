@@ -470,6 +470,26 @@ export default function V5Root(){
   }
  },[contextEntity,selectedSession,shared,contextId])
 
+ const workspaceContinuity=useMemo(()=>{
+  const rememberedId=sessionStorage.getItem('obsidia-selected-session')||''
+  const remembered=(shared?.sessions||[]).find(s=>s.sessionId===rememberedId)
+  const missionSessions=(workspaceContext.mission?.sessionRefs||[]).map(id=>(shared?.sessions||[]).find(s=>s.id===id)).filter((s):s is Session=>!!s)
+  const missionSession=missionSessions.find(s=>s.presence==='live')||missionSessions[0]
+  const session=selectedSession||missionSession||remembered
+  const sessionResultIds=new Set((shared?.relations||[]).filter(r=>session&&r.from===session.id&&['PRODUCES_RESULT','PRODUCES_ARTIFACT'].includes(r.type)).map(r=>r.to))
+  const result=workspaceContext.results.find(e=>sessionResultIds.has(e.id))||workspaceContext.results[0]
+  const proof=workspaceContext.proofs[0]
+  return {session,result,proof,mission:workspaceContext.mission}
+ },[shared,selectedSession,workspaceContext])
+
+ const resumeWorkspace=()=>{
+  const s=workspaceContinuity.session
+  if(!s)return
+  sessionStorage.setItem('obsidia-selected-session',s.sessionId)
+  focus(s.id)
+  setWorkspaceArea(workspaceForAgent(s.agentId))
+ }
+
  const workspaceActions=useMemo(()=>{
   const actions:{id:string;label:string;meta:string;state:string;run:()=>void}[]=[]
   if(workspaceContext.toolArea!=='home'){
@@ -677,6 +697,17 @@ export default function V5Root(){
       {workspaceContext.next!=='Aucune action dérivée du contexte.'&&<span>{workspaceContext.next}</span>}
      </div>
     </section>
+    {(workspaceContinuity.session||workspaceContinuity.mission||workspaceContinuity.result||workspaceContinuity.proof)&&<section className="v5-work-continuity">
+     <header><div><small>CONTINUITÉ DE TRAVAIL</small><h2>Reprendre sans perdre le contexte</h2></div><span>liaisons observées uniquement</span></header>
+     <div className="v5-work-continuity-chain">
+      {workspaceContinuity.session&&<button onClick={resumeWorkspace}><small>SESSION</small><strong>{workspaceContinuity.session.name}</strong><span>{workspaceContinuity.session.presence} · {workspaceContinuity.session.phase}</span></button>}
+      {workspaceContinuity.mission&&<button onClick={()=>{focus(workspaceContinuity.mission!.id);setWorldZone('activity');go('world')}}><small>MISSION</small><strong>{workspaceContinuity.mission.actionId}</strong><span>{workspaceContinuity.mission.status}</span></button>}
+      {workspaceContinuity.result&&<button onClick={()=>openWorldObject(workspaceContinuity.result!.id)}><small>RÉSULTAT LIÉ</small><strong>{workspaceContinuity.result.label}</strong><span>{workspaceContinuity.result.kind}</span></button>}
+      {workspaceContinuity.proof&&<button onClick={()=>openWorldObject(workspaceContinuity.proof!.id)}><small>PREUVE LIÉE</small><strong>{workspaceContinuity.proof.label}</strong><span>{workspaceContinuity.proof.kind}</span></button>}
+     </div>
+     {workspaceContinuity.session&&<footer><span>{workspaceContinuity.session.objective||workspaceContinuity.session.message||'Aucun objectif observé'}</span><button onClick={resumeWorkspace}>{workspaceContinuity.session.presence==='live'?'Reprendre la session':'Revoir la session'}</button></footer>}
+     <p>Cette continuité ne crée aucun nouvel ordre de workflow : elle suit seulement les liens session, mission, résultat et preuve déjà observés.</p>
+    </section>}
     {workspaceActions.length>0&&<section className="v5-work-actions-panel">
      <header><div><small>ACTIONS DISPONIBLES</small><h2>Continuer depuis ce contexte</h2></div><span>{workspaceActions.length} action(s)</span></header>
      <div>{workspaceActions.map(a=><button key={a.id} onClick={a.run}><div><strong>{a.label}</strong><small>{a.meta}</small></div><em>{a.state}</em></button>)}</div>
