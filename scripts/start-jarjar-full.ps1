@@ -91,6 +91,9 @@ function Quote-Arg([string]$Value) {
 }
 
 function Resolve-LlamaExecutable {
+    $frozen = Join-Path $env:USERPROFILE 'Desktop\llama-b11193\llama-server.exe'
+    if (Test-Path -LiteralPath $frozen) { return (Resolve-Path -LiteralPath $frozen).Path }
+
     foreach ($name in @('llama-server','llama')) {
         $cmd = Get-Command $name -ErrorAction SilentlyContinue
         if ($cmd -and $cmd.Source) { return $cmd.Source }
@@ -265,42 +268,17 @@ New-Item -ItemType Directory -Path $obsidiaLocal -Force | Out-Null
 $qwenTextLog = Join-Path $obsidiaLocal 'jarjar_qwen_text.log'
 
 $qwenNativeLog = Join-Path $obsidiaLocal 'jarjar_qwen_text_llama.log'
-$qwenRepo = 'Qwen/Qwen2.5-3B-Instruct-GGUF'
-$qwenFile = 'qwen2.5-3b-instruct-q4_k_m.gguf'
 $qwenLocalCandidates = @(
     $env:OBSIDIA_QWEN_TEXT_MODEL,
     (Join-Path $env:USERPROFILE 'Desktop\MODELS\QWEN\qwen2.5-3b-instruct-q4_k_m.gguf')
 ) | Where-Object { $_ } | Select-Object -Unique
-function Get-QwenLocalDownloadWriter([string]$Path) {
-    if (-not $Path) { return $null }
-    try {
-        $escaped = [Regex]::Escape($Path)
-        return Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
-            $_.Name -ieq 'curl.exe' -and $_.CommandLine -match $escaped
-        } | Select-Object -First 1
-    } catch { return $null }
-}
 function Test-QwenLocalModelReady([string]$Path) {
     if (-not $Path -or -not (Test-Path -LiteralPath $Path)) { return $false }
-    try {
-        if ((Get-Item -LiteralPath $Path).Length -le 1000000000) { return $false }
-        return -not (Get-QwenLocalDownloadWriter $Path)
-    } catch { return $false }
+    try { return (Get-Item -LiteralPath $Path).Length -gt 1000000000 } catch { return $false }
 }
-$qwenLocalDownload = $qwenLocalCandidates | Where-Object {
-    (Test-Path -LiteralPath $_) -and (Get-QwenLocalDownloadWriter $_)
-} | Select-Object -First 1
 $qwenLocalModel = $qwenLocalCandidates | Where-Object { Test-QwenLocalModelReady $_ } | Select-Object -First 1
-$qwenTextGpuLayers = '0'
-$qwenHfBlobDir = Join-Path $env:USERPROFILE '.cache\huggingface\hub\models--Qwen--Qwen2.5-3B-Instruct-GGUF\blobs'
-
-function Clear-QwenBrokenDownload {
-    if (-not (Test-Path -LiteralPath $qwenHfBlobDir)) { return }
-    $partials = @(Get-ChildItem -LiteralPath $qwenHfBlobDir -Filter '*.downloadInProgress' -File -ErrorAction SilentlyContinue)
-    foreach ($partial in $partials) {
-        Write-Host "[QWEN TEXT] Suppression resume HF incomplet: $($partial.Name)" -ForegroundColor Yellow
-        Remove-Item -LiteralPath $partial.FullName -Force -ErrorAction SilentlyContinue
-    }
+if (-not $qwenLocalModel) {
+    throw "Qwen texte local absent. Freeze exige OBSIDIA_QWEN_TEXT_MODEL ou $env:USERPROFILE\Desktop\MODELS\QWEN\qwen2.5-3b-instruct-q4_k_m.gguf. Aucun telechargement automatique."
 }
 
 if ((Port-Open 8080) -and $qwenLocalModel) {
@@ -308,39 +286,20 @@ if ((Port-Open 8080) -and $qwenLocalModel) {
 }
 if (-not (Port-Open 8080)) {
     Write-Host '[4/6] Demarrage Qwen texte :8080...' -ForegroundColor Cyan
-    if ($qwenLocalDownload) {
-        $writer = Get-QwenLocalDownloadWriter $qwenLocalDownload
-        throw "Qwen local est encore en telechargement via curl (PID=$($writer.ProcessId)): $qwenLocalDownload"
-    }
     if (-not $LlamaExecutable) { throw 'llama-server introuvable pour Qwen texte.' }
     Remove-Item -LiteralPath $qwenTextLog -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $qwenNativeLog -Force -ErrorAction SilentlyContinue
-    if ($qwenLocalModel) {
-        Write-Host "[QWEN TEXT] Modele local detecte: $qwenLocalModel" -ForegroundColor Green
-        $qwenArgs = @(
-            '-m', $qwenLocalModel,
-            '--host', '127.0.0.1',
-            '--port', '8080',
-            '-c', '4096',
-            '--gpu-layers', $qwenTextGpuLayers,
-            '--log-file', $qwenNativeLog,
-            '--log-verbosity', '5',
-            '--log-colors', 'off'
-        )
-    } else {
-        Clear-QwenBrokenDownload
-        $qwenArgs = @(
-            '-hfr', $qwenRepo,
-            '-hff', $qwenFile,
-            '--host', '127.0.0.1',
-            '--port', '8080',
-            '-c', '4096',
-            '--gpu-layers', $qwenTextGpuLayers,
-            '--log-file', $qwenNativeLog,
-            '--log-verbosity', '5',
-            '--log-colors', 'off'
-        )
-    }
+    Write-Host "[QWEN TEXT] Freeze local: $qwenLocalModel" -ForegroundColor Green
+    Write-Host "[QWEN TEXT] llama.cpp: $LlamaExecutable" -ForegroundColor DarkGray
+    $qwenArgs = @(
+        '-m', $qwenLocalModel,
+        '--host', '127.0.0.1',
+        '--port', '8080',
+        '-c', '4096',
+        '--log-file', $qwenNativeLog,
+        '--log-verbosity', '5',
+        '--log-colors', 'off'
+    )
     $qwenServer = Start-Server 'QWEN TEXT' $LlamaExecutable $qwenArgs $Jarjar
 } else { Write-Host '[4/6] Qwen texte deja actif.' -ForegroundColor DarkGray }
 $qwenState = Start-OptionalService 8080 'QWEN TEXT' $qwenServer 12
@@ -357,42 +316,28 @@ if ($qwenState -eq 'STARTING') {
 }
 
 if ($qwenState -eq 'OFFLINE' -and -not (Port-Open 8080)) {
-    Write-Host '[QWEN TEXT] Premier lancement echoue. Nettoyage du resume HF puis retry propre...' -ForegroundColor Yellow
+    Write-Host '[QWEN TEXT] Premier lancement echoue. Retry local unique, sans reseau...' -ForegroundColor Yellow
     if (Test-Path -LiteralPath $qwenNativeLog) {
         Get-Content -LiteralPath $qwenNativeLog -Tail 20 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
     }
     Start-Sleep -Seconds 1
     Remove-Item -LiteralPath $qwenNativeLog -Force -ErrorAction SilentlyContinue
-    if ($qwenLocalModel) {
-        $qwenRetryArgs = @(
-            '-m', $qwenLocalModel,
-            '--host', '127.0.0.1',
-            '--port', '8080',
-            '-c', '4096',
-            '--log-file', $qwenNativeLog,
-            '--log-verbosity', '5',
-            '--log-colors', 'off'
-        )
-    } else {
-        Clear-QwenBrokenDownload
-        $qwenRetryArgs = @(
-            '-hfr', $qwenRepo,
-            '-hff', $qwenFile,
-            '--host', '127.0.0.1',
-            '--port', '8080',
-            '-c', '4096',
-            '--log-file', $qwenNativeLog,
-            '--log-verbosity', '5',
-            '--log-colors', 'off'
-        )
-    }
-    $qwenServer = Start-Server 'QWEN TEXT RETRY CLEAN' $LlamaExecutable $qwenRetryArgs $Jarjar
+    $qwenRetryArgs = @(
+        '-m', $qwenLocalModel,
+        '--host', '127.0.0.1',
+        '--port', '8080',
+        '-c', '4096',
+        '--log-file', $qwenNativeLog,
+        '--log-verbosity', '5',
+        '--log-colors', 'off'
+    )
+    $qwenServer = Start-Server 'QWEN TEXT RETRY LOCAL' $LlamaExecutable $qwenRetryArgs $Jarjar
     try {
         Wait-Service 8080 'QWEN TEXT' $qwenServer 180
         $qwenState = 'READY'
     } catch {
         $qwenState = 'OFFLINE'
-        Write-Host "[QWEN TEXT] Echec activation apres retry: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "[QWEN TEXT] Echec activation apres retry local: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
