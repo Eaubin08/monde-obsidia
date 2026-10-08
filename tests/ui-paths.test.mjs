@@ -370,7 +370,7 @@ test('Pokemon projects observed agent context without inventing authority or wor
 
 test('Pokemon navigates observed agent context across World mission domain and Workspace',()=>{
  for(const invariant of [
-  "const openWorld=(id:string,zone:'agents'|'activity'|'domains')",
+  "const openWorld=(id:string,zone:'agents'|'activity'|'domains'|'knowledge'|'governance')",
   "new CustomEvent('obsidia-world-zone'",
   "Voir l’agent dans Monde",
   "Voir la mission",
