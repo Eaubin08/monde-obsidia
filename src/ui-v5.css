@@ -711,3 +711,24 @@ select:focus-visible {
 .v5-routines article>div>button strong{margin-top:4px;font-size:12px}
 .v5-routines article>div>button small{margin-top:3px;font-size:9px;opacity:.42;overflow-wrap:anywhere}
 
+.v5-world-cockpit{margin:0 0 16px;padding:16px;border:1px solid rgba(255,255,255,.09);border-radius:18px;background:rgba(255,255,255,.025)}
+.v5-world-cockpit>header{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:12px}
+.v5-world-cockpit>header small{display:block;opacity:.5;letter-spacing:.1em}
+.v5-world-cockpit>header h2{margin:2px 0 0;font-size:18px}
+.v5-world-cockpit>header span{font-size:11px;opacity:.5}
+.v5-world-cockpit-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.v5-world-cockpit-kpis article{padding:12px;border:1px solid rgba(255,255,255,.06);border-radius:12px;background:rgba(7,12,24,.36)}
+.v5-world-cockpit-kpis strong,.v5-world-cockpit-kpis small{display:block}
+.v5-world-cockpit-kpis strong{font-size:17px}
+.v5-world-cockpit-kpis small{margin-top:3px;font-size:10px;opacity:.52}
+.v5-world-attention{margin-top:12px}
+.v5-world-attention>header{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px}
+.v5-world-attention>header small{opacity:.48}
+.v5-world-attention>button{width:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:10px;border:1px solid rgba(255,255,255,.06);border-radius:11px;background:rgba(255,255,255,.02);color:inherit;text-align:left;cursor:pointer}
+.v5-world-attention>button+button{margin-top:7px}
+.v5-world-attention>button>span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.07);font-weight:700}
+.v5-world-attention>button strong,.v5-world-attention>button small{display:block}
+.v5-world-attention>button small{margin-top:3px;opacity:.54}
+.v5-world-attention>button em{font-style:normal;font-size:10px;opacity:.45}
+@media(max-width:850px){.v5-world-cockpit-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.v5-world-attention>button{grid-template-columns:auto 1fr}.v5-world-attention>button em{grid-column:2}}
+
