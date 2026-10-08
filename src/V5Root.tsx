@@ -133,6 +133,24 @@ export default function V5Root(){
  const files=snap?.files||[]
 
  const focus=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);setContextId(id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
+ const zoneForEntity=(entity?:Entity):WorldZone|null=>{
+  if(!entity)return null
+  if(entity.kind==='domain')return 'domains'
+  if(['agent','session'].includes(entity.kind))return 'agents'
+  if(['decision','decision_record','receipt','sealed_receipt','rollback_evidence','impact'].includes(entity.kind))return 'governance'
+  if(['repository','objective','result','artifact'].includes(entity.kind))return 'knowledge'
+  if(entity.kind==='proposal')return 'rnd'
+  if(entity.kind==='mission')return 'activity'
+  return null
+ }
+ const openWorldObject=(id:string)=>{
+  const entity=shared?.entities.find(e=>e.id===id)
+  const zone=zoneForEntity(entity)
+  if(zone)setWorldZone(zone)
+  focus(id)
+  if(view!=='world')go('world')
+ }
+ const backToTerritories=()=>{setSelectedMechanism('');setWorldZone('territories')}
  const workspaceForAgent=(agentId?:string|null):WorkspaceArea=>agentId==='brody'?'brody':agentId==='obsidure'?'obsidure':agentId==='cli'?'cli':'home'
  const openContextWorkspace=()=>{const agentId=selectedSession?.agentId||contextEntity?.agentId||null;const area=workspaceForAgent(agentId);setWorkspaceArea(area);sessionStorage.setItem('obsidia-workspace-area',area);go('workspace')}
  const focusSearchAgent=()=>{if(!searchSelection)return;let id=searchSelection.id;if(id.startsWith('rd:')){const match=shared?.entities.find(e=>e.kind==='agent'&&e.label===searchSelection.label);if(match)id=match.id;else return false}focus(id);return true}
@@ -428,6 +446,12 @@ export default function V5Root(){
      <div><small>MONDE</small><h1>{zones.find(([id])=>id===worldZone)?.[1]}</h1><p>Explorer cette partie de l’écosystème Obsidia.</p></div>
      <button onClick={()=>setWorldZone('home')}>← Vue globale</button>
     </header>
+    <nav className="v5-world-trail" aria-label="Navigation micro macro">
+     <button onClick={()=>setWorldZone('home')}>Monde</button><span>›</span>
+     <button onClick={backToTerritories}>Territoires</button>
+     {worldZone!=='territories'&&<><span>›</span><button onClick={()=>{setSelectedMechanism('');setWorldZone(worldZone)}}>{zones.find(([id])=>id===worldZone)?.[1]}</button></>}
+     {contextEntity&&worldZone!=='territories'&&<><span>›</span><strong>{contextEntity.label}</strong></>}
+    </nav>
     <nav className="v5-zonebar">{zones.map(([id,label])=><button key={id} aria-pressed={worldZone===id} onClick={()=>{setSelectedMechanism('');setWorldZone(id)}}>{label}</button>)}</nav>
     {worldZone!=='territories'&&territorySublayers[worldZone]?.length&&<section className="v5-sublayers">
      <header><div><small>SOUS-COUCHES</small><h2>Organisation du territoire</h2></div><span>projection de navigation</span></header>
@@ -439,7 +463,7 @@ export default function V5Root(){
     </section>}
     {selectedMechanism&&<section className="v5-mechanism-detail">
      <header><div><small>LIAISON</small><h2>{selectedMechanism}</h2></div><button onClick={()=>setSelectedMechanism('')}>Fermer</button></header>
-     <div>{mechanismRelations.map((r,i)=><article key={r.from+r.to+i}><button onClick={()=>focus(r.from)}><small>DE</small><strong>{r.fromLabel}</strong><code>{r.from}</code></button><span>→ <code>{r.type}</code> →</span><button onClick={()=>focus(r.to)}><small>VERS</small><strong>{r.toLabel}</strong><code>{r.to}</code></button></article>)}</div>
+     <div>{mechanismRelations.map((r,i)=><article key={r.from+r.to+i}><button onClick={()=>openWorldObject(r.from)}><small>DE</small><strong>{r.fromLabel}</strong><code>{r.from}</code></button><span>→ <code>{r.type}</code> →</span><button onClick={()=>openWorldObject(r.to)}><small>VERS</small><strong>{r.toLabel}</strong><code>{r.to}</code></button></article>)}</div>
     </section>}
     {worldZone==='territories'?<section className="v5-territory-map">
      {territoryCards.map(t=><button key={t.id} className="v5-territory-card" onClick={()=>{setSelectedMechanism('');setWorldZone(t.zone)}}>
@@ -450,10 +474,10 @@ export default function V5Root(){
       <footer>Ouvrir le territoire →</footer>
      </button>)}
     </section>:<section className="v5-grid">
-     {worldItems.map(item=><button className="v5-object" key={item.id} onClick={()=>{if(item.id.startsWith('layer:')){const lid=item.id.slice(6);const l=layers.find(x=>x.id===lid);if(l){setSelectedFile(l.path);setFileContent(l.content)}}else focus(item.id)}}><small>{item.kind}</small><strong>{item.label}</strong><span>{item.meta}</span></button>)}
+     {worldItems.map(item=><button className="v5-object" key={item.id} onClick={()=>{if(item.id.startsWith('layer:')){const lid=item.id.slice(6);const l=layers.find(x=>x.id===lid);if(l){setSelectedFile(l.path);setFileContent(l.content)}}else openWorldObject(item.id)}}><small>{item.kind}</small><strong>{item.label}</strong><span>{item.meta}</span></button>)}
      {!worldItems.length&&<p className="v5-empty">Aucun objet observé dans cette zone.</p>}
     </section>}
-    {contextEntity&&<aside className="v5-focus"><small>OBJET SÉLECTIONNÉ</small><h2>{contextEntity.label}</h2><p>{contextEntity.kind} · {contextEntity.id}</p><div><button onClick={openContextWorkspace}>Workspace</button><button onClick={()=>go('agents')}>Pokémon</button></div><details><summary>Relations · {shared?.relations.filter(r=>r.from===contextEntity.id||r.to===contextEntity.id).length||0}</summary>{shared?.relations.filter(r=>r.from===contextEntity.id||r.to===contextEntity.id).map((r,i)=><p key={i}><code>{r.from}</code> → {r.type} → <code>{r.to}</code></p>)}</details></aside>}
+    {contextEntity&&<aside className="v5-focus"><small>OBJET SÉLECTIONNÉ</small><h2>{contextEntity.label}</h2><p>{contextEntity.kind} · {contextEntity.id}</p><div><button onClick={backToTerritories}>← Territoires</button>{zoneForEntity(contextEntity)&&zoneForEntity(contextEntity)!==worldZone&&<button onClick={()=>setWorldZone(zoneForEntity(contextEntity)!)}>Son territoire</button>}<button onClick={openContextWorkspace}>Workspace</button><button onClick={()=>go('agents')}>Pokémon</button></div><details><summary>Relations · {shared?.relations.filter(r=>r.from===contextEntity.id||r.to===contextEntity.id).length||0}</summary>{shared?.relations.filter(r=>r.from===contextEntity.id||r.to===contextEntity.id).map((r,i)=><p key={i}><code>{r.from}</code> → {r.type} → <code>{r.to}</code></p>)}</details></aside>}
     {worldZone==='layers'&&selectedFile&&<section className="v5-layer-reader"><header><strong>{selectedFile}</strong><button onClick={()=>{setSelectedFile('');setFileContent('')}}>Fermer</button></header><pre>{fileContent}</pre></section>}
    </section>}
 
