@@ -121,3 +121,19 @@ test('Jarjar prefers a completed local Qwen GGUF',()=>{
   "'-m', $qwenLocalModel",
  ]) assert.ok(jarjarLauncher.includes(invariant),invariant)
 })
+
+test('Monde exposes navigable territories without inventing new runtime truth',()=>{
+ for(const invariant of [
+  "['territories','Territoires']",
+  "Terrains & domaines",
+  "R&D / Build",
+  "Agents & organes",
+  "Gouvernance & preuves",
+  "Objets & résultats",
+  "Couches documentaires",
+  "territory:'+t.zone",
+  "item.id.startsWith('territory:')",
+  "setWorldZone(item.id.slice(10) as WorldZone)",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
