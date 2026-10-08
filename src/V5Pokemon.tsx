@@ -134,9 +134,14 @@ export default function V5Pokemon(){
   }
  },[current,currentMission,state])
 
+ const agentHistory=useMemo(()=>{
+  if(!current)return []
+  return [...(current.events||[])].sort((a,b)=>String(b.timestamp||'').localeCompare(String(a.timestamp||''))).slice(0,6)
+ },[current])
+
  const focus=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
  const choose=(s:Session)=>{setSelected(s.sessionId);sessionStorage.setItem('obsidia-selected-session',s.sessionId);focus('session:'+s.sessionId)}
- const openWorld=(id:string,zone:'agents'|'activity'|'domains')=>{focus(id);window.dispatchEvent(new CustomEvent('obsidia-world-zone',{detail:zone}));location.hash='world'}
+ const openWorld=(id:string,zone:'agents'|'activity'|'domains'|'knowledge'|'governance')=>{focus(id);window.dispatchEvent(new CustomEvent('obsidia-world-zone',{detail:zone}));location.hash='world'}
  const workspace=(s:Session)=>{choose(s);sessionStorage.setItem('obsidia-workspace-area',s.agentId==='brody'?'brody':s.agentId==='obsidure'?'obsidure':s.agentId==='cli'?'cli':'home');location.hash='workspace'}
 
  return <section className="v5pk v5pk-world">
@@ -195,6 +200,20 @@ export default function V5Pokemon(){
       </div>
       <p>Projection readonly des liaisons déjà observées pour cet agent.</p>
      </section>}
+     <section className="v5pk-agent-evidence">
+      <header><div><small>PREUVES & HISTORIQUE</small><strong>Traces récentes liées à l’agent</strong></div><span>{agentContext?.results.length||0} résultat(s) · {agentContext?.proofs.length||0} preuve(s)</span></header>
+      <div className="v5pk-agent-evidence-grid">
+       <div>
+        <small>RÉSULTATS / PREUVES</small>
+        {agentContext&&(agentContext.results.length||agentContext.proofs.length)?[...agentContext.results,...agentContext.proofs].slice(0,6).map(e=><button key={e.id} onClick={()=>openWorld(e.id,['result','artifact'].includes(e.kind)?'knowledge':'governance')}><strong>{e.label}</strong><span>{e.kind}</span></button>):<p>Aucune preuve ou résultat lié à la mission courante.</p>}
+       </div>
+       <div>
+        <small>HISTORIQUE SESSION</small>
+        {agentHistory.length?agentHistory.map((e,i)=><article key={(e.timestamp||'')+i}><time>{String(e.timestamp||'').slice(11,19)||'—'}</time><div><strong>{e.phase||e.kind}</strong><span>{e.message||e.objective||e.kind}</span></div></article>):<p>Aucun événement récent observé.</p>}
+       </div>
+      </div>
+      <p>Historique de session et preuves liées sont affichés sans dupliquer le dossier complet du Workspace.</p>
+     </section>
      <button className="v5pk-workspace-cta" onClick={()=>workspace(current)}>Ouvrir dans Workspace</button>
      <details className="v5pk-tech"><summary>Détails techniques</summary><p>{current.sessionId}</p><p>{current.repository}</p><p>{current.phase}</p></details>
     </>:<div className="v5-empty"><h2>Aucun agent actif</h2><p>Le village se remplira avec les sessions observées.</p></div>}
