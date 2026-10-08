@@ -368,3 +368,23 @@ test('Pokemon projects observed agent context without inventing authority or wor
  ]) assert.ok(pokemon.includes(invariant),invariant)
 })
 
+test('Pokemon navigates observed agent context across World mission domain and Workspace',()=>{
+ for(const invariant of [
+  "const openWorld=(id:string,zone:'agents'|'activity'|'domains')",
+  "new CustomEvent('obsidia-world-zone'",
+  "Voir l’agent dans Monde",
+  "Voir la mission",
+  "Voir le domaine",
+  "Continuer dans Workspace",
+  "agentContext.agentEntity",
+  "agentContext.mission",
+  "agentContext.domain",
+  "className=\"v5pk-agent-context-actions\"",
+ ]) assert.ok(pokemon.includes(invariant),invariant)
+ for(const invariant of [
+  "const worldZoneEvent=(e:Event)",
+  "window.addEventListener('obsidia-world-zone'",
+  "setWorldZone(zone)",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
