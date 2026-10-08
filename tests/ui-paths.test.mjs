@@ -67,9 +67,21 @@ test('Qwen text uses the frozen local GGUF without automatic network fallback',(
  assert.ok(!bridge.includes("const log=resolve(local,'Obsidia','jarjar_qwen_text.log')"))
 })
 
-test('Sigma projection does not claim verified READY from API alone',()=>{
- assert.ok(bridge.includes("API_READY_UNVERIFIED"))
- assert.ok(bridge.includes("API_8000_PRESENT_ROUTE_NOT_PROBED"))
+test('Sigma READY requires the canonical readonly F63 monitoring route',()=>{
+ for(const invariant of [
+  "canonicalSigmaMonitoringStatus",
+  "/api/periphery/monitoring/sigma/domains",
+  "SIGMA_F63_DOMAINS_ROUTE_VERIFIED",
+  "SIGMA_F63_ROUTE_INVALID_PAYLOAD",
+  "decision_authority==='KX108_ONLY'",
+  "d?.readonly===true",
+  "d?.emits_act===false",
+  "d?.kernel_mutation===false",
+  "['bank','trading','ecom','gps_defense_aviation']",
+  "sigmaProbe.ready?'READY':api?.ready?'ROUTE_UNVERIFIED':'OFFLINE'",
+ ]) assert.ok(bridge.includes(invariant),invariant)
+ assert.ok(!bridge.includes("API_READY_UNVERIFIED"))
+ assert.ok(!bridge.includes("API_8000_PRESENT_ROUTE_NOT_PROBED"))
 })
 
 test('Pokemon lifecycle includes catalog available and inactive agents',()=>{
