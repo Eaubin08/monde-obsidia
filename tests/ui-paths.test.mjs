@@ -487,9 +487,9 @@ test('Monde Workspace and Pokemon share one context without changing object kind
 
 test('Post V5 new Monde final architecture keeps one readonly projection and preserved view boundaries',()=>{
  for(const invariant of [
-  "MONDE",
-  "WORKSPACE",
-  "Pokémon",
+  "['world','Monde']",
+  "['workspace','Workspace']",
+  "['agents','Pokémon']",
   "const territoryCards=useMemo",
   "const worldOperational=useMemo",
   "const workspaceContext=useMemo",
