@@ -165,3 +165,16 @@ test('Monde territories project only observed relation mechanisms',()=>{
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
+test('Observed Monde mechanisms are clickable and reveal their concrete relations',()=>{
+ for(const invariant of [
+  "const [selectedMechanism,setSelectedMechanism]",
+  "const mechanismRelations",
+  "shared.relations.filter(r=>r.type===selectedMechanism)",
+  "aria-pressed={selectedMechanism===x.type}",
+  "onClick={()=>setSelectedMechanism(selectedMechanism===x.type?'':x.type)}",
+  "className=\"v5-mechanism-detail\"",
+  "onClick={()=>focus(r.from)}",
+  "onClick={()=>focus(r.to)}",
+ ]) assert.ok(root.includes(invariant),invariant)
+})
+
