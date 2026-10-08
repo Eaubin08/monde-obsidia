@@ -1,9 +1,9 @@
-import {useEffect,useState} from 'react'
+import {useEffect,useMemo,useState} from 'react'
 
 type Event={kind:string;timestamp:string;status:string;phase:string;message:string;objective?:string;result?:Record<string,unknown>}
 type Session={sessionId:string;agentId:string;name:string;repository:string;status:string;phase:string;message:string;objective:string|null;timestamp:string;presence:'live'|'unknown'|'ended';nativeService?:boolean;observedState?:'READY'|'STARTING'|'OFFLINE';source?:string;events:Event[];jarjarRuntime?:boolean;inputMode?:string|null;cognitionSource?:string;decisionAuthority?:string;governanceSource?:string;governancePhase?:string;humanConfirmationRequired?:boolean;confirmationPrompt?:string;telemetryFresh?:boolean;components?:Record<string,unknown>}
 type Entity={id:string;kind:string;label:string;agentId?:string;domainId?:string}
-type Mission={id:string;actionId:string;agentId:string|null;status:string;traceabilityStatus:string;sessionRefs:string[];resultRefs:string[];primaryBlocker?:string}
+type Mission={id:string;actionId:string;agentId:string|null;domainId?:string|null;status:string;traceabilityStatus:string;sessionRefs:string[];resultRefs:string[];decisionRecordRefs?:string[];receiptRefs?:string[];impactRefs?:string[];primaryBlocker?:string}
 type Family={id:string;label:string;kind:string;agents:string[];localPresent:boolean}
 type State={entities:Entity[];relations:{from:string;type:string;to:string}[];sessions:Session[];missions:Mission[];agentFamilies?:Family[]}
 type Filter='all'|'live'|'available'|'preparing'|'blocked'|'inactive'
@@ -107,6 +107,32 @@ export default function V5Pokemon(){
  const catalogFamily=catalogSelected?families.find(f=>f.agents.includes(catalogSelected)):undefined
  const selectedFamily=current?families.find(f=>f.agents.includes(current.agentId)):undefined
  const currentRole=current?roleMeta(current):null
+ const agentContext=useMemo(()=>{
+  if(!current||!state)return null
+  const agentEntity=state.entities.find(e=>e.kind==='agent'&&e.agentId===current.agentId)
+  const mission=currentMission
+  const domainId=mission?.domainId?('domain:'+mission.domainId):(agentEntity?.domainId?('domain:'+agentEntity.domainId):state.relations.find(r=>r.from===agentEntity?.id&&r.type==='BELONGS_TO_DOMAIN')?.to)
+  const domain=domainId?state.entities.find(e=>e.id===domainId):undefined
+  const evidenceIds=new Set([
+   ...(mission?.resultRefs||[]),
+   ...(mission?.decisionRecordRefs||[]),
+   ...(mission?.receiptRefs||[]),
+   ...(mission?.impactRefs||[]),
+  ])
+  const evidence=state.entities.filter(e=>evidenceIds.has(e.id))
+  const results=evidence.filter(e=>['result','artifact'].includes(e.kind))
+  const proofs=evidence.filter(e=>['decision_record','sealed_receipt','receipt','impact','rollback_evidence'].includes(e.kind))
+  const relationCount=agentEntity?state.relations.filter(r=>r.from===agentEntity.id||r.to===agentEntity.id).length:0
+  return {
+   agentEntity,
+   domain,
+   mission,
+   results,
+   proofs,
+   relationCount,
+   status:mission?.primaryBlocker?'ATTENTION':current.presence==='live'?'LIVE':'OBSERVÉ',
+  }
+ },[current,currentMission,state])
 
  const focus=(id:string)=>{sessionStorage.setItem('obsidia-focus-entity',id);window.dispatchEvent(new CustomEvent('obsidia-context',{detail:id}))}
  const choose=(s:Session)=>{setSelected(s.sessionId);sessionStorage.setItem('obsidia-selected-session',s.sessionId);focus('session:'+s.sessionId)}
@@ -151,6 +177,17 @@ export default function V5Pokemon(){
       <div><dt>Preuve</dt><dd>{currentMission?.traceabilityStatus||'Non reliée'}</dd></div>
       <div><dt>Statut</dt><dd>{currentMission?.primaryBlocker?'Blocage : '+currentMission.primaryBlocker:'En cours'}</dd></div>
      </dl>
+     {agentContext&&<section className="v5pk-agent-context">
+      <header><small>CONTEXTE AGENT</small><span>{agentContext.status}</span></header>
+      <div className="v5pk-agent-context-grid">
+       <article><small>DOMAINE</small><strong>{agentContext.domain?.label||'Non relié'}</strong></article>
+       <article><small>MISSION</small><strong>{agentContext.mission?.actionId||'Aucune mission reliée'}</strong></article>
+       <article><small>RÉSULTATS</small><strong>{agentContext.results.length}</strong></article>
+       <article><small>PREUVES</small><strong>{agentContext.proofs.length}</strong></article>
+       <article><small>RELATIONS</small><strong>{agentContext.relationCount}</strong></article>
+      </div>
+      <p>Projection readonly des liaisons déjà observées pour cet agent.</p>
+     </section>}
      <button className="v5pk-workspace-cta" onClick={()=>workspace(current)}>Ouvrir dans Workspace</button>
      <details className="v5pk-tech"><summary>Détails techniques</summary><p>{current.sessionId}</p><p>{current.repository}</p><p>{current.phase}</p></details>
     </>:<div className="v5-empty"><h2>Aucun agent actif</h2><p>Le village se remplira avec les sessions observées.</p></div>}
