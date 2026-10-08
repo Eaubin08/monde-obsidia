@@ -173,8 +173,8 @@ test('Observed Monde mechanisms are clickable and reveal their concrete relation
   "aria-pressed={selectedMechanism===x.type}",
   "onClick={()=>setSelectedMechanism(selectedMechanism===x.type?'':x.type)}",
   "className=\"v5-mechanism-detail\"",
-  "onClick={()=>focus(r.from)}",
-  "onClick={()=>focus(r.to)}",
+  "onClick={()=>openWorldObject(r.from)}",
+  "onClick={()=>openWorldObject(r.to)}",
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
