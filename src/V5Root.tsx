@@ -437,6 +437,30 @@ export default function V5Root(){
   }
  },[shared,live,territoryCards,proofCount])
 
+ const workspaceContext=useMemo(()=>{
+  const entity=contextEntity
+  const session=selectedSession
+  const mission=(shared?.missions||[]).find(m=>m.id===contextId||m.sessionRefs.includes(contextId)||m.sessionRefs.includes('session:'+session?.sessionId))
+  const relatedIds=new Set<string>()
+  if(entity)for(const r of shared?.relations||[]){
+   if(r.from===entity.id)relatedIds.add(r.to)
+   if(r.to===entity.id)relatedIds.add(r.from)
+  }
+  const related=(shared?.entities||[]).filter(e=>relatedIds.has(e.id))
+  const proofs=related.filter(e=>['decision_record','sealed_receipt','rollback_evidence','impact','receipt'].includes(e.kind))
+  const results=related.filter(e=>['result','artifact'].includes(e.kind))
+  return {
+   label:session?.name||entity?.label||mission?.actionId||'Aucun contexte sélectionné',
+   kind:session?'session':entity?.kind||mission?'mission':'aucun',
+   objective:session?.objective||session?.message||mission?.actionId||'Aucun objectif observé',
+   blocker:mission?.primaryBlocker||'Aucun blocage de mission observé',
+   next:mission?.recommendedNextStep||'Aucune action dérivée du contexte.',
+   proofs,
+   results,
+   mission,
+  }
+ },[contextEntity,selectedSession,shared,contextId])
+
  return <div className="v5">
   <aside className="v5-sidebar">
    <a className="v5-brand" href="#world"><span>◈</span><div><strong>OBSIDIA</strong><small>Écosystème IA</small></div></a>
@@ -577,6 +601,21 @@ export default function V5Root(){
    {view==='workspace'&&<section className="v5-page">
     <header className="v5-page-head"><div><small>QUOI ?</small><h1>Workspace</h1><p>Travailler sur ce qui est en cours.</p></div><strong>{live.length} session(s)</strong></header>
     <nav className="v5-subnav">{([['home',"Aujourd'hui"],['launchers','Lancements'],['brody','Brody'],['obsidure','Obsidure'],['cli','CLI'],['files','Fichiers & preuves']] as [WorkspaceArea,string][]).map(([id,label])=><button key={id} aria-pressed={workspaceArea===id} onClick={()=>setWorkspaceArea(id)}>{label}</button>)}</nav>
+    <section className="v5-work-context">
+     <header><div><small>CONTEXTE DE TRAVAIL</small><h2>{workspaceContext.label}</h2></div><span>{workspaceContext.kind}</span></header>
+     <div className="v5-work-context-grid">
+      <article><small>OBJECTIF</small><strong>{workspaceContext.objective}</strong></article>
+      <article className={workspaceContext.blocker==='Aucun blocage de mission observé'?'':'warn'}><small>BLOCAGE</small><strong>{workspaceContext.blocker}</strong></article>
+      <article><small>PREUVES LIÉES</small><strong>{workspaceContext.proofs.length}</strong></article>
+      <article><small>RÉSULTATS LIÉS</small><strong>{workspaceContext.results.length}</strong></article>
+     </div>
+     <div className="v5-work-context-actions">
+      {contextEntity&&<button onClick={()=>{const zone=zoneForEntity(contextEntity);if(zone)setWorldZone(zone);go('world')}}>Voir dans Monde</button>}
+      {(selectedSession||contextEntity?.kind==='agent')&&<button onClick={()=>go('agents')}>Voir dans Pokémon</button>}
+      {workspaceContext.mission&&<button onClick={()=>{focus(workspaceContext.mission!.id);setWorldZone('activity');go('world')}}>Voir la mission</button>}
+      {workspaceContext.next!=='Aucune action dérivée du contexte.'&&<span>{workspaceContext.next}</span>}
+     </div>
+    </section>
     {workspaceArea==='launchers'&&<V5Launchers/>}
     {workspaceArea==='home'&&<section className="v5-work-list">{live.length?live.map(s=><article key={s.sessionId}><small>{s.agentId}</small><h2>{s.name}</h2><p>{s.objective||s.message||'Aucun objectif observé'}</p><span>{s.phase}</span><div><button onClick={()=>{sessionStorage.setItem('obsidia-selected-session',s.sessionId);focus('session:'+s.sessionId);setWorkspaceArea(s.agentId==='brody'?'brody':s.agentId==='obsidure'?'obsidure':s.agentId==='cli'?'cli':'home')}}>Continuer</button><button onClick={()=>{focus('session:'+s.sessionId);go('agents')}}>Voir l’agent</button></div></article>):<p className="v5-empty">Aucune session live.</p>}</section>}
     {(['brody','obsidure','cli'] as const).includes(workspaceArea as 'brody'|'obsidure'|'cli')&&(()=>{const tool=workspaceArea as 'brody'|'obsidure'|'cli';const s=activeTool(tool);const process=s?processes.find(p=>p.sessionId===s.sessionId):undefined;const conversation=(s?.events||[]).filter(e=>e.phase==='INPUT_RECEIVED'||e.kind==='response');return <section className="v5-tool"><header><div><small>OUTIL</small><h2>{tool==='brody'?'Brody':tool==='obsidure'?'Obsidure':'CLI Obsidia'}</h2></div><span>{s?.presence==='live'?'SESSION ACTIVE':'PRÊT'}</span></header>{s&&<div className="v5-instance-strip"><span><small>INSTANCE</small><strong>{tool==='brody'?'Brody · API locale 8000':tool==='obsidure'?'Obsidure · runtime local':'CLI Obsidia · runtime local'}</strong></span><span><small>MODE</small><strong>{process?.native?'Terminal Windows':'Intégré interface'}</strong></span><span><small>SESSION</small><strong>{s.sessionId.slice(0,8)}</strong></span><span><small>SOURCE</small><strong>{s.source||'OBSIDIA_VISUAL_EVENT_V1'}</strong></span></div>}{tool==='brody'?<div className="v5-chat">{conversation.length?conversation.map((e,i)=>{const answer=e.kind==='response'?(String(e.result?.final_answer||e.result?.response||e.message||'')):(e.objective||e.message);return <article key={i}><strong>{e.phase==='INPUT_RECEIVED'?'Vous':'Brody'}</strong><p>{answer}</p></article>}):<p className="v5-empty">Écris directement ta demande.</p>}</div>:tool==='obsidure'?(process?.native?<div className="v5-tool-output"><h3>Terminal Windows actif</h3><p>{s?.objective||'Aucune mission active.'}</p><p>La sortie détaillée reste dans le terminal natif pour éviter de dupliquer le TUI dans Workspace.</p></div>:<div className="v5-tool-output"><h3>Mission / résultat</h3><p>{s?.objective||'Aucune mission active.'}</p><pre>{process?.output||s?.message||'Le résultat apparaîtra ici.'}</pre></div>):process?.native?<div className="v5-tool-output"><h3>Terminal Windows actif</h3><p>La console complète reste dans sa fenêtre native.</p></div>:<div className="v5-tool-output"><h3>Console</h3><pre>{process?.output||'CLI prête.'}</pre>{cliRuntime&&<details><summary>État runtime</summary><p><strong>{cliRuntime.state}</strong> · autorité {cliRuntime.decisionAuthority} · projection readonly</p><div className="v5-cli-runtime">{cliRuntime.services.map(x=><p key={x.id}><strong>{x.label}</strong> · {x.status} <small>{x.evidence}</small></p>)}</div></details>}</div>}{process?.native?<div className="v5-terminal-input-note"><strong>Saisie dans le terminal Windows</strong><p>Cette session a été lancée en terminal natif. Continue directement dans sa fenêtre Windows.</p></div>:<form className="v5-composer" onSubmit={e=>{e.preventDefault();void sendTool(tool)}}>{tool==='cli'?<input value={toolText} onChange={e=>setToolText(e.target.value)} onKeyDown={e=>composerKeyDown(e,tool)} placeholder="Commande / demande CLI"/>:<textarea value={toolText} onChange={e=>setToolText(e.target.value)} onKeyDown={e=>composerKeyDown(e,tool)} placeholder={tool==='brody'?'Écris à Brody…':'Décris la mission…'}/>}<button disabled={toolBusy||!toolText.trim()}>Envoyer</button></form>}<div className="v5-tool-actions">{!s||s.presence!=='live'?<button disabled={toolBusy} onClick={()=>runTool(tool)}>Démarrer</button>:<>{process?.native&&<button disabled={toolBusy} onClick={async()=>{try{await sessionAction('focus/'+s.sessionId)}catch(e){setMessage(String(e))}}}>Ouvrir le terminal</button>}<button disabled={toolBusy} onClick={()=>stopTool(tool)}>Arrêter</button></>}{tool==='obsidure'&&<><button disabled={toolBusy} onClick={()=>runTool('obsidure','audit')}>Audit rapide</button><button disabled={toolBusy} onClick={()=>runTool('obsidure','audit-long')}>Audit long</button></>}</div></section>})()}
