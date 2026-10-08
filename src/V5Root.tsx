@@ -461,7 +461,7 @@ export default function V5Root(){
   const toolArea=workspaceForAgent(session?.agentId||mission?.agentId||entity?.agentId||null)
   return {
    label:session?.name||entity?.label||mission?.actionId||'Aucun contexte sélectionné',
-   kind:session?'session':entity?.kind||mission?'mission':'aucun',
+   kind:session?'session':(entity?.kind||(mission?'mission':'aucun')),
    objective:session?.objective||session?.message||mission?.actionId||'Aucun objectif observé',
    blocker:mission?.primaryBlocker||'Aucun blocage de mission observé',
    next:mission?.recommendedNextStep||'Aucune action dérivée du contexte.',
