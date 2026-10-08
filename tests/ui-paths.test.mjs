@@ -403,3 +403,18 @@ test('Pokemon exposes recent observed agent evidence and session history without
  ]) assert.ok(pokemon.includes(invariant),invariant)
 })
 
+test('Pokemon shows only observed mission teammates and direct agent relations',()=>{
+ for(const invariant of [
+  "const agentNetwork=useMemo",
+  "mission?.sessionRefs",
+  "state.relations.filter(r=>anchors.has(r.from)||anchors.has(r.to))",
+  "ÉQUIPE & LIENS",
+  "SESSIONS DE LA MISSION",
+  "RELATIONS OBSERVÉES",
+  "Aucune autre session reliée à cette mission.",
+  "Aucune relation directe observée autour de cet agent.",
+  "Aucune collaboration n’est déduite",
+  "className=\"v5pk-agent-network\"",
+ ]) assert.ok(pokemon.includes(invariant),invariant)
+})
+
