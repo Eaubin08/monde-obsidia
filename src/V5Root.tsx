@@ -111,7 +111,45 @@ export default function V5Root(){
   }
   throw Error('API Obsidia non prête après relance du terminal')
  }
- const sendTool=async(tool:'brody'|'obsidure'|'cli')=>{if(!toolText.trim())return;setToolBusy(true);try{if(tool==='brody'||tool==='obsidure')await ensureBrodyApiTerminal();let s=activeTool(tool);let id=s?.presence==='live'?s.sessionId:'';if(!id){const d=await sessionAction('run',{mode:'interactive',tool});id=d.sessionId;sessionStorage.setItem('obsidia-selected-session',id);for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,150));const lr=await fetch('/obsidia-local/live');const ld=await lr.json();s=ld.sessions?.find((x:Session)=>x.sessionId===id);if(s?.phase==='WAITING_INPUT')break}}await sessionAction('input/'+id,{text:toolText.trim()});setToolText('')}catch(e){setMessage(String(e))}finally{setToolBusy(false)}}
+ const waitForToolInput=async(id:string)=>{
+  const deadline=Date.now()+20000
+  while(Date.now()<deadline){
+   const lr=await fetch('/obsidia-local/live')
+   if(lr.ok){
+    const ld=await lr.json()
+    const current=ld.sessions?.find((x:Session)=>x.sessionId===id)
+    if(current?.presence==='ended')throw Error('Session terminée avant la saisie')
+    if(current?.phase==='WAITING_INPUT')return
+   }
+   await new Promise(r=>setTimeout(r,200))
+  }
+  throw Error('Session non prête pour la saisie après 20 s')
+ }
+ const sendTool=async(tool:'brody'|'obsidure'|'cli')=>{
+  const text=toolText.trim()
+  if(!text)return
+  setToolBusy(true)
+  setMessage(tool+' · préparation…')
+  try{
+   if(tool==='brody'||tool==='obsidure')await ensureBrodyApiTerminal()
+   let s=activeTool(tool)
+   let id=s?.presence==='live'?s.sessionId:''
+   if(!id){
+    const d=await sessionAction('run',{mode:'interactive',tool})
+    id=d.sessionId||''
+    if(id)sessionStorage.setItem('obsidia-selected-session',id)
+   }
+   if(!id)throw Error('Aucune session interface disponible')
+   await waitForToolInput(id)
+   await sessionAction('input/'+id,{text})
+   setToolText('')
+   setMessage(tool+' · demande envoyée')
+  }catch(e){
+   setMessage(e instanceof Error?e.message:String(e))
+  }finally{
+   setToolBusy(false)
+  }
+ }
  const stopTool=async(tool:'brody'|'obsidure'|'cli')=>{const s=activeTool(tool);if(!s)return;setToolBusy(true);try{await sessionAction('stop/'+s.sessionId);setMessage(tool+' arrêté')}catch(e){setMessage(String(e))}finally{setToolBusy(false)}}
 
  const composerKeyDown=(e:KeyboardEvent<HTMLInputElement|HTMLTextAreaElement>,tool:'brody'|'obsidure'|'cli')=>{
