@@ -463,3 +463,25 @@ test('Pokemon post V5 remains a readonly QUI projection with shared cross-view c
  ]) assert.equal(pokemon.includes(forbidden),false,forbidden)
 })
 
+test('Monde Workspace and Pokemon share one context without changing object kind or authority',()=>{
+ for(const invariant of [
+  "sessionStorage.setItem('obsidia-focus-entity',id)",
+  "window.dispatchEvent(new CustomEvent('obsidia-context'",
+  "window.addEventListener('obsidia-context'",
+  "window.dispatchEvent(new CustomEvent('obsidia-world-zone'",
+  "sessionStorage.setItem('obsidia-workspace-area'",
+ ]) assert.ok((root+'\n'+pokemon).includes(invariant),invariant)
+
+ assert.ok(root.includes("kind:session?'session':(entity?.kind||(mission?'mission':'aucun'))"))
+ assert.ok(root.includes("shared?.decisionAuthority||'KX108_ONLY'"))
+ assert.ok(pokemon.includes("current.decisionAuthority||'KX108_ONLY'"))
+
+ for(const forbidden of [
+  "canonicalTruth:true",
+  "decisionAuthority:'WORKSPACE'",
+  "decisionAuthority:'POKEMON'",
+  "workspaceCanonicalTruth",
+  "pokemonCanonicalTruth",
+ ]) assert.equal((root+'\n'+pokemon).includes(forbidden),false,forbidden)
+})
+
