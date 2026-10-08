@@ -131,9 +131,9 @@ test('Monde exposes navigable territories without inventing new runtime truth',(
   "Gouvernance & preuves",
   "Objets & résultats",
   "Couches documentaires",
-  "territory:'+t.zone",
-  "item.id.startsWith('territory:')",
-  "setWorldZone(item.id.slice(10) as WorldZone)",
+  "const territoryCards=useMemo",
+  "territoryCards.map(t=>",
+  "setWorldZone(t.zone)",
  ]) assert.ok(root.includes(invariant),invariant)
 })
 
