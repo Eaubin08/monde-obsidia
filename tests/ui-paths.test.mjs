@@ -485,3 +485,39 @@ test('Monde Workspace and Pokemon share one context without changing object kind
  ]) assert.equal((root+'\n'+pokemon).includes(forbidden),false,forbidden)
 })
 
+test('Post V5 new Monde final architecture keeps one readonly projection and preserved view boundaries',()=>{
+ for(const invariant of [
+  "MONDE",
+  "WORKSPACE",
+  "Pokémon",
+  "const territoryCards=useMemo",
+  "const worldOperational=useMemo",
+  "const workspaceContext=useMemo",
+  "const workspaceContinuity=useMemo",
+  "const workspaceSummary=useMemo",
+  "const agentContext=useMemo",
+  "const agentNetwork=useMemo",
+  "const agentOperational=useMemo",
+  "shared?.decisionAuthority||'KX108_ONLY'",
+  "current.decisionAuthority||'KX108_ONLY'",
+ ]) assert.ok((root+'\n'+pokemon).includes(invariant),invariant)
+ for(const invariant of [
+  "readonly:true",
+  "canonicalTruth:false",
+  "decisionAuthority:'KX108_ONLY'",
+  "views:{",
+  "world:{entityRefs:",
+  "workspace:{entityRefs:",
+  "pokemon:{entityRefs:",
+ ]) assert.ok(stateProjection.includes(invariant),invariant)
+ for(const forbidden of [
+  "canonicalTruth:true",
+  "decisionAuthority:'WORKSPACE'",
+  "decisionAuthority:'POKEMON'",
+  "decisionAuthority:'MONDE'",
+  "workspaceCanonicalTruth",
+  "pokemonCanonicalTruth",
+  "worldCanonicalTruth",
+ ]) assert.equal((root+'\n'+pokemon+'\n'+stateProjection).includes(forbidden),false,forbidden)
+})
+
