@@ -26,13 +26,13 @@ type C53View={status:string;recordCount:number;records:{decisionRecordId:string;
 type C5View={schema:string;status:string;organizationFilter?:string|null;recordCount:number;records:{organizationId:string;domainId:string;capabilityId:string;gate:string;status:string;evidenceGrade:string;decisionRecordId:string;receiptId:string;canExecute:boolean}[];executionAllowed:boolean}
 
 const nav:[View,string][]=[['world','Monde'],['workspace','Workspace'],['agents','Pokémon'],['search','Recherche']]
-const zones:[WorldZone,string][]=[['home','Vue globale'],['territories','Territoires'],['activity','Activité'],['rnd','R&D / Build'],['agents','Agents & organes'],['governance','Gouvernance & preuves'],['universal','CSSA & Universalité'],['knowledge','Objets & résultats'],['domains','Domaines'],['layers','Couches documentaires']]
+const zones:[WorldZone,string][]=[['home','Vue globale'],['territories','Territoires'],['activity','Activité'],['rnd','R&D / Build'],['agents','Agents & organes'],['governance','Gouvernance & preuves'],['universal','Entreprises & Organisations'],['knowledge','Objets & résultats'],['domains','Domaines'],['layers','Couches documentaires']]
 const territories:{id:string;label:string;zone:Exclude<WorldZone,'home'|'territories'>;summary:string;glyph:string}[]=[
  ['terrain','Terrains & domaines','domains','Bank · Trading · E-commerce · GPS / Défense / Aviation','◫'],
  ['forge','R&D / Build','rnd','Branches, worktrees et chantiers de construction','⬡'],
  ['population','Agents & organes','agents','Population connue et organes raccordés','◇'],
  ['authority','Gouvernance & preuves','governance','Décisions, receipts, impacts et frontières KX108','◆'],
- ['universal','CSSA & Universalité','universal','Organisations, délégations et capacités gouvernées (lecture seule)','◈'],
+ ['universal','Entreprises & Organisations','universal','Structures raccordées au moteur universel et leurs métiers propres','◈'],
  ['knowledge','Objets & résultats','knowledge','Résultats, artefacts, objectifs et dépôts','▤'],
  ['layers','Couches documentaires','layers','Cartes, contrats et documentation des couches','▦'],
 ].map(([id,label,zone,summary,glyph])=>({id,label,zone:zone as Exclude<WorldZone,'home'|'territories'>,summary,glyph}))
@@ -663,7 +663,7 @@ export default function V5Root(){
     </nav>
     <nav className="v5-zonebar">{zones.map(([id,label])=><button key={id} aria-pressed={worldZone===id} onClick={()=>{setSelectedMechanism('');setWorldZone(id)}}>{label}</button>)}</nav>
     {worldZone==='universal'&&<UniversalOrganizationsPage state={universalC5} observedCount={observedC53?.recordCount??0}/>}
-    {(worldZone==='governance'||worldZone==='universal')&&<section className="v5-panel" aria-label="Universal C5 — Organisations">
+    {worldZone==='governance'&&<section className="v5-panel" aria-label="Universal C5 — Organisations">
       <header><div><small>UNIVERSAL C5 · READ-ONLY</small><h2>Organisation et capacités gouvernées</h2></div><span>KX108_ONLY · aucune exécution</span></header>
       <p>Source locale explicitement configurée. Une seule organisation autorisée par le serveur. Données absentes : aucune autorité inférée.</p>
       <p><strong>État : {universalC5?.status||'NON_OBSERVÉ'}</strong> · Organisation : {universalC5?.organizationFilter||'NON_CONFIGURÉE'} · {universalC5?.recordCount||0} preuve(s)</p>
@@ -673,7 +673,7 @@ export default function V5Root(){
        <small>Décision : {record.decisionRecordId} · Receipt : {record.receiptId} · exécution désactivée</small>
       </article>)}
      </section>}
-     {(worldZone==='governance'||worldZone==='universal')&&<section className="v5-panel" aria-label="C5.3 observations non attribuées">
+     {worldZone==='governance'&&<section className="v5-panel" aria-label="C5.3 observations non attribuées">
       <header><div><small>UNIVERSAL C5.3 · OBSERVATIONS</small><h2>Preuves non attribuées</h2></div><span>Lecture seule</span></header>
       <p>Identité organisationnelle non vérifiée. Liens décision-reçu observés, sans validation cryptographique ni autorisation d'action.</p>
       <p><strong>{observedC53?.status||'NON_OBSERVÉ'}</strong> · {observedC53?.recordCount||0} décision(s)</p>
