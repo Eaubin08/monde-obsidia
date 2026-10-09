@@ -13,6 +13,43 @@ $env:OBSIDIA_TERMINAL_COLOR = '1'
 $env:OBSIDURE_COLOR = '1'
 $Api = 'http://127.0.0.1:8000'
 
+function Test-ServicePort {
+  param([int]$Port)
+  try {
+    $tcp = New-Object System.Net.Sockets.TcpClient
+    $iar = $tcp.BeginConnect('127.0.0.1', $Port, $null, $null)
+    $ok = $iar.AsyncWaitHandle.WaitOne(400) -and $tcp.Connected
+    $tcp.Close()
+    return $ok
+  } catch { return $false }
+}
+
+function Wait-ServicePort {
+  param([int]$Port,[string]$Name,[int]$TimeoutSeconds=180)
+  $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+  while ((Get-Date) -lt $deadline) {
+    if (Test-ServicePort $Port) {
+      Write-Host "[$Name] ALLUME :$Port" -ForegroundColor Green
+      return
+    }
+    Start-Sleep -Milliseconds 500
+  }
+  throw "$Name non pret sur le port $Port apres $TimeoutSeconds s"
+}
+
+function Resolve-JarjarRoot {
+  $candidates = @(
+    $env:OBSIDIA_JARJAR_ROOT,
+    (Join-Path $env:USERPROFILE 'Desktop\Jarvis-iron-obsidia-github'),
+    (Join-Path $env:USERPROFILE 'Desktop\Jarvis-iron-obsidia-'),
+    'C:\Users\Aubin\Desktop\Jarvis-iron-obsidia-github',
+    'C:\Users\Aubin\Desktop\Jarvis-iron-obsidia-',
+    'C:\Users\User\Desktop\Jarvis-iron-obsidia-github',
+    'C:\Users\User\Desktop\Jarvis-iron-obsidia-'
+  ) | Where-Object { $_ } | Select-Object -Unique
+  return $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+}
+
 function Write-ServiceLine {
   param([string]$Line,[string]$Kind)
   if ($null -eq $Line) { return }
@@ -54,6 +91,54 @@ switch ($Service) {
     $env:PYTHONPATH = $Root
     $env:OBSIDIA_KERNEL_URL = 'http://127.0.0.1:3001/kernel/ragnarok'
     & cmd.exe /d /s /c "python -m uvicorn apps.obsidia_api.main:app --host 127.0.0.1 --port 8000 2>&1" | ForEach-Object { Write-ServiceLine ([string]$_) 'api' }
+  }
+  'qwen-text' {
+    [Console]::Title = 'QWEN TEXT 8080 - LOCAL GGUF'
+    Write-Host ''
+    Write-Host '============================================================' -ForegroundColor Cyan
+    Write-Host ' QWEN TEXT 8080 - LOCAL GGUF' -ForegroundColor Cyan
+    Write-Host '============================================================' -ForegroundColor Cyan
+    if (Test-ServicePort 8080) {
+      Write-Host 'Qwen texte deja ALLUME sur :8080.' -ForegroundColor Green
+      while (Test-ServicePort 8080) { Start-Sleep -Seconds 2 }
+      return
+    }
+    $llama = Join-Path $env:USERPROFILE 'Desktop\llama-b11193\llama-server.exe'
+    if (-not (Test-Path -LiteralPath $llama)) { throw "llama-server gele introuvable: $llama" }
+    $modelCandidates = @(
+      $env:OBSIDIA_QWEN_TEXT_MODEL,
+      (Join-Path $env:USERPROFILE 'Desktop\MODELS\QWEN\qwen2.5-3b-instruct-q4_k_m.gguf')
+    ) | Where-Object { $_ } | Select-Object -Unique
+    $model = $modelCandidates | Where-Object {
+      if (-not (Test-Path -LiteralPath $_)) { return $false }
+      try { (Get-Item -LiteralPath $_).Length -gt 1000000000 } catch { $false }
+    } | Select-Object -First 1
+    if (-not $model) { throw 'Qwen texte local complet introuvable. Aucun telechargement automatique.' }
+    $logDir = Join-Path $env:LOCALAPPDATA 'Obsidia'
+    New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+    $log = Join-Path $logDir 'jarjar_qwen_text_llama.log'
+    Write-Host "Modele : $model" -ForegroundColor DarkGray
+    Write-Host "Serveur: $llama" -ForegroundColor DarkGray
+    & $llama -m $model --host 127.0.0.1 --port 8080 -c 4096 --log-file $log --log-verbosity 5 --log-colors off
+  }
+  'qwen-vl' {
+    [Console]::Title = 'QWEN-VL 8081 - VISION LOCAL'
+    Write-Host ''
+    Write-Host '============================================================' -ForegroundColor Cyan
+    Write-Host ' QWEN-VL 8081 - VISION LOCAL' -ForegroundColor Cyan
+    Write-Host '============================================================' -ForegroundColor Cyan
+    if (Test-ServicePort 8081) {
+      Write-Host 'Qwen-VL deja ALLUME sur :8081.' -ForegroundColor Green
+      while (Test-ServicePort 8081) { Start-Sleep -Seconds 2 }
+      return
+    }
+    $jarjar = Resolve-JarjarRoot
+    if (-not $jarjar) { throw 'Repo Jarjar introuvable pour Qwen-VL.' }
+    $launcher = Join-Path $jarjar 'scripts\start_qwen_vl.ps1'
+    if (-not (Test-Path -LiteralPath $launcher)) { throw "Launcher Qwen-VL introuvable: $launcher" }
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $launcher
+    Wait-ServicePort 8081 'QWEN-VL' 180
+    while (Test-ServicePort 8081) { Start-Sleep -Seconds 2 }
   }
   'gps-defense' {
     [Console]::Title = 'GPS/AVIATION LIVE -> KERNEL BRIDGE'
