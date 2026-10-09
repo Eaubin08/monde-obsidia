@@ -88,9 +88,23 @@ if($LASTEXITCODE -ne 0){
   throw 'Installation Python OpenJarvis impossible'
 }
 
-& $python -c "import openjarvis; print('OPENJARVIS_IMPORT_OK')"
+$obsidiaRequirements = Join-Path $ojRoot 'requirements.txt'
+if(-not (Test-Path -LiteralPath $obsidiaRequirements)){
+  throw "Requirements Obsidia introuvables: $obsidiaRequirements"
+}
+
+& $python -c "import fastapi, pydantic, requests, yaml" 2>$null
 if($LASTEXITCODE -ne 0){
-  throw 'Import OpenJarvis impossible apres installation'
+  Write-Host "Installation des dependances runtime Obsidia dans le venv OpenJarvis..." -ForegroundColor Yellow
+  & $python -m pip install --disable-pip-version-check -r $obsidiaRequirements
+  if($LASTEXITCODE -ne 0){
+    throw 'Installation des dependances runtime Obsidia impossible'
+  }
+}
+
+& $python -c "import openjarvis, fastapi; print('OPENJARVIS_OBSIDIA_IMPORT_OK')"
+if($LASTEXITCODE -ne 0){
+  throw 'Import OpenJarvis/Obsidia impossible apres installation'
 }
 
 $env:OBSIDIA_OPENJARVIS_SOURCE = $upstream
