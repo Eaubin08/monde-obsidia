@@ -7,11 +7,12 @@ type JarjarStatus={state:'OFFLINE'|'STARTING'|'READY'|'DEGRADED';managed:boolean
 const launchable=[
  ['brody','Brody','agent'],['obsidure','Obsidure','agent'],['cli','CLI Obsidia','agent'],
  ['kernel-x108','Kernel X108','service'],['obsidia-api','API Obsidia + Brody + Native Memory','service'],
+ ['qwen-text','Qwen texte · :8080','service'],['qwen-vl','Qwen-VL · :8081','service'],
  ['gps-defense','GPS / Defense / Aviation','service'],['trading-x108','Trading → X108','service'],
  ['brody-enriched','Brody Enriched','service'],['obsidure-dry','Obsidure DryRun','service'],
  ['jarvis','Jarvis','future']
 ] as const
-const nativeIds=new Set(['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
+const nativeIds=new Set(['kernel-x108','obsidia-api','qwen-text','qwen-vl','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
 
 export default function V5Launchers(){
  const [state,setState]=useState<State|null>(null)
@@ -52,7 +53,7 @@ export default function V5Launchers(){
    <p>Autorité {jarjar?.decisionAuthority||'KX108_ONLY'} · entrée {jarjar?.inputMode||'non observée'} · cognition {jarjar?.cognitionSource||'en attente'}</p>
    <div className="v5pk-components">{[['Kernel',jarjar?.components.kernel.ready],['API/Brody',jarjar?.components.brodyApi.ready],['Qwen',jarjar?.components.qwenText.ready],['Qwen-VL',jarjar?.components.qwenVL.ready],['HUD',jarjar?.components.hud.ready]].map(([n,ok])=><span key={String(n)} className={ok?'ok':''}>{String(n)} · {ok?'READY':'OFFLINE'}</span>)}</div>
    {jarjar&&!jarjar.components.qwenText.ready&&jarjar.qwenTextDiagnostic&&<details className="v5pk-diagnostic"><summary>Diagnostic Qwen texte</summary><pre>{jarjar.qwenTextDiagnostic}</pre></details>}
-   <div className="v5pk-actions">{jarjar?.state==='OFFLINE'?<button disabled={launching==='jarjar'} onClick={()=>launch('jarjar')}>Lancer Jarjar</button>:jarjar?.managed?<><button onClick={()=>launch('jarjar')}>Ouvrir / réutiliser</button><button disabled={launching==='jarjar'} onClick={stopJarjar}>Arrêter Jarjar</button></>:<button onClick={()=>launch('jarjar')}>Lancer / ouvrir</button>}</div>
+   <div className="v5pk-actions">{jarjar?.state==='OFFLINE'?<button disabled={launching==='jarjar'} onClick={()=>launch('jarjar')}>Lancer Jarjar</button>:jarjar?.managed?<><button style={jarjar?.components.qwenText.ready?{background:'#0d5f31',borderColor:'#27d76f',color:'#d9ffe8'}:undefined} onClick={()=>launch('jarjar')}>{jarjar?.components.qwenText.ready?'ONLINE · Ouvrir':'Ouvrir / réutiliser'}</button><button disabled={launching==='jarjar'} onClick={stopJarjar}>Arrêter Jarjar</button></>:<button style={jarjar?.components.qwenText.ready?{background:'#0d5f31',borderColor:'#27d76f',color:'#d9ffe8'}:undefined} onClick={()=>launch('jarjar')}>{jarjar?.components.qwenText.ready?'ONLINE · Ouvrir':'Lancer / ouvrir'}</button>}</div>
   </article>
 
   <div className="v5-launcher-groups">
