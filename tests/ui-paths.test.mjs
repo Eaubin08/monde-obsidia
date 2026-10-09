@@ -48,10 +48,14 @@ test('Workspace system services expose Qwen live state and lit buttons',()=>{
   "PORT_8081_CANONICAL_PROCESS",
  ]) assert.ok(bridge.includes(invariant),invariant)
  for(const invariant of [
+  "<button disabled={launching===id} onClick={()=>launch(id)}>Lancer terminal</button>",
+  "jarjar?.components.qwenText.ready?'ok':''",
+  "jarjar?.components.qwenText.ready?'Qwen allumé · Ouvrir'",
+ ]) assert.ok(launchers.includes(invariant),invariant)
+ for(const forbidden of [
   "status==='READY'?<button disabled>ALLUMÉ</button>",
   "status==='STARTING'?<button disabled>ALLUMAGE…</button>",
-  "jarjar.state==='READY'?'ALLUMÉ · Ouvrir'",
- ]) assert.ok(launchers.includes(invariant),invariant)
+ ]) assert.equal(launchers.includes(forbidden),false,forbidden)
  for(const invariant of [
   "'qwen-text' {",
   "'qwen-vl' {",
