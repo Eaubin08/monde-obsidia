@@ -7,11 +7,12 @@ type JarjarStatus={state:'OFFLINE'|'STARTING'|'READY'|'DEGRADED';managed:boolean
 const launchable=[
  ['brody','Brody','agent'],['obsidure','Obsidure','agent'],['cli','CLI Obsidia','agent'],
  ['kernel-x108','Kernel X108','service'],['obsidia-api','API Obsidia + Brody + Native Memory','service'],
+ ['qwen-text','Qwen texte · :8080','service'],['qwen-vl','Qwen-VL · :8081','service'],
  ['gps-defense','GPS / Defense / Aviation','service'],['trading-x108','Trading → X108','service'],
  ['brody-enriched','Brody Enriched','service'],['obsidure-dry','Obsidure DryRun','service'],
  ['jarvis','Jarvis','future']
 ] as const
-const nativeIds=new Set(['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
+const nativeIds=new Set(['kernel-x108','obsidia-api','qwen-text','qwen-vl','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
 
 export default function V5Launchers(){
  const [state,setState]=useState<State|null>(null)
