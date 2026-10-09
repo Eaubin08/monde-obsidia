@@ -608,7 +608,7 @@ export default function V5Root(){
 
   <section className="v5-app">
    <header className="v5-topbar">
-    <div className="v5-top-search"><span>⌕</span><input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} onFocus={()=>{if(view!=='search')go('search')}} placeholder="Rechercher un agent, une mission, un fichier, un domaine…" /></div>
+    <div className="v5-top-search"><span>⌕</span><input value={searchQuery} onChange={e=>{setSearchQuery(e.target.value);if(view!=='search'&&e.target.value.trim())go('search')}} placeholder="Rechercher un agent, une mission, un fichier, un domaine…" /></div>
     <div className="v5-system"><span className={coreRuntimeReady||snap?.available?'on':''}/><div><strong>{coreRuntimeReady?'Core LIVE':snap?.available?'Sources disponibles':'Hors ligne'}</strong><small>{coreRuntimeReady?'Kernel + API observés':snap?.available?'Sources Git disponibles · runtime core non observé':'Connexion indisponible'}</small></div></div>
     <div className="v5-core"><strong>Obsidia Core</strong><small>{snap?.branch||'branche inconnue'} · {snap?.sha?.slice(0,7)||'—'}</small></div>
    </header>
