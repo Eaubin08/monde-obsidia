@@ -25,8 +25,27 @@ if(-not (Test-Path -LiteralPath $root)){
   if($LASTEXITCODE -ne 0){ throw 'Clone obsidia-x108-proofs impossible' }
 }else{
   Write-Host "Dossier existant: $root" -ForegroundColor Green
-  if(Test-Path -LiteralPath (Join-Path $root '.git')){
-    git -C $root fetch origin "$obsidiaBranch`:refs/remotes/origin/$obsidiaBranch"
+
+  $gitDir = Join-Path $root '.git'
+  if(-not (Test-Path -LiteralPath $gitDir)){
+    $backup = "$root.partial-" + (Get-Date -Format 'yyyyMMdd-HHmmss')
+    Write-Host "Dossier partiel non Git detecte. Sauvegarde -> $backup" -ForegroundColor Yellow
+    Move-Item -LiteralPath $root -Destination $backup
+    git clone --branch $obsidiaBranch --single-branch $obsidiaRepo $root
+    if($LASTEXITCODE -ne 0){ throw 'Clone obsidia-x108-proofs impossible apres sauvegarde du dossier partiel' }
+  }else{
+    $originUrl = (git -C $root remote get-url origin 2>$null)
+    if($LASTEXITCODE -ne 0 -or -not $originUrl){
+      Write-Host "Remote origin absent: ajout de $obsidiaRepo" -ForegroundColor Yellow
+      git -C $root remote add origin $obsidiaRepo
+      if($LASTEXITCODE -ne 0){ throw 'Impossible d ajouter le remote origin OpenJarvis Obsidia' }
+    }elseif($originUrl.Trim() -ne $obsidiaRepo){
+      Write-Host "Remote origin corrige -> $obsidiaRepo" -ForegroundColor Yellow
+      git -C $root remote set-url origin $obsidiaRepo
+      if($LASTEXITCODE -ne 0){ throw 'Impossible de corriger le remote origin OpenJarvis Obsidia' }
+    }
+
+    git -C $root fetch origin ($obsidiaBranch + ':refs/remotes/origin/' + $obsidiaBranch)
     if($LASTEXITCODE -ne 0){ throw 'git fetch OpenJarvis Obsidia impossible' }
 
     git -C $root show-ref --verify --quiet "refs/heads/$obsidiaBranch"
