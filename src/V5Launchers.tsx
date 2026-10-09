@@ -12,7 +12,7 @@ const launchable=[
  ['brody-enriched','Brody Enriched','service'],['obsidure-dry','Obsidure DryRun','service'],
  ['jarvis','Jarvis','future']
 ] as const
-const nativeIds=new Set(['kernel-x108','obsidia-api','qwen-text','qwen-vl','open-jarvis','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
+const nativeIds=new Set(['kernel-x108','obsidia-api','qwen-text','qwen-vl','open-jarvis','open-jarvis-ui','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
 const openJarvisUiUrl=(import.meta.env.VITE_OPENJARVIS_UI_URL as string|undefined)||'http://127.0.0.1:5173'
 
 export default function V5Launchers(){
@@ -60,7 +60,7 @@ export default function V5Launchers(){
   <div className="v5-launcher-groups">
    <section>
     <header><small>AGENTS / OUTILS</small><h3>Sessions de travail</h3></header>
-    <div className="v5pk-launch-grid">{launchable.filter(x=>x[2]==='agent').map(([id,label])=>{const active=(id==='open-jarvis'?native:agents).find(s=>s.agentId===id);return <article key={id} className={active?'active':'ready'}><div><strong>{label}</strong><span>{active?'LIVE':'PRÊT'}</span></div><p>{active?.objective||active?.message||(active?'Session active':'Disponible')}</p><div className="v5pk-actions"><button disabled={launching===id} onClick={()=>launch(id)}>{active?'Ouvrir / réutiliser':'Lancer'}</button>{id==='open-jarvis'&&<a href={openJarvisUiUrl} target="_blank" rel="noreferrer">Ouvrir UI</a>}{active&&<button onClick={()=>focus('session:'+active.sessionId)}>Contexte</button>}</div></article>})}</div>
+    <div className="v5pk-launch-grid">{launchable.filter(x=>x[2]==='agent').map(([id,label])=>{const active=(id==='open-jarvis'?native:agents).find(s=>s.agentId===id);return <article key={id} className={active?'active':'ready'}><div><strong>{label}</strong><span>{active?'LIVE':'PRÊT'}</span></div><p>{active?.objective||active?.message||(active?'Session active':'Disponible')}</p><div className="v5pk-actions"><button disabled={launching===id} onClick={()=>launch(id)}>{id==='open-jarvis'?(active?'Ouvrir / réutiliser CLI':'Lancer CLI'):(active?'Ouvrir / réutiliser':'Lancer')}</button>{id==='open-jarvis'&&<button disabled={launching==='open-jarvis-ui'} onClick={()=>launch('open-jarvis-ui')}>Lancer UI</button>}{id==='open-jarvis'&&<a href={openJarvisUiUrl} target="_blank" rel="noreferrer">Ouvrir UI</a>}{active&&<button onClick={()=>focus('session:'+active.sessionId)}>Contexte</button>}</div></article>})}</div>
    </section>
 
    <section>
