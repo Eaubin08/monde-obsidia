@@ -73,6 +73,28 @@ const authorizationFixture={
  checkpoint_projection:{...fixture,mission_id:'mission-f6d1',checkpoint:{checkpoint_id:'smc-f6d1-post'}},
 }
 
+const verificationFixture={
+ schema_version:'OBSIDURE_SUPERVISED_MISSION_VERIFICATION_OPERATOR_API_V1',
+ status:'R12_F6_D2_VERIFICATION_ASSESSED',
+ state:'CLOSURE_BLOCKED',
+ reason:'BINDER_DECISION_RECONSTRUCTION_REQUIRED',
+ mission_id:'mission-f6d2',
+ ticket_id:'ticket-a',
+ checkpoint_id:'smc-f6d2',
+ closure_eligibility:'CLOSURE_BLOCKED',
+ receipt_integrity:{r8_replay_verdict:'VERIFIED_WITH_LIMITS'},
+ r8_replay:{binder_replay_status:'INLINE_STATUS_ONLY',verified_with_limits:true},
+ binder_independence:{fully_independent:false,limitation:'BINDER_DECISION_RECONSTRUCTION_REQUIRED'},
+ verification_assessment:{status:'R12_F5_C2_INDEPENDENT_VERIFICATION_HELD',reason:'BINDER_DECISION_RECONSTRUCTION_REQUIRED'},
+ authority:'NONE',
+ decision_authority:'KX108_ONLY',
+ executor_invoked:false,
+ approval_created:false,
+ memory_write:false,
+ token:'hidden',
+ local_root:'C:/secret/root',
+}
+
 async function withServers(handler){
  const api=createServer(handler)
  await new Promise(resolve=>api.listen(0,'127.0.0.1',resolve))
@@ -267,4 +289,57 @@ test('authorization handoff proxy preserves HOLD and upstream auth failures',asy
   assert.equal(data.reason,'UPSTREAM_AUTH_DENIED')
   assert.equal(data.executor_invoked,false)
  }finally{denied.api.close();denied.monde.close()}
+})
+
+test('verification projection proxy exposes closure limits without authority',async()=>{
+ let auth=''
+ const servers=await withServers((req,res)=>{
+  auth=req.headers['x-api-key']||''
+  assert.equal(req.url,'/api/supervised-missions/mission-f6d2/verification-projection?checkpoint_id=smc-f6d2&ticket_id=ticket-a')
+  res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify(verificationFixture))
+ })
+ try{
+  const response=await fetch(servers.base+'/obsidia-local/supervised-mission/verification-projection?mission_id=mission-f6d2&checkpoint_id=smc-f6d2&ticket_id=ticket-a')
+  const data=await response.json()
+  assert.equal(response.status,200)
+  assert.equal(auth,'secret')
+  assert.equal(data.monde_proxy_schema,'OBSIDIA_MONDE_SUPERVISED_MISSION_VERIFICATION_PROXY_V1')
+  assert.equal(data.closure_eligibility,'CLOSURE_BLOCKED')
+  assert.equal(data.binder_independence.limitation,'BINDER_DECISION_RECONSTRUCTION_REQUIRED')
+  assert.equal(data.executor_invoked,false)
+  assert.equal(data.approval_created,false)
+  assert.equal(data.local_root,undefined)
+  assert.equal(data.token,undefined)
+ }finally{servers.api.close();servers.monde.close()}
+})
+
+test('verification assessment proxy posts explicit evidence and preserves HOLD',async()=>{
+ let posted=null
+ const servers=await withServers((req,res)=>{
+  assert.equal(req.url,'/api/supervised-missions/mission-f6d2/verify-ticket')
+  let body=''
+  req.on('data',chunk=>{body+=chunk})
+  req.on('end',()=>{
+   posted=JSON.parse(body)
+   res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify(verificationFixture))
+  })
+ })
+ try{
+  const response=await fetch(servers.base+'/obsidia-local/supervised-mission/verify-ticket',{
+   method:'POST',
+   headers:{Origin:servers.base,'Content-Type':'application/json'},
+   body:JSON.stringify({mission_id:'mission-f6d2',checkpoint_id:'smc-f6d2',ticket_id:'ticket-a',verification_evidence:{verification_id:'ver-f6d2',api_key:'hidden'}}),
+  })
+  const data=await response.json()
+  assert.equal(response.status,200)
+  assert.equal(posted.verification_evidence.verification_id,'ver-f6d2')
+  assert.equal(data.monde_proxy_schema,'OBSIDIA_MONDE_SUPERVISED_MISSION_VERIFICATION_ASSESSMENT_PROXY_V1')
+  assert.equal(data.closure_eligibility,'CLOSURE_BLOCKED')
+  assert.equal(data.reason,'BINDER_DECISION_RECONSTRUCTION_REQUIRED')
+  assert.equal(data.executor_invoked,false)
+  assert.equal(data.approval_created,false)
+  assert.equal(data.memory_write,false)
+  assert.equal(data.local_root,undefined)
+  assert.equal(data.token,undefined)
+ }finally{servers.api.close();servers.monde.close()}
 })

@@ -4,6 +4,7 @@ type Ticket={ticket_id:string;objective?:string;dependency_ids:string[];status:s
 type Projection={schema_version?:string;status:string;reason?:string;mission_id?:string;original_goal?:string;mandate?:{human_mandate_reference?:string;status?:string;revoked?:boolean};project?:{repository_identity?:string;branch?:string;base_sha?:string;worktree_visible?:boolean;local_root_visible?:boolean};tickets?:Ticket[];unique_next_ticket_id?:string;hold?:{reason?:string;root_causes?:unknown[];transitive_blocks?:unknown[]};budget?:Record<string,unknown>;timebox?:Record<string,unknown>;pending_approvals?:unknown[];evidence?:{evidence_refs?:string[];action_evidence_refs?:string[];receipt_refs?:string[]};verification?:{ticket_levels?:Record<string,string>;mission_completion_proof_ref?:Record<string,unknown>|null};binder_replay?:{independent_replay_available?:boolean;limitations?:string[]};checkpoint?:{checkpoint_id?:string;integrity_digest?:string;resume_status?:string};next_step?:{status?:string;selected_ticket_id?:string;requested_operation?:string;hold_reason?:string};status_distinctions?:Record<string,boolean>;readonly?:boolean;authority?:string;decision_authority?:string;executor_invoked?:boolean;approval_created?:boolean;memory_write?:boolean}
 type PrepareResult={status:string;state?:string;reason?:string;mission_id?:string;checkpoint_id?:string;checkpoint_projection?:Projection;hold_reasons?:string[];provider_provenance?:Record<string,unknown>;authority?:string;decision_authority?:string;executor_invoked?:boolean;approval_created?:boolean;memory_write?:boolean}
 type AuthorizationResult={status:string;state?:string;reason?:string;mission_id?:string;ticket_id?:string;checkpoint_id?:string;checkpoint_projection?:Projection;execution_phase?:string;action_evidence_id?:string;execution_outcome?:Record<string,unknown>;r8_receipt?:string;r10_repair_classification?:Record<string,unknown>;authority?:string;decision_authority?:string;executor_invoked?:boolean;approval_created?:boolean;memory_write?:boolean}
+type VerificationResult={status:string;state?:string;reason?:string;mission_id?:string;ticket_id?:string;checkpoint_id?:string;verification_projection?:Record<string,unknown>;verification_assessment?:Record<string,unknown>;receipt_integrity?:Record<string,unknown>;r8_replay?:Record<string,unknown>;binder_independence?:Record<string,unknown>;closure_eligibility?:string;authority?:string;decision_authority?:string;executor_invoked?:boolean;approval_created?:boolean;memory_write?:boolean}
 
 const statusOrder=['PREPARED','AUTHORIZED','EXECUTED_OBSERVED','AWAITING_VERIFICATION','VERIFIED','CLOSED','MISSION_DONE_VERIFIED','HOLD']
 const prepareStates=['PREPARED_AWAITING_APPROVAL','HOLD','UNAVAILABLE','ERROR']
@@ -16,6 +17,7 @@ export default function SupervisedMissionPanel(){
  const [missionId,setMissionId]=useState(''),[checkpointId,setCheckpointId]=useState(''),[projection,setProjection]=useState<Projection|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(false)
  const [goal,setGoal]=useState(''),[mandateRef,setMandateRef]=useState(''),[repoId,setRepoId]=useState(''),[worktree,setWorktree]=useState(''),[branch,setBranch]=useState(''),[baseSha,setBaseSha]=useState(''),[targetPaths,setTargetPaths]=useState(''),[operations,setOperations]=useState('MODIFY'),[tools,setTools]=useState('pytest'),[tests,setTests]=useState(''),[budgets,setBudgets]=useState('{"max_attempts":1,"max_actions":1}'),[provider,setProvider]=useState('{"status":"VERIFIED","provider":"QWEN_LOCAL","model":"qwen2.5-3b-instruct-q4_k_m"}'),[artifacts,setArtifacts]=useState('{"phase1_candidate":{},"inventory_snapshot":{},"deficiency_evidence":{},"validation_evidence":{}}'),[prepareResult,setPrepareResult]=useState<PrepareResult|null>(null),[preparing,setPreparing]=useState(false)
  const [authTicket,setAuthTicket]=useState(''),[authEah,setAuthEah]=useState(''),[authRef,setAuthRef]=useState(''),[authResult,setAuthResult]=useState<AuthorizationResult|null>(null),[authorizing,setAuthorizing]=useState(false)
+ const [verifyTicket,setVerifyTicket]=useState(''),[verificationEvidence,setVerificationEvidence]=useState('{}'),[verificationResult,setVerificationResult]=useState<VerificationResult|null>(null),[verifying,setVerifying]=useState(false)
  async function submit(event:FormEvent){
   event.preventDefault();setLoading(true);setError('')
   try{
@@ -69,8 +71,18 @@ export default function SupervisedMissionPanel(){
    setAuthResult(data)
    if(data.checkpoint_id)setCheckpointId(data.checkpoint_id)
    if(data.mission_id)setMissionId(data.mission_id)
-   if(data.checkpoint_projection)setProjection(data.checkpoint_projection)
+  if(data.checkpoint_projection)setProjection(data.checkpoint_projection)
   }catch(e){setError(String(e).replace(/^Error:\s*/,''))}finally{setAuthorizing(false)}
+ }
+ async function verify(event:FormEvent){
+  event.preventDefault();setVerifying(true);setError('');setVerificationResult(null)
+  try{
+   const payload={mission_id:missionId.trim(),checkpoint_id:checkpointId.trim(),ticket_id:verifyTicket.trim(),verification_evidence:json(verificationEvidence)}
+   const response=await fetch('/obsidia-local/supervised-mission/verify-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+   const data=await response.json()
+   if(!response.ok)throw Error(data.error||'Vérification indisponible')
+   setVerificationResult(data)
+  }catch(e){setError(String(e).replace(/^Error:\s*/,''))}finally{setVerifying(false)}
  }
  const tickets=projection?.tickets||[]
  const unavailable=projection?.status==='UNAVAILABLE'
@@ -127,6 +139,23 @@ export default function SupervisedMissionPanel(){
    <strong>{authResult.state||authResult.status}</strong>
    <span>{authResult.reason||authResult.action_evidence_id||authResult.checkpoint_id||'Résultat reçu'}</span>
    <pre>{compact({mission_id:authResult.mission_id,ticket_id:authResult.ticket_id,checkpoint_id:authResult.checkpoint_id,execution_phase:authResult.execution_phase,action_evidence_id:authResult.action_evidence_id,r8_receipt:authResult.r8_receipt,r10:authResult.r10_repair_classification,authority:authResult.authority,decision_authority:authResult.decision_authority,executor_invoked:authResult.executor_invoked,approval_created:authResult.approval_created,memory_write:authResult.memory_write})}</pre>
+  </div>}
+  {projection&&!unavailable&&<form className="supervised-prepare" onSubmit={verify} aria-label="Projection de vérification indépendante">
+   <div className="supervised-prepare-title"><div><span className="eyebrow">VÉRIFICATION INDÉPENDANTE</span><h4>Éligibilité de clôture · readonly</h4></div><span>aucune clôture automatique</span></div>
+   <section className="supervised-grid">
+    <div><h4>Observation ≠ vérification</h4><pre>{compact({tickets:tickets.map(t=>({ticket_id:t.ticket_id,phase:t.phase,verification_level:t.verification_level,closed:t.closed})),status_distinctions:projection.status_distinctions})}</pre></div>
+    <div><h4>Limite Binder</h4><pre>{compact({binder:projection.binder_replay,required:'BINDER_DECISION_RECONSTRUCTION_REQUIRED'})}</pre></div>
+   </section>
+   <div className="supervised-form-grid">
+    <label>Ticket à évaluer<input value={verifyTicket} onChange={e=>setVerifyTicket(e.target.value)} placeholder={selectedTicket?.ticket_id||'ticket-...'} maxLength={160}/></label>
+   </div>
+   <label>Preuve de vérification JSON<textarea value={verificationEvidence} onChange={e=>setVerificationEvidence(e.target.value)} maxLength={65536}/></label>
+   <button disabled={verifying||!missionId.trim()||!checkpointId.trim()||!verifyTicket.trim()}>{verifying?'Évaluation…':'Évaluer l’éligibilité'}</button>
+  </form>}
+  {verificationResult&&<div className={`supervised-prepare-result status-${verificationResult.state||verificationResult.status}`} role="status">
+   <strong>{verificationResult.closure_eligibility||verificationResult.state||verificationResult.status}</strong>
+   <span>{verificationResult.reason||'Projection de vérification reçue'}</span>
+   <pre>{compact({mission_id:verificationResult.mission_id,ticket_id:verificationResult.ticket_id,checkpoint_id:verificationResult.checkpoint_id,receipt_integrity:verificationResult.receipt_integrity,r8_replay:verificationResult.r8_replay,binder_independence:verificationResult.binder_independence,assessment:verificationResult.verification_assessment,authority:verificationResult.authority,decision_authority:verificationResult.decision_authority,executor_invoked:verificationResult.executor_invoked,approval_created:verificationResult.approval_created,memory_write:verificationResult.memory_write})}</pre>
   </div>}
   {projection&&<div className={unavailable?'supervised-unavailable':'supervised-content'}>
    {unavailable?<p role="status">UNAVAILABLE · {projection.reason||'API Obsidia indisponible'}</p>:<>

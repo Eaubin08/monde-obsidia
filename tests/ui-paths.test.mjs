@@ -108,6 +108,27 @@ test('Workspace exposes authorization handoff without minting authority',()=>{
  for(const forbidden of ['APPROVE','RESUME_EXECUTE','REPAIR'])assert.equal(supervisedPanel.includes(forbidden),false,forbidden)
 })
 
+test('Workspace exposes independent verification projection without closure controls',()=>{
+ for(const invariant of [
+  '/obsidia-local/supervised-mission/verify-ticket',
+  'VÉRIFICATION INDÉPENDANTE',
+  'Éligibilité de clôture · readonly',
+  'aucune clôture automatique',
+  'Observation ≠ vérification',
+  'BINDER_DECISION_RECONSTRUCTION_REQUIRED',
+  'Évaluer l’éligibilité',
+ ]) assert.ok(supervisedPanel.includes(invariant),invariant)
+ for(const invariant of [
+  "'/supervised-mission/verification-projection'",
+  "'/supervised-mission/verify-ticket'",
+  'supervisedMissionVerificationProjection',
+  'supervisedMissionVerifyTicket',
+  'OBSIDIA_MONDE_SUPERVISED_MISSION_VERIFICATION_PROXY_V1',
+  'OBSIDIA_MONDE_SUPERVISED_MISSION_VERIFICATION_ASSESSMENT_PROXY_V1',
+ ]) assert.ok(bridge.includes(invariant),invariant)
+ for(const forbidden of ['MARK_VERIFIED','CLOSE_MISSION','APPROVE','RESUME_EXECUTE','REPAIR'])assert.equal(supervisedPanel.includes(forbidden),false,forbidden)
+})
+
 test('Cross-view context remains shared',()=>{
  for(const invariant of ['obsidia-focus-entity','obsidia-context',"switchView('workspace')","switchView('agents')"])assert.ok(ecosystem.includes(invariant),invariant)
  for(const invariant of ['obsidia-selected-session','obsidia-context'])assert.ok(pokemon.includes(invariant),invariant)
