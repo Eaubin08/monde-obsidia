@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useState,type KeyboardEvent} from 'react'
 import V5Pokemon from './V5Pokemon'
 import V5Launchers from './V5Launchers'
+import CSSAPage from './CSSAPage'
 import {sessionAction} from './SessionControls'
 import './App.css'
 import './Office.css'
@@ -8,7 +9,7 @@ import './SourceOffice.css'
 import './Ecosystem.css'
 import './ui-v5.css'
 
-type View='world'|'workspace'|'agents'|'search'
+type View='world'|'workspace'|'agents'|'search'|'cssa'
 type WorkspaceArea='home'|'launchers'|'brody'|'obsidure'|'cli'|'files'
 type WorldZone='home'|'territories'|'activity'|'rnd'|'agents'|'governance'|'knowledge'|'domains'|'layers'
 type Agent={id:number;name:string;family:string;role:string|null;output:string|null}
@@ -22,7 +23,7 @@ type Shared={decisionAuthority:string;entities:Entity[];relations:{from:string;t
 type Process={sessionId:string;active:boolean;runtimeActive:boolean;native:boolean;surface?:'terminal'|'interface';tool:string;output:string}
 type CliRuntime={schema:string;readonly:boolean;canonicalTruth:boolean;decisionAuthority:string;state:string;services:{id:string;label:string;status:string;evidence:string}[];legacy:{graphiti:string;neo4j:string;ui5173:string};observedAt:string}
 
-const nav:[View,string][]=[['world','Monde'],['workspace','Workspace'],['agents','Pokémon'],['search','Recherche']]
+const nav:[View,string][]=[['world','Monde'],['workspace','Workspace'],['agents','Pokémon'],['search','Recherche'],['cssa','CSSA']]
 const zones:[WorldZone,string][]=[['home','Vue globale'],['territories','Territoires'],['activity','Activité'],['rnd','R&D / Build'],['agents','Agents & organes'],['governance','Gouvernance & preuves'],['knowledge','Objets & résultats'],['domains','Domaines'],['layers','Couches documentaires']]
 const territories:{id:string;label:string;zone:Exclude<WorldZone,'home'|'territories'>;summary:string;glyph:string}[]=[
  ['terrain','Terrains & domaines','domains','Bank · Trading · E-commerce · GPS / Défense / Aviation','◫'],
@@ -83,7 +84,7 @@ const territoryRelationTypes:Partial<Record<WorldZone,string[]>>={
 
 export default function V5Root(){
  const initial=(location.hash.slice(1)||'world') as View
- const [view,setView]=useState<View>(['world','workspace','agents','search'].includes(initial)?initial:'world')
+ const [view,setView]=useState<View>(['world','workspace','agents','search','cssa'].includes(initial)?initial:'world')
  const [workspaceArea,setWorkspaceArea]=useState<WorkspaceArea>(()=>{const saved=sessionStorage.getItem('obsidia-workspace-area');return (['home','launchers','brody','obsidure','cli','files'].includes(saved||'')?saved:'home') as WorkspaceArea})
  const [worldZone,setWorldZone]=useState<WorldZone>('home')
  const [shared,setShared]=useState<Shared|null>(null)
@@ -111,7 +112,7 @@ export default function V5Root(){
   const refresh=async()=>{if(pending)return;pending=true;try{const [s,w]=await Promise.all([read('/obsidia-local/snapshot'),read('/obsidia-local/state')]);setSnap(s);setShared(w)}catch(e){if(!abort.signal.aborted)setMessage(String(e))}finally{pending=false}}
   void refresh()
   const timer=setInterval(refresh,4000)
-  const hash=()=>{const next=(location.hash.slice(1)||'world') as View;if(['world','workspace','agents','search'].includes(next)){setView(next);if(next==='workspace'){const saved=sessionStorage.getItem('obsidia-workspace-area');if(['home','launchers','brody','obsidure','cli','files'].includes(saved||''))setWorkspaceArea(saved as WorkspaceArea)}}}
+  const hash=()=>{const next=(location.hash.slice(1)||'world') as View;if(['world','workspace','agents','search','cssa'].includes(next)){setView(next);if(next==='workspace'){const saved=sessionStorage.getItem('obsidia-workspace-area');if(['home','launchers','brody','obsidure','cli','files'].includes(saved||''))setWorkspaceArea(saved as WorkspaceArea)}}}
   const context=(e:Event)=>setContextId((e as CustomEvent<string>).detail||sessionStorage.getItem('obsidia-focus-entity')||'')
   const worldZoneEvent=(e:Event)=>{const zone=(e as CustomEvent<WorldZone>).detail;if(zones.some(([id])=>id===zone))setWorldZone(zone)}
   window.addEventListener('hashchange',hash)
@@ -577,7 +578,7 @@ export default function V5Root(){
   <aside className="v5-sidebar">
    <a className="v5-brand" href="#world"><span>◈</span><div><strong>OBSIDIA</strong><small>Écosystème IA</small></div></a>
    <nav className="v5-primary-nav">
-    {nav.map(([id,label])=><a key={id} href={'#'+id} aria-current={view===id?'page':undefined} onClick={()=>{if(id==='world')setWorldZone('home');setView(id)}}><span>{id==='world'?'◎':id==='workspace'?'▦':id==='agents'?'◇':'⌕'}</span><div><strong>{label}</strong><small>{id==='world'?'Vue globale':id==='workspace'?'Projets et outils':id==='agents'?'Agents IA':'Connaissances'}</small></div></a>)}
+    {nav.map(([id,label])=><a key={id} href={'#'+id} aria-current={view===id?'page':undefined} onClick={()=>{if(id==='world')setWorldZone('home');setView(id)}}><span>{id==='world'?'◎':id==='workspace'?'▦':id==='agents'?'◇':id==='search'?'⌕':'◆'}</span><div><strong>{label}</strong><small>{id==='world'?'Vue globale':id==='workspace'?'Projets et outils':id==='agents'?'Agents IA':id==='search'?'Connaissances':'Club dédié'}</small></div></a>)}
    </nav>
    <div className="v5-sidebar-foot">
     <div className="v5-context-mini"><span>Contexte</span><strong>{contextLabel}</strong></div>
@@ -774,6 +775,8 @@ export default function V5Root(){
    </section>}
 
    {view==='agents'&&<section className="v5-page v5-pokemon"><V5Pokemon/></section>}
+
+   {view==='cssa'&&<CSSAPage/>}
 
    {view==='search'&&<section className="v5-page">
     <header className="v5-page-head"><div><small>TROUVER</small><h1>Recherche</h1><p>Un seul endroit pour retrouver agents, missions, domaines, fichiers et preuves.</p></div></header>
