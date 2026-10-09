@@ -1,7 +1,6 @@
 import {useEffect,useMemo,useState,type KeyboardEvent} from 'react'
 import V5Pokemon from './V5Pokemon'
 import V5Launchers from './V5Launchers'
-import UniversalOrganizationsPage from './UniversalOrganizationsPage'
 import {sessionAction} from './SessionControls'
 import './App.css'
 import './Office.css'
@@ -11,7 +10,7 @@ import './ui-v5.css'
 
 type View='world'|'workspace'|'agents'|'search'
 type WorkspaceArea='home'|'launchers'|'brody'|'obsidure'|'cli'|'files'
-type WorldZone='home'|'territories'|'activity'|'rnd'|'agents'|'governance'|'universal'|'knowledge'|'domains'|'layers'
+type WorldZone='home'|'territories'|'activity'|'rnd'|'agents'|'governance'|'knowledge'|'domains'|'layers'
 type Agent={id:number;name:string;family:string;role:string|null;output:string|null}
 type Layer={id:string;title:string;content:string;path:string;commit:string}
 type Proposal={id:string;path:string;receipt:string|null;observedAt:string;data:Record<string,unknown>}
@@ -22,17 +21,14 @@ type Mission={id:string;label:string;actionId:string;agentId:string|null;domainI
 type Shared={decisionAuthority:string;entities:Entity[];relations:{from:string;type:string;to:string}[];sessions:Session[];missions:Mission[]}
 type Process={sessionId:string;active:boolean;runtimeActive:boolean;native:boolean;surface?:'terminal'|'interface';tool:string;output:string}
 type CliRuntime={schema:string;readonly:boolean;canonicalTruth:boolean;decisionAuthority:string;state:string;services:{id:string;label:string;status:string;evidence:string}[];legacy:{graphiti:string;neo4j:string;ui5173:string};observedAt:string}
-type C53View={status:string;recordCount:number;records:{decisionRecordId:string;domainId:string|null;gate:string;receiptRefs:string[];organizationAttribution:string;evidenceStatus:string}[]}
-type C5View={schema:string;status:string;organizationFilter?:string|null;recordCount:number;records:{organizationId:string;domainId:string;capabilityId:string;gate:string;status:string;evidenceGrade:string;decisionRecordId:string;receiptId:string;canExecute:boolean}[];executionAllowed:boolean}
 
 const nav:[View,string][]=[['world','Monde'],['workspace','Workspace'],['agents','Pokémon'],['search','Recherche']]
-const zones:[WorldZone,string][]=[['home','Vue globale'],['territories','Territoires'],['activity','Activité'],['rnd','R&D / Build'],['agents','Agents & organes'],['governance','Gouvernance & preuves'],['universal','Entreprises & Organisations'],['knowledge','Objets & résultats'],['domains','Domaines'],['layers','Couches documentaires']]
+const zones:[WorldZone,string][]=[['home','Vue globale'],['territories','Territoires'],['activity','Activité'],['rnd','R&D / Build'],['agents','Agents & organes'],['governance','Gouvernance & preuves'],['knowledge','Objets & résultats'],['domains','Domaines'],['layers','Couches documentaires']]
 const territories:{id:string;label:string;zone:Exclude<WorldZone,'home'|'territories'>;summary:string;glyph:string}[]=[
  ['terrain','Terrains & domaines','domains','Bank · Trading · E-commerce · GPS / Défense / Aviation','◫'],
  ['forge','R&D / Build','rnd','Branches, worktrees et chantiers de construction','⬡'],
  ['population','Agents & organes','agents','Population connue et organes raccordés','◇'],
  ['authority','Gouvernance & preuves','governance','Décisions, receipts, impacts et frontières KX108','◆'],
- ['universal','Entreprises & Organisations','universal','Structures raccordées au moteur universel et leurs métiers propres','◈'],
  ['knowledge','Objets & résultats','knowledge','Résultats, artefacts, objectifs et dépôts','▤'],
  ['layers','Couches documentaires','layers','Cartes, contrats et documentation des couches','▦'],
 ].map(([id,label,zone,summary,glyph])=>({id,label,zone:zone as Exclude<WorldZone,'home'|'territories'>,summary,glyph}))
@@ -102,8 +98,6 @@ export default function V5Root(){
  const [toolBusy,setToolBusy]=useState(false)
  const [processes,setProcesses]=useState<Process[]>([])
  const [cliRuntime,setCliRuntime]=useState<CliRuntime|null>(null)
- const [universalC5,setUniversalC5]=useState<C5View|null>(null)
- const [observedC53,setObservedC53]=useState<C53View|null>(null)
  const [searchQuery,setSearchQuery]=useState('')
  const [searchKind,setSearchKind]=useState<'all'|'agent'|'mission'|'domain'|'file'|'proof'|'layer'>('all')
  const [searchSelection,setSearchSelection]=useState<{id:string;kind:string;label:string;meta:string}|null>(null)
@@ -130,9 +124,7 @@ export default function V5Root(){
 
  useEffect(()=>{const c=new AbortController();const poll=async()=>{try{const [pr,cr]=await Promise.all([fetch('/obsidia-local/processes',{signal:c.signal}),fetch('/obsidia-local/cli-runtime',{signal:c.signal})]);if(pr.ok)setProcesses((await pr.json()).processes||[]);if(cr.ok)setCliRuntime(await cr.json())}catch{}};void poll();const t=setInterval(poll,1400);return()=>{c.abort();clearInterval(t)}},[])
 
- useEffect(()=>{const controller=new AbortController();const refresh=async()=>{try{const response=await fetch('/obsidia-local/universal-c5',{signal:controller.signal});if(response.ok)setUniversalC5(await response.json());else setUniversalC5(null)}catch{if(!controller.signal.aborted)setUniversalC5(null)}};void refresh();const timer=setInterval(refresh,10000);return()=>{controller.abort();clearInterval(timer)}},[])
 
- useEffect(()=>{const controller=new AbortController();const refresh=async()=>{try{const response=await fetch('/obsidia-local/universal-c53-observed',{signal:controller.signal});if(response.ok)setObservedC53(await response.json());else setObservedC53(null)}catch{if(!controller.signal.aborted)setObservedC53(null)}};void refresh();const timer=setInterval(refresh,10000);return()=>{controller.abort();clearInterval(timer)}},[])
 
  const live=shared?.sessions.filter(s=>s.presence==='live'&&!s.nativeService)||[]
  const systemServices=shared?.sessions.filter(s=>s.presence==='live'&&s.nativeService)||[]
@@ -263,7 +255,6 @@ export default function V5Root(){
   if(worldZone==='knowledge')return shared.entities.filter(e=>['repository','objective','result','artifact'].includes(e.kind)).slice(-40).reverse().map(e=>({id:e.id,kind:e.kind,label:e.label,meta:e.path||e.source||''}))
   if(worldZone==='domains')return shared.entities.filter(e=>e.kind==='domain').map(e=>({id:e.id,kind:'DOMAINE',label:e.label,meta:e.runtimeFilePresent?'runtime présent':'runtime non confirmé'}))
   if(worldZone==='rnd')return (snap?.worktrees||[]).map(w=>({id:'worktree:'+w.path,kind:'WORKTREE',label:w.branch,meta:w.head.slice(0,12)+(w.dirty?' · modifié':' · propre')}))
-  if(worldZone==='universal')return []
   return layers.map(l=>({id:'layer:'+l.id,kind:'COUCHE',label:l.title,meta:l.path}))
  },[shared,worldZone,live,snap,layers])
 
@@ -374,18 +365,6 @@ export default function V5Root(){
      {label:'missions bloquées',value:missionBlockers},
      {label:'missions complètes',value:completeMissions},
      {label:'chaînes preuve',value:relCount('AUTHORIZES_RECEIPT','PROVES_IMPACT','HAS_ROLLBACK_EVIDENCE')},
-    ],
-   },
-   universal:{
-    status:'DISPONIBLE',
-    blocker:noBlock,
-    proof:'Vue Entreprises & Organisations disponible dans Monde',
-    nextAction:noAction,
-    facts:[
-     {label:'organisation pilote',value:'CSSA'},
-     {label:'modules métiers',value:6},
-     {label:'moteur',value:'Universal C5'},
-     {label:'autorité',value:'KX108_ONLY'},
     ],
    },
    knowledge:{
@@ -629,7 +608,6 @@ export default function V5Root(){
 
     <section className="v5-space-grid">
      <button className="v5-space-card world" onClick={()=>{setWorldZone('territories');go('world')}}><div className="icon">◎</div><div className="head"><h2>Monde</h2><span>Explorer l’écosystème</span></div><div className="metrics"><strong>{domainCount}<small>domaines</small></strong><strong>{snap?.worktrees?.length||0}<small>worktrees</small></strong><strong>{shared?.entities.length||0}<small>objets</small></strong></div><div className="spark bars blue">{Array.from({length:12},(_,i)=><i key={i} style={{height:(18+((i*13)%42))+'px'}}/> )}</div><footer>Terrains · R&D · Gouvernance · Couches</footer></button>
-     <button className="v5-space-card world" onClick={()=>{setSelectedMechanism('');setWorldZone('universal');go('world')}}><div className="icon">◈</div><div className="head"><h2>Entreprises & Organisations</h2><span>Universalité</span></div><div className="metrics"><strong>1<small>organisation pilote</small></strong><strong>6<small>modules métiers</small></strong><strong>KX108<small>gouvernance</small></strong></div><div className="spark bars blue">{Array.from({length:12},(_,i)=><i key={i} style={{height:(16+((i*11)%38))+'px'}}/> )}</div><footer>CSSA · entreprises · associations · administrations</footer></button>
      <button className="v5-space-card workspace" onClick={()=>go('workspace')}><div className="icon">▦</div><div className="head"><h2>Workspace</h2><span>Construire et collaborer</span></div><div className="metrics"><strong>{live.length}<small>agents</small></strong><strong>{files.length}<small>fichiers</small></strong><strong>{proofCount}<small>preuves</small></strong></div><div className="spark line purple"/><footer>Brody · Obsidure · CLI · Fichiers</footer></button>
      <button className="v5-space-card pokemon" onClick={()=>go('agents')}><div className="icon">◇</div><div className="head"><h2>Pokémon</h2><span>Agents et leurs actions</span></div><div className="metrics"><strong>{shared?.entities.filter(e=>e.kind==='agent').length||0}<small>agents</small></strong><strong>{shared?.missions.length||0}<small>missions</small></strong><strong>{live.length}<small>live</small></strong></div><div className="spark bars green">{Array.from({length:12},(_,i)=><i key={i} style={{height:(14+((i*17)%46))+'px'}}/> )}</div><footer>Agents · Pipeline · Population · Missions</footer></button>
      <button className="v5-space-card search" onClick={()=>go('search')}><div className="icon">⌕</div><div className="head"><h2>Recherche</h2><span>Connaissances et preuves</span></div><div className="metrics"><strong>{agents.length}<small>agents</small></strong><strong>{files.length}<small>fichiers</small></strong><strong>{proofCount}<small>preuves</small></strong></div><div className="spark line violet"/><footer>Domaines · Missions · Fichiers · Couches</footer></button>
@@ -676,17 +654,6 @@ export default function V5Root(){
      {contextEntity&&worldZone!=='territories'&&<><span>›</span><strong>{contextEntity.label}</strong></>}
     </nav>
     <nav className="v5-zonebar">{zones.map(([id,label])=><button key={id} aria-pressed={worldZone===id} onClick={()=>{setSelectedMechanism('');setWorldZone(id)}}>{label}</button>)}</nav>
-    {worldZone==='universal'&&<UniversalOrganizationsPage state={universalC5} observedCount={observedC53?.recordCount??0}/>}
-    {worldZone==='governance'&&<section className="v5-panel" aria-label="Universal C5 — Organisations">
-      <header><div><small>UNIVERSAL C5 · READ-ONLY</small><h2>Organisation et capacités gouvernées</h2></div><span>KX108_ONLY · aucune exécution</span></header>
-      <p>Source locale explicitement configurée. Une seule organisation autorisée par le serveur. Données absentes : aucune autorité inférée.</p>
-      <p><strong>État : {universalC5?.status||'NON_OBSERVÉ'}</strong> · Organisation : {universalC5?.organizationFilter||'NON_CONFIGURÉE'} · {universalC5?.recordCount||0} preuve(s)</p>
-      {(universalC5?.records||[]).map((record,i)=><article key={record.decisionRecordId+record.receiptId+i}>
-       <strong>{record.domainId} · {record.capabilityId}</strong>
-       <p>{record.gate} · {record.status} · {record.evidenceGrade}</p>
-       <small>Décision : {record.decisionRecordId} · Receipt : {record.receiptId} · exécution désactivée</small>
-      </article>)}
-     </section>}
      {worldZone==='governance'&&<section className="v5-panel" aria-label="C5.3 observations non attribuées">
       <header><div><small>UNIVERSAL C5.3 · OBSERVATIONS</small><h2>Preuves non attribuées</h2></div><span>Lecture seule</span></header>
       <p>Identité organisationnelle non vérifiée. Liens décision-reçu observés, sans validation cryptographique ni autorisation d'action.</p>
