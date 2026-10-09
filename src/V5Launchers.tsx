@@ -7,11 +7,12 @@ type JarjarStatus={state:'OFFLINE'|'STARTING'|'READY'|'DEGRADED';managed:boolean
 const launchable=[
  ['brody','Brody','agent'],['obsidure','Obsidure','agent'],['cli','CLI Obsidia','agent'],
  ['kernel-x108','Kernel X108','service'],['obsidia-api','API Obsidia + Brody + Native Memory','service'],
+ ['qwen-text','Qwen texte · :8080','service'],['qwen-vl','Qwen-VL · :8081','service'],
  ['gps-defense','GPS / Defense / Aviation','service'],['trading-x108','Trading → X108','service'],
  ['brody-enriched','Brody Enriched','service'],['obsidure-dry','Obsidure DryRun','service'],
  ['jarvis','Jarvis','future']
 ] as const
-const nativeIds=new Set(['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
+const nativeIds=new Set(['kernel-x108','obsidia-api','qwen-text','qwen-vl','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
 
 export default function V5Launchers(){
  const [state,setState]=useState<State|null>(null)
@@ -52,7 +53,7 @@ export default function V5Launchers(){
    <p>Autorité {jarjar?.decisionAuthority||'KX108_ONLY'} · entrée {jarjar?.inputMode||'non observée'} · cognition {jarjar?.cognitionSource||'en attente'}</p>
    <div className="v5pk-components">{[['Kernel',jarjar?.components.kernel.ready],['API/Brody',jarjar?.components.brodyApi.ready],['Qwen',jarjar?.components.qwenText.ready],['Qwen-VL',jarjar?.components.qwenVL.ready],['HUD',jarjar?.components.hud.ready]].map(([n,ok])=><span key={String(n)} className={ok?'ok':''}>{String(n)} · {ok?'READY':'OFFLINE'}</span>)}</div>
    {jarjar&&!jarjar.components.qwenText.ready&&jarjar.qwenTextDiagnostic&&<details className="v5pk-diagnostic"><summary>Diagnostic Qwen texte</summary><pre>{jarjar.qwenTextDiagnostic}</pre></details>}
-   <div className="v5pk-actions">{jarjar?.state==='OFFLINE'?<button disabled={launching==='jarjar'} onClick={()=>launch('jarjar')}>Lancer Jarjar</button>:jarjar?.managed?<><button onClick={()=>launch('jarjar')}>Ouvrir / réutiliser</button><button disabled={launching==='jarjar'} onClick={stopJarjar}>Arrêter Jarjar</button></>:<button onClick={()=>launch('jarjar')}>Lancer / ouvrir</button>}</div>
+   <div className="v5pk-actions">{jarjar?.state==='OFFLINE'?<button disabled={launching==='jarjar'} onClick={()=>launch('jarjar')}>Lancer Jarjar</button>:jarjar?.state==='STARTING'?<button disabled>ALLUMAGE…</button>:jarjar?.managed?<><button onClick={()=>launch('jarjar')}>{jarjar.state==='READY'?'ALLUMÉ · Ouvrir':'Ouvrir / réutiliser'}</button><button disabled={launching==='jarjar'} onClick={stopJarjar}>Arrêter Jarjar</button></>:<button onClick={()=>launch('jarjar')}>{jarjar?.state==='READY'?'ALLUMÉ · Ouvrir':'Lancer / ouvrir'}</button>}</div>
   </article>
 
   <div className="v5-launcher-groups">
@@ -63,7 +64,7 @@ export default function V5Launchers(){
 
    <section>
     <header><small>SERVICES SYSTÈME</small><h3>Runtime et domaines</h3></header>
-    <div className="v5pk-launch-grid">{launchable.filter(x=>x[2]==='service').map(([id,label])=>{const svc=native.find(s=>s.agentId===id);const status=svc?.observedState||'OFFLINE';return <article key={id} className={status==='READY'?'active':status==='STARTING'?'starting':'ready'}><div><strong>{label}</strong><span>{status}</span></div><p>Terminal natif validé · freeze 2026-10-06</p><div className="v5pk-actions"><button disabled={launching===id} onClick={()=>launch(id)}>Lancer terminal</button>{svc&&<button onClick={()=>focus('session:'+svc.sessionId)}>Contexte</button>}</div></article>})}</div>
+    <div className="v5pk-launch-grid">{launchable.filter(x=>x[2]==='service').map(([id,label])=>{const svc=native.find(s=>s.agentId===id);const status=svc?.observedState||'OFFLINE';return <article key={id} className={status==='READY'?'active':status==='STARTING'?'starting':'ready'}><div><strong>{label}</strong><span>{status}</span></div><p>Terminal natif validé · freeze 2026-10-06</p><div className="v5pk-actions">{status==='READY'?<button disabled>ALLUMÉ</button>:status==='STARTING'?<button disabled>ALLUMAGE…</button>:<button disabled={launching===id} onClick={()=>launch(id)}>Lancer terminal</button>}{svc&&<button onClick={()=>focus('session:'+svc.sessionId)}>Contexte</button>}</div></article>})}</div>
    </section>
   </div>
 
