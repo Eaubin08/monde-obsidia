@@ -14,33 +14,24 @@ const modules=[
 ] as const
 
 export default function UniversalOrganizationsPage({state,observedCount}:Props){
+ const [selectedOrganization,setSelectedOrganization]=useState<'cssa'|null>(null)
  const [selectedModule,setSelectedModule]=useState<string|null>(null)
  const organization=state?.organizationFilter||null
  const selected=modules.find(([name])=>name===selectedModule)
 
- return <section className="v5-panel" aria-label="Entreprises et organisations">
-  <header>
-   <div><small>MONDE OBSIDIA · UNIVERSALITÉ</small><h2>Entreprises & Organisations</h2></div>
-   <span>Moteur universel · KX108_ONLY</span>
-  </header>
-  <p>Vue globale des structures raccordées au moteur universel. Chaque organisation conserve ses propres métiers, données, processus et projets.</p>
+ if(selectedOrganization==='cssa'){
+  return <section className="v5-panel" aria-label="CSSA — Vue entreprise">
+   <header>
+    <div><small>MONDE OBSIDIA · UNIVERSALITÉ · ORGANISATION</small><h2>CSSA — Club Sportif Sedan Ardennes</h2></div>
+    <span>Club sportif · Organisation pilote</span>
+   </header>
+   <button onClick={()=>{setSelectedOrganization(null);setSelectedModule(null)}}>← Entreprises & Organisations</button>
+   <p>Vue d'ensemble de l'organisation. Les cas métiers sont accessibles ici, à l'intérieur de CSSA, et ne remplacent pas sa vue entreprise.</p>
 
-  <section className="v5-panel" aria-label="Répertoire des organisations">
-   <header><div><small>ORGANISATIONS</small><h2>Vue globale</h2></div><span>Répertoire universel</span></header>
-   <article>
-    <strong>CSSA — Club Sportif Sedan Ardennes</strong>
-    <p>Club sportif · Organisation pilote</p>
-    <p>Administration, relations membres, événements, communication, finances et gouvernance.</p>
-   </article>
-   <article>
-    <strong>Autres entreprises et associations</strong>
-    <p>Même architecture universelle, avec configuration métier et données propres à chaque structure.</p>
-   </article>
-  </section>
-
-  <section className="v5-panel" aria-label="Vue organisation CSSA">
-   <header><div><small>ORGANISATION SÉLECTIONNÉE</small><h2>CSSA — Vue entreprise</h2></div><span>Prototype</span></header>
-   <p>Vue d'ensemble de l'organisation. Les cas métiers restent accessibles à l'intérieur de CSSA et ne remplacent pas cette vue entreprise.</p>
+   <section className="v5-panel" aria-label="Vue d'ensemble CSSA">
+    <header><div><small>VUE ENTREPRISE</small><h2>CSSA — Vue d'ensemble</h2></div><span>Prototype</span></header>
+    <p>Administration, relations membres, communication, événements, finances et opérations.</p>
+   </section>
 
    <div className="v5-sublayers">
     <header><div><small>DOMAINES & CAS MÉTIERS</small><h2>Modules de l'organisation</h2></div><span>À concevoir ou raccorder</span></header>
@@ -63,6 +54,28 @@ export default function UniversalOrganizationsPage({state,observedCount}:Props){
     <p>Décisions KX108, permissions, validations humaines, receipts et preuves gouvernent les cas métiers sans devenir un domaine métier supplémentaire.</p>
     <p>État C5 : <strong>{state?.status||'NON_OBSERVÉ'}</strong> · périmètre serveur : <strong>{organization||'NON_CONFIGURÉ'}</strong> · observations locales non attribuées : <strong>{observedCount}</strong>.</p>
    </section>
+  </section>
+ }
+
+ return <section className="v5-panel" aria-label="Entreprises et organisations">
+  <header>
+   <div><small>MONDE OBSIDIA · UNIVERSALITÉ</small><h2>Entreprises & Organisations</h2></div>
+   <span>Moteur universel · KX108_ONLY</span>
+  </header>
+  <p>Vue globale des structures raccordées au moteur universel. Chaque organisation conserve ses propres métiers, données, processus et projets.</p>
+
+  <section className="v5-panel" aria-label="Répertoire des organisations">
+   <header><div><small>ORGANISATIONS</small><h2>Vue globale</h2></div><span>Répertoire universel</span></header>
+   <article>
+    <strong>CSSA — Club Sportif Sedan Ardennes</strong>
+    <p>Club sportif · Organisation pilote</p>
+    <p>Administration, relations membres, événements, communication, finances et gouvernance.</p>
+    <button onClick={()=>setSelectedOrganization('cssa')}>Ouvrir l'organisation CSSA</button>
+   </article>
+   <article>
+    <strong>Autres entreprises et associations</strong>
+    <p>Même architecture universelle, avec configuration métier et données propres à chaque structure.</p>
+   </article>
   </section>
  </section>
 }
