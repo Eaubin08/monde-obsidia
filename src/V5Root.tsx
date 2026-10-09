@@ -263,6 +263,7 @@ export default function V5Root(){
   if(worldZone==='knowledge')return shared.entities.filter(e=>['repository','objective','result','artifact'].includes(e.kind)).slice(-40).reverse().map(e=>({id:e.id,kind:e.kind,label:e.label,meta:e.path||e.source||''}))
   if(worldZone==='domains')return shared.entities.filter(e=>e.kind==='domain').map(e=>({id:e.id,kind:'DOMAINE',label:e.label,meta:e.runtimeFilePresent?'runtime présent':'runtime non confirmé'}))
   if(worldZone==='rnd')return (snap?.worktrees||[]).map(w=>({id:'worktree:'+w.path,kind:'WORKTREE',label:w.branch,meta:w.head.slice(0,12)+(w.dirty?' · modifié':' · propre')}))
+  if(worldZone==='universal')return []
   return layers.map(l=>({id:'layer:'+l.id,kind:'COUCHE',label:l.title,meta:l.path}))
  },[shared,worldZone,live,snap,layers])
 
@@ -373,6 +374,18 @@ export default function V5Root(){
      {label:'missions bloquées',value:missionBlockers},
      {label:'missions complètes',value:completeMissions},
      {label:'chaînes preuve',value:relCount('AUTHORIZES_RECEIPT','PROVES_IMPACT','HAS_ROLLBACK_EVIDENCE')},
+    ],
+   },
+   universal:{
+    status:'DISPONIBLE',
+    blocker:noBlock,
+    proof:'Vue Entreprises & Organisations disponible dans Monde',
+    nextAction:noAction,
+    facts:[
+     {label:'organisation pilote',value:'CSSA'},
+     {label:'modules métiers',value:6},
+     {label:'moteur',value:'Universal C5'},
+     {label:'autorité',value:'KX108_ONLY'},
     ],
    },
    knowledge:{
