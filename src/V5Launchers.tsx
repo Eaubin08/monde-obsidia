@@ -53,7 +53,7 @@ export default function V5Launchers(){
    <p>Autorité {jarjar?.decisionAuthority||'KX108_ONLY'} · entrée {jarjar?.inputMode||'non observée'} · cognition {jarjar?.cognitionSource||'en attente'}</p>
    <div className="v5pk-components">{[['Kernel',jarjar?.components.kernel.ready],['API/Brody',jarjar?.components.brodyApi.ready],['Qwen',jarjar?.components.qwenText.ready],['Qwen-VL',jarjar?.components.qwenVL.ready],['HUD',jarjar?.components.hud.ready]].map(([n,ok])=><span key={String(n)} className={ok?'ok':''}>{String(n)} · {ok?'READY':'OFFLINE'}</span>)}</div>
    {jarjar&&!jarjar.components.qwenText.ready&&jarjar.qwenTextDiagnostic&&<details className="v5pk-diagnostic"><summary>Diagnostic Qwen texte</summary><pre>{jarjar.qwenTextDiagnostic}</pre></details>}
-   <div className="v5pk-actions">{jarjar?.state==='OFFLINE'?<button disabled={launching==='jarjar'} onClick={()=>launch('jarjar')}>Lancer Jarjar</button>:jarjar?.state==='STARTING'?<button disabled>ALLUMAGE…</button>:jarjar?.managed?<><button onClick={()=>launch('jarjar')}>{jarjar.state==='READY'?'ALLUMÉ · Ouvrir':'Ouvrir / réutiliser'}</button><button disabled={launching==='jarjar'} onClick={stopJarjar}>Arrêter Jarjar</button></>:<button onClick={()=>launch('jarjar')}>{jarjar?.state==='READY'?'ALLUMÉ · Ouvrir':'Lancer / ouvrir'}</button>}</div>
+   <div className="v5pk-actions">{jarjar?.state==='OFFLINE'?<button disabled={launching==='jarjar'} onClick={()=>launch('jarjar')}>Lancer Jarjar</button>:jarjar?.managed?<><button className={jarjar?.components.qwenText.ready?'ok':''} onClick={()=>launch('jarjar')}>{jarjar?.components.qwenText.ready?'Qwen allumé · Ouvrir':'Ouvrir / réutiliser'}</button><button disabled={launching==='jarjar'} onClick={stopJarjar}>Arrêter Jarjar</button></>:<button className={jarjar?.components.qwenText.ready?'ok':''} onClick={()=>launch('jarjar')}>{jarjar?.components.qwenText.ready?'Qwen allumé · Ouvrir':'Lancer / ouvrir'}</button>}</div>
   </article>
 
   <div className="v5-launcher-groups">
@@ -64,7 +64,7 @@ export default function V5Launchers(){
 
    <section>
     <header><small>SERVICES SYSTÈME</small><h3>Runtime et domaines</h3></header>
-    <div className="v5pk-launch-grid">{launchable.filter(x=>x[2]==='service').map(([id,label])=>{const svc=native.find(s=>s.agentId===id);const status=svc?.observedState||'OFFLINE';return <article key={id} className={status==='READY'?'active':status==='STARTING'?'starting':'ready'}><div><strong>{label}</strong><span>{status}</span></div><p>Terminal natif validé · freeze 2026-10-06</p><div className="v5pk-actions">{status==='READY'?<button disabled>ALLUMÉ</button>:status==='STARTING'?<button disabled>ALLUMAGE…</button>:<button disabled={launching===id} onClick={()=>launch(id)}>Lancer terminal</button>}{svc&&<button onClick={()=>focus('session:'+svc.sessionId)}>Contexte</button>}</div></article>})}</div>
+    <div className="v5pk-launch-grid">{launchable.filter(x=>x[2]==='service').map(([id,label])=>{const svc=native.find(s=>s.agentId===id);const status=svc?.observedState||'OFFLINE';return <article key={id} className={status==='READY'?'active':status==='STARTING'?'starting':'ready'}><div><strong>{label}</strong><span>{status}</span></div><p>Terminal natif validé · freeze 2026-10-06</p><div className="v5pk-actions"><button disabled={launching===id} onClick={()=>launch(id)}>Lancer terminal</button>{svc&&<button onClick={()=>focus('session:'+svc.sessionId)}>Contexte</button>}</div></article>})}</div>
    </section>
   </div>
 
