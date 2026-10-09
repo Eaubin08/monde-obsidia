@@ -21,6 +21,8 @@ type Mission={id:string;label:string;actionId:string;agentId:string|null;domainI
 type Shared={decisionAuthority:string;entities:Entity[];relations:{from:string;type:string;to:string}[];sessions:Session[];missions:Mission[]}
 type Process={sessionId:string;active:boolean;runtimeActive:boolean;native:boolean;surface?:'terminal'|'interface';tool:string;output:string}
 type CliRuntime={schema:string;readonly:boolean;canonicalTruth:boolean;decisionAuthority:string;state:string;services:{id:string;label:string;status:string;evidence:string}[];legacy:{graphiti:string;neo4j:string;ui5173:string};observedAt:string}
+type C53View={status:string;recordCount:number;records:{decisionRecordId:string;domainId:string|null;gate:string;receiptRefs:string[];organizationAttribution:string;evidenceStatus:string}[]}
+type C5View={schema:string;status:string;organizationFilter?:string|null;recordCount:number;records:{organizationId:string;domainId:string;capabilityId:string;gate:string;status:string;evidenceGrade:string;decisionRecordId:string;receiptId:string;canExecute:boolean}[];executionAllowed:boolean}
 
 const nav:[View,string][]=[['world','Monde'],['workspace','Workspace'],['agents','Pokémon'],['search','Recherche']]
 const zones:[WorldZone,string][]=[['home','Vue globale'],['territories','Territoires'],['activity','Activité'],['rnd','R&D / Build'],['agents','Agents & organes'],['governance','Gouvernance & preuves'],['knowledge','Objets & résultats'],['domains','Domaines'],['layers','Couches documentaires']]
@@ -98,6 +100,8 @@ export default function V5Root(){
  const [toolBusy,setToolBusy]=useState(false)
  const [processes,setProcesses]=useState<Process[]>([])
  const [cliRuntime,setCliRuntime]=useState<CliRuntime|null>(null)
+ const [universalC5,setUniversalC5]=useState<C5View|null>(null)
+ const [observedC53,setObservedC53]=useState<C53View|null>(null)
  const [searchQuery,setSearchQuery]=useState('')
  const [searchKind,setSearchKind]=useState<'all'|'agent'|'mission'|'domain'|'file'|'proof'|'layer'>('all')
  const [searchSelection,setSearchSelection]=useState<{id:string;kind:string;label:string;meta:string}|null>(null)
@@ -123,6 +127,10 @@ export default function V5Root(){
  useEffect(()=>{sessionStorage.setItem('obsidia-workspace-area',workspaceArea)},[workspaceArea])
 
  useEffect(()=>{const c=new AbortController();const poll=async()=>{try{const [pr,cr]=await Promise.all([fetch('/obsidia-local/processes',{signal:c.signal}),fetch('/obsidia-local/cli-runtime',{signal:c.signal})]);if(pr.ok)setProcesses((await pr.json()).processes||[]);if(cr.ok)setCliRuntime(await cr.json())}catch{}};void poll();const t=setInterval(poll,1400);return()=>{c.abort();clearInterval(t)}},[])
+
+ useEffect(()=>{const controller=new AbortController();const refresh=async()=>{try{const response=await fetch('/obsidia-local/universal-c5',{signal:controller.signal});if(response.ok)setUniversalC5(await response.json());else setUniversalC5(null)}catch{if(!controller.signal.aborted)setUniversalC5(null)}};void refresh();const timer=setInterval(refresh,10000);return()=>{controller.abort();clearInterval(timer)}},[])
+
+ useEffect(()=>{const controller=new AbortController();const refresh=async()=>{try{const response=await fetch('/obsidia-local/universal-c53-observed',{signal:controller.signal});if(response.ok)setObservedC53(await response.json());else setObservedC53(null)}catch{if(!controller.signal.aborted)setObservedC53(null)}};void refresh();const timer=setInterval(refresh,10000);return()=>{controller.abort();clearInterval(timer)}},[])
 
  const live=shared?.sessions.filter(s=>s.presence==='live'&&!s.nativeService)||[]
  const systemServices=shared?.sessions.filter(s=>s.presence==='live'&&s.nativeService)||[]
@@ -652,7 +660,27 @@ export default function V5Root(){
      {contextEntity&&worldZone!=='territories'&&<><span>›</span><strong>{contextEntity.label}</strong></>}
     </nav>
     <nav className="v5-zonebar">{zones.map(([id,label])=><button key={id} aria-pressed={worldZone===id} onClick={()=>{setSelectedMechanism('');setWorldZone(id)}}>{label}</button>)}</nav>
-    {currentTerritory&&<section className="v5-territory-health">
+    {worldZone==='governance'&&<section className="v5-panel" aria-label="Universal C5 — Organisations">
+      <header><div><small>UNIVERSAL C5 · READ-ONLY</small><h2>Organisation et capacités gouvernées</h2></div><span>KX108_ONLY · aucune exécution</span></header>
+      <p>Source locale explicitement configurée. Une seule organisation autorisée par le serveur. Données absentes : aucune autorité inférée.</p>
+      <p><strong>État : {universalC5?.status||'NON_OBSERVÉ'}</strong> · Organisation : {universalC5?.organizationFilter||'NON_CONFIGURÉE'} · {universalC5?.recordCount||0} preuve(s)</p>
+      {(universalC5?.records||[]).map((record,i)=><article key={record.decisionRecordId+record.receiptId+i}>
+       <strong>{record.domainId} · {record.capabilityId}</strong>
+       <p>{record.gate} · {record.status} · {record.evidenceGrade}</p>
+       <small>Décision : {record.decisionRecordId} · Receipt : {record.receiptId} · exécution désactivée</small>
+      </article>)}
+     </section>}
+     {worldZone==='governance'&&<section className="v5-panel" aria-label="C5.3 observations non attribuées">
+      <header><div><small>UNIVERSAL C5.3 · OBSERVATIONS</small><h2>Preuves non attribuées</h2></div><span>Lecture seule</span></header>
+      <p>Identité organisationnelle non vérifiée. Liens décision-reçu observés, sans validation cryptographique ni autorisation d'action.</p>
+      <p><strong>{observedC53?.status||'NON_OBSERVÉ'}</strong> · {observedC53?.recordCount||0} décision(s)</p>
+      {(observedC53?.records||[]).slice(-20).map(record=><article key={record.decisionRecordId}>
+       <strong>{record.domainId||'Domaine inconnu'} · {record.gate}</strong>
+       <p>{record.evidenceStatus} · {record.organizationAttribution}</p>
+       <small>Décision : {record.decisionRecordId} · Reçus observés : {record.receiptRefs.length}</small>
+      </article>)}
+     </section>}
+     {currentTerritory&&<section className="v5-territory-health">
      <article><small>ÉTAT</small><strong>{currentTerritory.status}</strong><p>Projection readonly du territoire.</p></article>
      <article className={currentTerritory.blocker==='Aucun blocage observé'?'':'warn'}><small>BLOCAGE</small><strong>{currentTerritory.blocker}</strong><p>Uniquement à partir des signaux observés.</p></article>
      <article><small>PREUVE</small><strong>{currentTerritory.proof}</strong><p>Aucune preuve supplémentaire n’est inférée.</p></article>
