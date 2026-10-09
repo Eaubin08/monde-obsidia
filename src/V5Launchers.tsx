@@ -5,14 +5,14 @@ type State={sessions:Session[]}
 type JarjarStatus={state:'OFFLINE'|'STARTING'|'READY'|'DEGRADED';managed:boolean;decisionAuthority:string;inputMode:string|null;cognitionSource:string;qwenTextDiagnostic?:string;components:{kernel:{ready:boolean};brodyApi:{ready:boolean};qwenText:{ready:boolean};qwenVL:{ready:boolean};hud:{ready:boolean}}}
 
 const launchable=[
- ['brody','Brody','agent'],['obsidure','Obsidure','agent'],['cli','CLI Obsidia','agent'],['open-jarvis','Open Jarvis','agent'],
+ ['brody','Brody','agent'],['obsidure','Obsidure','agent'],['cli','CLI Obsidia','agent'],
  ['kernel-x108','Kernel X108','service'],['obsidia-api','API Obsidia + Brody + Native Memory','service'],
  ['qwen-text','Qwen texte · :8080','service'],['qwen-vl','Qwen-VL · :8081','service'],
  ['gps-defense','GPS / Defense / Aviation','service'],['trading-x108','Trading → X108','service'],
  ['brody-enriched','Brody Enriched','service'],['obsidure-dry','Obsidure DryRun','service'],
  ['jarvis','Jarvis','future']
 ] as const
-const nativeIds=new Set(['kernel-x108','obsidia-api','qwen-text','qwen-vl','open-jarvis','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
+const nativeIds=new Set(['kernel-x108','obsidia-api','qwen-text','qwen-vl','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
 
 export default function V5Launchers(){
  const [state,setState]=useState<State|null>(null)
@@ -59,7 +59,7 @@ export default function V5Launchers(){
   <div className="v5-launcher-groups">
    <section>
     <header><small>AGENTS / OUTILS</small><h3>Sessions de travail</h3></header>
-    <div className="v5pk-launch-grid">{launchable.filter(x=>x[2]==='agent').map(([id,label])=>{const active=(id==='open-jarvis'?native:agents).find(s=>s.agentId===id);return <article key={id} className={active?'active':'ready'}><div><strong>{label}</strong><span>{active?'LIVE':'PRÊT'}</span></div><p>{active?.objective||active?.message||(active?'Session active':'Disponible')}</p><div className="v5pk-actions"><button disabled={launching===id} onClick={()=>launch(id)}>{active?'Ouvrir / réutiliser':'Lancer'}</button>{active&&<button onClick={()=>focus('session:'+active.sessionId)}>Contexte</button>}</div></article>})}</div>
+    <div className="v5pk-launch-grid">{launchable.filter(x=>x[2]==='agent').map(([id,label])=>{const active=agents.find(s=>s.agentId===id);return <article key={id} className={active?'active':'ready'}><div><strong>{label}</strong><span>{active?'LIVE':'PRÊT'}</span></div><p>{active?.objective||active?.message||(active?'Session active':'Disponible')}</p><div className="v5pk-actions"><button disabled={launching===id} onClick={()=>launch(id)}>{active?'Ouvrir / réutiliser':'Lancer'}</button>{active&&<button onClick={()=>focus('session:'+active.sessionId)}>Contexte</button>}</div></article>})}</div>
    </section>
 
    <section>
