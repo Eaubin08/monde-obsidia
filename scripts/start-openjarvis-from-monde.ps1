@@ -34,29 +34,99 @@ if($observed -ne $upstreamCommit){
   throw "OpenJarvis commit mismatch: $observed"
 }
 
+function Get-CompatiblePython {
+  $candidates = @()
+
+  if(Get-Command py.exe -ErrorAction SilentlyContinue){
+    foreach($version in @('3.13','3.12','3.11','3.10')){
+      $probe = & py.exe "-$version" -c "import sys; print(sys.executable)" 2>$null
+      if($LASTEXITCODE -eq 0 -and $probe){
+        $candidates += [pscustomobject]@{
+          File = 'py.exe'
+          Args = @("-$version")
+          Version = $version
+        }
+        break
+      }
+    }
+  }
+
+  if(Get-Command python.exe -ErrorAction SilentlyContinue){
+    $ver = & python.exe -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>$null
+    if($LASTEXITCODE -eq 0 -and $ver -match '^3\.(10|11|12|13)
+
+$env:OBSIDIA_OPENJARVIS_SOURCE = $upstream
+$env:OBSIDIA_OPENJARVIS_COMMIT = $upstreamCommit
+$env:PYTHONPATH = "$ojRoot;$($ojRoot)\scripts;$($upstream)\src"
+
+$label = 'monde-openjarvis'
+$bindOut = & $python $binding bind $label $ojRoot 2>&1
+$bindCode = $LASTEXITCODE
+$sessionId = $null
+
+if($bindCode -eq 0){
+  try { $sessionId = (($bindOut -join "`n") | ConvertFrom-Json).session_id } catch {}
+}else{
+  $listOut = & $python $binding list 2>&1
+  if($LASTEXITCODE -eq 0){
+    try {
+      $items = (($listOut -join "`n") | ConvertFrom-Json)
+      $match = @($items) | Where-Object { $_.workspace -eq $ojRoot } | Select-Object -First 1
+      if($match){ $sessionId = $match.session_id }
+    } catch {}
+  }
+}
+
+if(-not $sessionId){
+  Write-Host ($bindOut -join "`n") -ForegroundColor Red
+  throw 'Impossible de creer ou reutiliser la session OpenJarvis gouvernee'
+}
+
+$env:OBSIDIA_JARVIS_SESSION_ID = $sessionId
+
+Write-Host ''
+Write-Host 'OPEN JARVIS / OBSIDIA' -ForegroundColor Cyan
+Write-Host "Session: $sessionId" -ForegroundColor Green
+Write-Host "Source : $upstream" -ForegroundColor Green
+Write-Host 'Authority: NONE | Decision authority: KX108_ONLY' -ForegroundColor DarkGray
+Write-Host ''
+
+Set-Location -LiteralPath $ojRoot
+& $python $bridge
+exit $LASTEXITCODE
+){
+      $candidates += [pscustomobject]@{
+        File = 'python.exe'
+        Args = @()
+        Version = $ver.Trim()
+      }
+    }
+  }
+
+  return $candidates | Select-Object -First 1
+}
+
 if(-not (Test-Path -LiteralPath $python)){
   Write-Host "Creation du venv OpenJarvis..." -ForegroundColor Yellow
 
-  $created = $false
-  if(Get-Command py.exe -ErrorAction SilentlyContinue){
-    & py.exe -3.12 -m venv $venv
-    if($LASTEXITCODE -eq 0){ $created = $true }
+  $runtime = Get-CompatiblePython
+  if(-not $runtime){
+    throw 'Aucun Python compatible OpenJarvis trouve. Python 3.10, 3.11, 3.12 ou 3.13 est requis.'
   }
-  if(-not $created -and (Get-Command python.exe -ErrorAction SilentlyContinue)){
-    & python.exe -m venv $venv
-    if($LASTEXITCODE -eq 0){ $created = $true }
-  }
-  if(-not $created -or -not (Test-Path -LiteralPath $python)){
-    throw 'Impossible de creer le venv OpenJarvis (Python 3.10-3.13 requis)'
+
+  Write-Host ("Python retenu: " + $runtime.Version) -ForegroundColor Green
+  & $runtime.File @($runtime.Args) -m venv $venv
+  if($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $python)){
+    throw 'Impossible de creer le venv OpenJarvis'
   }
 }
 
-$importCheck = & $python -c "import openjarvis; print('OK')" 2>$null
-if($LASTEXITCODE -ne 0 -or $importCheck -notcontains 'OK'){
-  Write-Host "Installation OpenJarvis dans le venv..." -ForegroundColor Yellow
-  & $python -m pip install --disable-pip-version-check -e $upstream
-  if($LASTEXITCODE -ne 0){ throw 'Installation Python OpenJarvis impossible' }
-}
+Write-Host "Installation/verification OpenJarvis dans le venv..." -ForegroundColor Yellow
+& $python -m pip install --disable-pip-version-check -e $upstream
+if($LASTEXITCODE -ne 0){ throw 'Installation Python OpenJarvis impossible' }
+
+& $python -c "import openjarvis; print('OPENJARVIS_IMPORT_OK')"
+if($LASTEXITCODE -ne 0){ throw 'Import OpenJarvis impossible apres installation' }
 
 $env:OBSIDIA_OPENJARVIS_SOURCE = $upstream
 $env:OBSIDIA_OPENJARVIS_COMMIT = $upstreamCommit
