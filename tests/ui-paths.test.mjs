@@ -86,6 +86,28 @@ test('Workspace exposes prepare-only supervised mission control without executio
  for(const forbidden of ['RESUME_EXECUTE','REPAIR'])assert.equal(supervisedPanel.includes(forbidden),false,forbidden)
 })
 
+test('Workspace exposes authorization handoff without minting authority',()=>{
+ for(const invariant of [
+  '/obsidia-local/supervised-mission/authorize-execution',
+  'HANDOFF D’AUTORISATION',
+  'Référence humaine existante · exécution gouvernée',
+  'pas de création d’autorité',
+  'Execution authority hash',
+  'Soumettre la référence',
+  'EXECUTION_ATTEMPTED',
+  'OUTCOME_UNCERTAIN',
+ ]) assert.ok(supervisedPanel.includes(invariant),invariant)
+ for(const invariant of [
+  "'/supervised-mission/authorize-execution'",
+  'supervisedMissionAuthorizeExecution',
+  'OBSIDIA_MONDE_SUPERVISED_MISSION_AUTHORIZATION_PROXY_V1',
+  "'/authorize-execution'",
+  'human_authorization_reference',
+  'checkpoint_projection',
+ ]) assert.ok(bridge.includes(invariant),invariant)
+ for(const forbidden of ['APPROVE','RESUME_EXECUTE','REPAIR'])assert.equal(supervisedPanel.includes(forbidden),false,forbidden)
+})
+
 test('Cross-view context remains shared',()=>{
  for(const invariant of ['obsidia-focus-entity','obsidia-context',"switchView('workspace')","switchView('agents')"])assert.ok(ecosystem.includes(invariant),invariant)
  for(const invariant of ['obsidia-selected-session','obsidia-context'])assert.ok(pokemon.includes(invariant),invariant)

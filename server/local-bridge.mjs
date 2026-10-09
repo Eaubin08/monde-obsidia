@@ -341,6 +341,41 @@ export async function supervisedMissionPrepareOnly(payload){
  }
  return result
 }
+export async function supervisedMissionAuthorizeExecution(payload){
+ if(!payload||typeof payload!=='object'||Array.isArray(payload))throw Error('Contrat d’autorisation invalide')
+ const missionId=String(payload.mission_id||'')
+ const checkpointId=String(payload.checkpoint_id||'')
+ if(!supervisedIdPattern.test(missionId))throw Error('Mission invalide')
+ if(!supervisedCheckpointPattern.test(checkpointId))throw Error('Checkpoint invalide')
+ const upstream=new URL('/api/supervised-missions/'+encodeURIComponent(missionId)+'/authorize-execution',obsidiaApiBase())
+ const headers={Accept:'application/json','Content-Type':'application/json'}
+ if(process.env.OBSIDIA_API_KEY)headers['X-API-Key']=process.env.OBSIDIA_API_KEY
+ let response,data
+ try{
+  response=await fetch(upstream,{method:'POST',headers,body:JSON.stringify({
+   checkpoint_id:checkpointId,
+   ticket_id:payload.ticket_id,
+   execution_authority_hash:payload.execution_authority_hash,
+   human_authorization_reference:payload.human_authorization_reference,
+   session_id:payload.session_id,
+  })})
+  const text=await response.text()
+  data=text?JSON.parse(text):{}
+ }catch(e){
+  return unavailable('UPSTREAM_API_UNAVAILABLE',{upstream_base:obsidiaApiBase(),authorization_handoff:true})
+ }
+ if(!response.ok){
+  const detail=data?.detail||data||{}
+  const reason=response.status===401?'UPSTREAM_AUTH_DENIED':String(detail.reason||detail.error||data.error||'UPSTREAM_REJECTED')
+  return unavailable(reason,{upstream_status:response.status,authorization_handoff:true,status:response.status===401?'UNAVAILABLE':'ERROR'})
+ }
+ const outcome=stripSensitive(data)
+ const result={...outcome,monde_proxy_schema:'OBSIDIA_MONDE_SUPERVISED_MISSION_AUTHORIZATION_PROXY_V1',authority:'NONE',decision_authority:'KX108_ONLY',emits_act:false,approval_created:false,automatic_approval:false,memory_write:false,native_memory_write:false,binder_mutation:false}
+ if(result.mission_id&&result.checkpoint_id&&result.checkpoint_projection_available){
+  result.checkpoint_projection=await supervisedMissionReadonlyProjection(result.mission_id,result.checkpoint_id)
+ }
+ return result
+}
 export function localBridge(){return {name:'obsidia-local-bridge',configureServer(server){server.httpServer?.once('close',()=>{closeOwnedBrodyApi();for(const p of processes.values())if(p.active&&!p.native)p.child.kill()});server.middlewares.use('/obsidia-local',async(req,res)=>{
  let launchKey;
  const url=new URL(req.url,'http://localhost');res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');
@@ -353,8 +388,13 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  }
  if(req.method==='POST'&&url.pathname==='/supervised-mission/prepare-only'){
   if(req.headers.origin!==`http://${req.headers.host}`)throw Error('Origine refusée')
-  const prepared=await supervisedMissionPrepareOnly(await body(req,65536))
+ const prepared=await supervisedMissionPrepareOnly(await body(req,65536))
   res.end(JSON.stringify(prepared));return
+ }
+ if(req.method==='POST'&&url.pathname==='/supervised-mission/authorize-execution'){
+  if(req.headers.origin!==`http://${req.headers.host}`)throw Error('Origine refusée')
+  const outcome=await supervisedMissionAuthorizeExecution(await body(req,32768))
+  res.end(JSON.stringify(outcome));return
  }
  if(req.method==='POST'&&url.pathname==='/jarjar/stop'){
   if(req.headers.origin!==`http://${req.headers.host}`)throw Error('Origine refusée')

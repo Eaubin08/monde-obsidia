@@ -47,6 +47,32 @@ const prepareFixture={
  token:'hidden',
 }
 
+const authorizationFixture={
+ schema_version:'OBSIDURE_SUPERVISED_MISSION_AUTHORIZATION_HANDOFF_API_V1',
+ status:'R12_F6_D1_EXECUTION_OUTCOME_ACCEPTED',
+ state:'EXECUTED_OBSERVED',
+ reason:null,
+ mission_id:'mission-f6d1',
+ ticket_id:'ticket-a',
+ checkpoint_id:'smc-f6d1-post',
+ input_checkpoint_id:'smc-f6d1-pre',
+ checkpoint_projection_available:true,
+ execution_phase:'EXECUTED_OBSERVED',
+ action_evidence_id:'aev-f6d1',
+ r8_receipt:'receipt-f6d1',
+ execution_authority_hash:'e'.repeat(64),
+ human_authorization_reference_hash:'h'.repeat(64),
+ authority:'NONE',
+ decision_authority:'KX108_ONLY',
+ supervisor_approval_created:false,
+ approval_created:false,
+ executor_invoked:true,
+ memory_write:false,
+ token:'hidden',
+ local_root:'C:/secret/root',
+ checkpoint_projection:{...fixture,mission_id:'mission-f6d1',checkpoint:{checkpoint_id:'smc-f6d1-post'}},
+}
+
 async function withServers(handler){
  const api=createServer(handler)
  await new Promise(resolve=>api.listen(0,'127.0.0.1',resolve))
@@ -175,6 +201,67 @@ test('prepare-only proxy preserves HOLD and upstream failures without green succ
  const denied=await withServers((_req,res)=>{res.writeHead(401,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'unauthorized'}))})
  try{
   const response=await fetch(denied.base+'/obsidia-local/supervised-mission/prepare-only',{method:'POST',headers:{Origin:denied.base,'Content-Type':'application/json'},body:JSON.stringify({human_request:'x'})})
+  const data=await response.json()
+  assert.equal(data.status,'UNAVAILABLE')
+  assert.equal(data.reason,'UPSTREAM_AUTH_DENIED')
+  assert.equal(data.executor_invoked,false)
+ }finally{denied.api.close();denied.monde.close()}
+})
+
+test('authorization handoff proxy submits existing reference and reloads canonical projection',async()=>{
+ let auth='',posted=null
+ const servers=await withServers((req,res)=>{
+  auth=req.headers['x-api-key']||''
+  if(req.method==='POST'){
+   assert.equal(req.url,'/api/supervised-missions/mission-f6d1/authorize-execution')
+   let body=''
+   req.on('data',chunk=>{body+=chunk})
+   req.on('end',()=>{
+    posted=JSON.parse(body)
+    res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify(authorizationFixture))
+   })
+   return
+  }
+  assert.equal(req.url,'/api/supervised-missions/mission-f6d1/projection?checkpoint_id=smc-f6d1-post')
+  res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({...fixture,mission_id:'mission-f6d1',checkpoint:{checkpoint_id:'smc-f6d1-post'}}))
+ })
+ try{
+  const response=await fetch(servers.base+'/obsidia-local/supervised-mission/authorize-execution',{
+   method:'POST',
+   headers:{Origin:servers.base,'Content-Type':'application/json'},
+   body:JSON.stringify({mission_id:'mission-f6d1',checkpoint_id:'smc-f6d1-pre',ticket_id:'ticket-a',execution_authority_hash:'e'.repeat(64),human_authorization_reference:'human-auth-f6d1',session_id:'test'}),
+  })
+  const data=await response.json()
+  assert.equal(response.status,200)
+  assert.equal(auth,'secret')
+  assert.equal(posted.human_authorization_reference,'human-auth-f6d1')
+  assert.equal(data.monde_proxy_schema,'OBSIDIA_MONDE_SUPERVISED_MISSION_AUTHORIZATION_PROXY_V1')
+  assert.equal(data.state,'EXECUTED_OBSERVED')
+  assert.equal(data.executor_invoked,true)
+  assert.equal(data.approval_created,false)
+  assert.equal(data.supervisor_approval_created,false)
+  assert.equal(data.memory_write,false)
+  assert.equal(data.local_root,undefined)
+  assert.equal(data.token,undefined)
+  assert.equal(data.checkpoint_projection.monde_proxy_schema,'OBSIDIA_MONDE_SUPERVISED_MISSION_PROXY_V1')
+ }finally{servers.api.close();servers.monde.close()}
+})
+
+test('authorization handoff proxy preserves HOLD and upstream auth failures',async()=>{
+ const hold=await withServers((_req,res)=>{
+  res.writeHead(200,{'Content-Type':'application/json'})
+  res.end(JSON.stringify({schema_version:'OBSIDURE_SUPERVISED_MISSION_AUTHORIZATION_HANDOFF_API_V1',status:'R12_F6_D1_EXECUTION_HELD',state:'HOLD',reason:'HOLD_AWAITING_VALID_AUTHORIZATION',executor_invoked:false,approval_created:false,memory_write:false}))
+ })
+ try{
+  const response=await fetch(hold.base+'/obsidia-local/supervised-mission/authorize-execution',{method:'POST',headers:{Origin:hold.base,'Content-Type':'application/json'},body:JSON.stringify({mission_id:'mission-f6d1',checkpoint_id:'smc-f6d1-pre',ticket_id:'ticket-a',execution_authority_hash:'e'.repeat(64),human_authorization_reference:'human-auth-f6d1'})})
+  const data=await response.json()
+  assert.equal(data.state,'HOLD')
+  assert.equal(data.reason,'HOLD_AWAITING_VALID_AUTHORIZATION')
+  assert.equal(data.executor_invoked,false)
+ }finally{hold.api.close();hold.monde.close()}
+ const denied=await withServers((_req,res)=>{res.writeHead(401,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'unauthorized'}))})
+ try{
+  const response=await fetch(denied.base+'/obsidia-local/supervised-mission/authorize-execution',{method:'POST',headers:{Origin:denied.base,'Content-Type':'application/json'},body:JSON.stringify({mission_id:'mission-f6d1',checkpoint_id:'smc-f6d1-pre',ticket_id:'ticket-a',execution_authority_hash:'e'.repeat(64),human_authorization_reference:'human-auth-f6d1'})})
   const data=await response.json()
   assert.equal(data.status,'UNAVAILABLE')
   assert.equal(data.reason,'UPSTREAM_AUTH_DENIED')

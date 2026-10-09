@@ -3,9 +3,11 @@ import {useState,type FormEvent} from 'react'
 type Ticket={ticket_id:string;objective?:string;dependency_ids:string[];status:string;phase:string;hold_reason?:string;blocked_reason?:string;verification_level?:string;pending_approval?:boolean;evidence_refs?:string[];action_evidence_id?:string;receipt_refs?:string[];closed?:boolean;verified?:boolean}
 type Projection={schema_version?:string;status:string;reason?:string;mission_id?:string;original_goal?:string;mandate?:{human_mandate_reference?:string;status?:string;revoked?:boolean};project?:{repository_identity?:string;branch?:string;base_sha?:string;worktree_visible?:boolean;local_root_visible?:boolean};tickets?:Ticket[];unique_next_ticket_id?:string;hold?:{reason?:string;root_causes?:unknown[];transitive_blocks?:unknown[]};budget?:Record<string,unknown>;timebox?:Record<string,unknown>;pending_approvals?:unknown[];evidence?:{evidence_refs?:string[];action_evidence_refs?:string[];receipt_refs?:string[]};verification?:{ticket_levels?:Record<string,string>;mission_completion_proof_ref?:Record<string,unknown>|null};binder_replay?:{independent_replay_available?:boolean;limitations?:string[]};checkpoint?:{checkpoint_id?:string;integrity_digest?:string;resume_status?:string};next_step?:{status?:string;selected_ticket_id?:string;requested_operation?:string;hold_reason?:string};status_distinctions?:Record<string,boolean>;readonly?:boolean;authority?:string;decision_authority?:string;executor_invoked?:boolean;approval_created?:boolean;memory_write?:boolean}
 type PrepareResult={status:string;state?:string;reason?:string;mission_id?:string;checkpoint_id?:string;checkpoint_projection?:Projection;hold_reasons?:string[];provider_provenance?:Record<string,unknown>;authority?:string;decision_authority?:string;executor_invoked?:boolean;approval_created?:boolean;memory_write?:boolean}
+type AuthorizationResult={status:string;state?:string;reason?:string;mission_id?:string;ticket_id?:string;checkpoint_id?:string;checkpoint_projection?:Projection;execution_phase?:string;action_evidence_id?:string;execution_outcome?:Record<string,unknown>;r8_receipt?:string;r10_repair_classification?:Record<string,unknown>;authority?:string;decision_authority?:string;executor_invoked?:boolean;approval_created?:boolean;memory_write?:boolean}
 
 const statusOrder=['PREPARED','AUTHORIZED','EXECUTED_OBSERVED','AWAITING_VERIFICATION','VERIFIED','CLOSED','MISSION_DONE_VERIFIED','HOLD']
 const prepareStates=['PREPARED_AWAITING_APPROVAL','HOLD','UNAVAILABLE','ERROR']
+const authorizationStates=['EXECUTION_ATTEMPTED','EXECUTED_OBSERVED','OUTCOME_UNCERTAIN','EXECUTION_FAILED','HOLD','UNAVAILABLE','ERROR']
 const compact=(value:unknown)=>JSON.stringify(value??{},null,2)
 const list=(value:string)=>value.split(',').map(x=>x.trim()).filter(Boolean)
 const json=(value:string)=>value.trim()?JSON.parse(value):{}
@@ -13,6 +15,7 @@ const json=(value:string)=>value.trim()?JSON.parse(value):{}
 export default function SupervisedMissionPanel(){
  const [missionId,setMissionId]=useState(''),[checkpointId,setCheckpointId]=useState(''),[projection,setProjection]=useState<Projection|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(false)
  const [goal,setGoal]=useState(''),[mandateRef,setMandateRef]=useState(''),[repoId,setRepoId]=useState(''),[worktree,setWorktree]=useState(''),[branch,setBranch]=useState(''),[baseSha,setBaseSha]=useState(''),[targetPaths,setTargetPaths]=useState(''),[operations,setOperations]=useState('MODIFY'),[tools,setTools]=useState('pytest'),[tests,setTests]=useState(''),[budgets,setBudgets]=useState('{"max_attempts":1,"max_actions":1}'),[provider,setProvider]=useState('{"status":"VERIFIED","provider":"QWEN_LOCAL","model":"qwen2.5-3b-instruct-q4_k_m"}'),[artifacts,setArtifacts]=useState('{"phase1_candidate":{},"inventory_snapshot":{},"deficiency_evidence":{},"validation_evidence":{}}'),[prepareResult,setPrepareResult]=useState<PrepareResult|null>(null),[preparing,setPreparing]=useState(false)
+ const [authTicket,setAuthTicket]=useState(''),[authEah,setAuthEah]=useState(''),[authRef,setAuthRef]=useState(''),[authResult,setAuthResult]=useState<AuthorizationResult|null>(null),[authorizing,setAuthorizing]=useState(false)
  async function submit(event:FormEvent){
   event.preventDefault();setLoading(true);setError('')
   try{
@@ -56,8 +59,22 @@ export default function SupervisedMissionPanel(){
    if(data.checkpoint_projection)setProjection(data.checkpoint_projection)
   }catch(e){setError(String(e).replace(/^Error:\s*/,''))}finally{setPreparing(false)}
  }
+ async function authorize(event:FormEvent){
+  event.preventDefault();setAuthorizing(true);setError('');setAuthResult(null)
+  try{
+   const payload={mission_id:missionId.trim(),checkpoint_id:checkpointId.trim(),ticket_id:authTicket.trim(),execution_authority_hash:authEah.trim(),human_authorization_reference:authRef.trim(),session_id:'monde-r12-f6-d1'}
+   const response=await fetch('/obsidia-local/supervised-mission/authorize-execution',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+   const data=await response.json()
+   if(!response.ok)throw Error(data.error||'Handoff indisponible')
+   setAuthResult(data)
+   if(data.checkpoint_id)setCheckpointId(data.checkpoint_id)
+   if(data.mission_id)setMissionId(data.mission_id)
+   if(data.checkpoint_projection)setProjection(data.checkpoint_projection)
+  }catch(e){setError(String(e).replace(/^Error:\s*/,''))}finally{setAuthorizing(false)}
+ }
  const tickets=projection?.tickets||[]
  const unavailable=projection?.status==='UNAVAILABLE'
+ const selectedTicket=tickets.find(ticket=>ticket.ticket_id===authTicket)||tickets.find(ticket=>ticket.pending_approval)||tickets[0]
  return <section className="supervised-panel" aria-label="Projection mission supervisée">
   <div className="supervised-head"><div><span className="eyebrow">MISSION SUPERVISÉE · READONLY</span><h3>État R12 canonique</h3></div><span>{projection?.readonly?'READONLY':'NON CHARGÉ'}</span></div>
   <form className="supervised-query" onSubmit={submit}>
@@ -91,6 +108,25 @@ export default function SupervisedMissionPanel(){
    <strong>{prepareResult.state||prepareResult.status}</strong>
    <span>{prepareResult.reason||prepareResult.hold_reasons?.join(' · ')||prepareResult.checkpoint_id||'Résultat reçu'}</span>
    <pre>{compact({mission_id:prepareResult.mission_id,checkpoint_id:prepareResult.checkpoint_id,provider:prepareResult.provider_provenance,authority:prepareResult.authority,decision_authority:prepareResult.decision_authority,executor_invoked:prepareResult.executor_invoked,approval_created:prepareResult.approval_created,memory_write:prepareResult.memory_write})}</pre>
+  </div>}
+  {projection&&!unavailable&&<form className="supervised-prepare" onSubmit={authorize} aria-label="Handoff d’autorisation supervisée">
+   <div className="supervised-prepare-title"><div><span className="eyebrow">HANDOFF D’AUTORISATION</span><h4>Référence humaine existante · exécution gouvernée</h4></div><span>pas de création d’autorité</span></div>
+   <div className="supervised-status-row">{authorizationStates.map(status=><span key={status} aria-current={authResult?.state===status||authResult?.execution_phase===status||authResult?.status===status?'true':undefined}>{status}</span>)}</div>
+   <section className="supervised-grid">
+    <div><h4>Inspection opérateur</h4><pre>{compact({checkpoint:projection.checkpoint,mandate:projection.mandate,selected_ticket:selectedTicket,budget:projection.budget,binder:projection.binder_replay})}</pre></div>
+    <div><h4>Dépendances</h4><pre>{compact({next:projection.next_step,hold:projection.hold,pending_approvals:projection.pending_approvals})}</pre></div>
+   </section>
+   <div className="supervised-form-grid">
+    <label>Ticket préparé<input value={authTicket} onChange={e=>setAuthTicket(e.target.value)} placeholder={selectedTicket?.ticket_id||'ticket-...'} maxLength={160}/></label>
+    <label>Execution authority hash<input value={authEah} onChange={e=>setAuthEah(e.target.value)} placeholder="64 hex" maxLength={64}/></label>
+    <label>Référence humaine<input value={authRef} onChange={e=>setAuthRef(e.target.value)} placeholder="human-auth-..." maxLength={256}/></label>
+   </div>
+   <button disabled={authorizing||!missionId.trim()||!checkpointId.trim()||!authTicket.trim()||!authEah.trim()||!authRef.trim()}>{authorizing?'Handoff…':'Soumettre la référence'}</button>
+  </form>}
+  {authResult&&<div className={`supervised-prepare-result status-${authResult.state||authResult.status}`} role="status">
+   <strong>{authResult.state||authResult.status}</strong>
+   <span>{authResult.reason||authResult.action_evidence_id||authResult.checkpoint_id||'Résultat reçu'}</span>
+   <pre>{compact({mission_id:authResult.mission_id,ticket_id:authResult.ticket_id,checkpoint_id:authResult.checkpoint_id,execution_phase:authResult.execution_phase,action_evidence_id:authResult.action_evidence_id,r8_receipt:authResult.r8_receipt,r10:authResult.r10_repair_classification,authority:authResult.authority,decision_authority:authResult.decision_authority,executor_invoked:authResult.executor_invoked,approval_created:authResult.approval_created,memory_write:authResult.memory_write})}</pre>
   </div>}
   {projection&&<div className={unavailable?'supervised-unavailable':'supervised-content'}>
    {unavailable?<p role="status">UNAVAILABLE · {projection.reason||'API Obsidia indisponible'}</p>:<>
