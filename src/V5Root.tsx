@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useState,type KeyboardEvent} from 'react'
 import V5Pokemon from './V5Pokemon'
 import V5Launchers from './V5Launchers'
+import UniversalOrganizationsPage from './UniversalOrganizationsPage'
 import {sessionAction} from './SessionControls'
 import './App.css'
 import './Office.css'
@@ -661,6 +662,7 @@ export default function V5Root(){
      {contextEntity&&worldZone!=='territories'&&<><span>›</span><strong>{contextEntity.label}</strong></>}
     </nav>
     <nav className="v5-zonebar">{zones.map(([id,label])=><button key={id} aria-pressed={worldZone===id} onClick={()=>{setSelectedMechanism('');setWorldZone(id)}}>{label}</button>)}</nav>
+    {worldZone==='universal'&&<UniversalOrganizationsPage state={universalC5} observedCount={observedC53?.recordCount??0}/>}
     {(worldZone==='governance'||worldZone==='universal')&&<section className="v5-panel" aria-label="Universal C5 — Organisations">
       <header><div><small>UNIVERSAL C5 · READ-ONLY</small><h2>Organisation et capacités gouvernées</h2></div><span>KX108_ONLY · aucune exécution</span></header>
       <p>Source locale explicitement configurée. Une seule organisation autorisée par le serveur. Données absentes : aucune autorité inférée.</p>
