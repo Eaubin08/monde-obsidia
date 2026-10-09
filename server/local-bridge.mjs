@@ -1,4 +1,5 @@
 import {brodyServiceStatus,closeOwnedBrodyApi} from './brody-service.mjs'
+import {readUniversalC5Local} from './universal-c5-local.mjs'
 import {terminalCommand,launchTerminal,focusTerminal,stopTerminal,terminalAlive} from './native-terminal.mjs'
 import {liveSnapshot,liveDirectory} from './live-events.mjs'
 import {buildObsidiaState} from './obsidia-state.mjs'
@@ -470,6 +471,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  let launchKey;
  const url=new URL(req.url,'http://localhost');res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');
  try{
+ if(req.method==='GET'&&url.pathname==='/universal-c5'){res.end(JSON.stringify(readUniversalC5Local({organizationId:process.env.OBSIDIA_C5_ORGANIZATION_ID,recordsPath:process.env.OBSIDIA_C5_RECORDS_PATH})));return}
  if(req.method==='GET'&&url.pathname==='/services'){res.end(JSON.stringify({brody:await brodyServiceStatus()}));return}
  if(req.method==='GET'&&url.pathname==='/jarjar/status'){res.end(JSON.stringify(jarjarObservedStatus()));return}
  if(req.method==='POST'&&url.pathname==='/jarjar/stop'){
