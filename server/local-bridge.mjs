@@ -35,11 +35,7 @@ function nativeServiceSpec(id,root){
   },
   'open-jarvis':{
    title:'OPEN JARVIS - GOVERNED',
-   command:`$oj=@(
-     (Join-Path $env:USERPROFILE 'Desktop\\obsidia-openjarvis-install-v0'),
-     'C:\\Users\\User\\Desktop\\obsidia-openjarvis-install-v0',
-     'C:\\Users\\Aubin\\Desktop\\obsidia-openjarvis-install-v0'
-   ) | Where-Object { Test-Path -LiteralPath (Join-Path $_ 'start-openjarvis.ps1') } | Select-Object -First 1; if(-not $oj){ throw 'Open Jarvis launcher introuvable' }; Set-Location -LiteralPath $oj; & (Join-Path $oj 'start-openjarvis.ps1')`
+   command:`& ${q(resolve(projectRoot,'scripts','start-openjarvis-from-monde.ps1'))}`
   },
   'gps-defense':{
    title:'GPS/AVIATION LIVE -> KERNEL BRIDGE',
