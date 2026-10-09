@@ -140,7 +140,7 @@ function jarjarObservedStatus(){
  const components={
   kernel:{port:3001,ready:!!kernelPid&&canonicalPortOwner('kernel-x108',kernelPid)},
   brodyApi:{port:8000,ready:!!apiPid&&canonicalPortOwner('obsidia-api',apiPid)},
-  qwenText:{port:8080,ready:portOpen(8080)},
+  qwenText:{port:8080,ready:!!qwenPid&&canonicalPortOwner('qwen-text',qwenPid)},
   qwenVL:{port:8081,ready:portOpen(8081)},
   hud:{port:null,ready:jarjarProcess}
  }
@@ -332,7 +332,7 @@ function canonicalPortOwner(id,pid){
  if(!line)return false
  if(id==='kernel-x108')return /server\.kernel\.sealed\.cjs/i.test(line)
  if(id==='obsidia-api')return /uvicorn/i.test(line)&&/apps\.obsidia_api\.main:app/i.test(line)
- if(id==='qwen-text')return /llama-server(?:\.exe)?/i.test(line)&&/(?:--port\s+|--port=)8080\b/i.test(line)
+ if(id==='qwen-text')return /llama-server(?:\.exe)?/i.test(line)&&/(?:qwen2\.5-3b-instruct-q4_k_m\.gguf|MODELS[\\/]QWEN)/i.test(line)
  if(id==='qwen-vl')return /llama-server(?:\.exe)?/i.test(line)&&/(?:--port\s+|--port=)8081\b/i.test(line)
  return false
 }
