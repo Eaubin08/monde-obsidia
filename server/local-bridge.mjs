@@ -15,7 +15,7 @@ import {projectRoot,repository,observer,pythonFor} from './paths.mjs'
 export {repository} from './paths.mjs'
 export function contained(root,path){const r=realpathSync(root),p=realpathSync(resolve(r,path));const rel=relative(r,p);if(rel.startsWith('..'+sep)||rel==='..'||rel.startsWith(sep))throw Error('Chemin hors projet');return p}
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
-const nativeServiceIds=new Set(['kernel-x108','obsidia-api','qwen-text','qwen-vl','open-jarvis','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
+const nativeServiceIds=new Set(['kernel-x108','obsidia-api','qwen-text','qwen-vl','open-jarvis','open-jarvis-ui','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
 function nativeServiceSpec(id,root){
  const q=s=>"'" + String(s).replaceAll("'","''") + "'"
  const rt=resolve(root,'runtime_terrain_bank_trading_gps')
@@ -40,6 +40,10 @@ function nativeServiceSpec(id,root){
   'open-jarvis':{
    title:'OPEN JARVIS - GOVERNED',
    command:`& ${q(resolve(projectRoot,'scripts','start-openjarvis-from-monde.ps1'))}`
+  },
+  'open-jarvis-ui':{
+   title:'OPEN JARVIS UI - GOVERNED',
+   command:`& ${q(resolve(projectRoot,'scripts','start-openjarvis-ui-from-monde.ps1'))}`
   },
   'gps-defense':{
    title:'GPS/AVIATION LIVE -> KERNEL BRIDGE',
