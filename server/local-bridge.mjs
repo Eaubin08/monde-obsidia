@@ -12,6 +12,8 @@ export {repository} from './paths.mjs'
 export function contained(root,path){const r=realpathSync(root),p=realpathSync(resolve(r,path));const rel=relative(r,p);if(rel.startsWith('..'+sep)||rel==='..'||rel.startsWith(sep))throw Error('Chemin hors projet');return p}
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
 const nativeServiceIds=new Set(['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
+const supervisedIdPattern=/^[A-Za-z0-9_.:-]{1,128}$/
+const supervisedCheckpointPattern=/^smc-[A-Za-z0-9_.:-]{1,80}$/
 function nativeServiceSpec(id,root){
  const q=s=>"'" + String(s).replaceAll("'","''") + "'"
  const rt=resolve(root,'runtime_terrain_bank_trading_gps')
@@ -219,6 +221,49 @@ function externalFamily(root,name,relativeRepo,agentFile,kind='agents'){
   return {id:name,label:name,sourceRepo:relativeRepo,localPresent:true,kind,agents}
  }catch{return {id:name,label:name,sourceRepo:relativeRepo,localPresent:false,kind,agents:[]}}
 }
+function obsidiaApiBase(){
+ return (process.env.OBSIDIA_API_BASE||process.env.VITE_ENGINE_API_BASE||'http://127.0.0.1:8000').replace(/\/+$/,'')
+}
+function stripSensitive(value){
+ if(Array.isArray(value))return value.map(stripSensitive)
+ if(value&&typeof value==='object'){
+  const out={}
+  for(const [key,raw] of Object.entries(value)){
+   if(/api[_-]?key|credential|secret|token/i.test(key))continue
+   if(key==='local_root')continue
+   if(key==='worktree'){out.worktree_visible=!!raw;continue}
+   out[key]=stripSensitive(raw)
+  }
+  return out
+ }
+ return value
+}
+function unavailable(reason,extra={}){
+ return {schema_version:'OBSIDIA_MONDE_SUPERVISED_MISSION_PROXY_V1',status:'UNAVAILABLE',reason,readonly:true,authority:'NONE',decision_authority:'KX108_ONLY',emits_act:false,approval_created:false,executor_invoked:false,memory_write:false,native_memory_write:false,kx108_called:false,binder_mutation:false,...extra}
+}
+export async function supervisedMissionReadonlyProjection(missionId,checkpointId){
+ if(!supervisedIdPattern.test(String(missionId||'')))throw Error('Mission invalide')
+ if(!supervisedCheckpointPattern.test(String(checkpointId||'')))throw Error('Checkpoint invalide')
+ const upstream=new URL('/api/supervised-missions/'+encodeURIComponent(missionId)+'/projection',obsidiaApiBase())
+ upstream.searchParams.set('checkpoint_id',checkpointId)
+ const headers={Accept:'application/json'}
+ if(process.env.OBSIDIA_API_KEY)headers['X-API-Key']=process.env.OBSIDIA_API_KEY
+ let response,data
+ try{
+  response=await fetch(upstream,{headers})
+  const text=await response.text()
+  data=text?JSON.parse(text):{}
+ }catch(e){
+  return unavailable('UPSTREAM_API_UNAVAILABLE',{upstream_base:obsidiaApiBase(),error:String(e?.message||e)})
+ }
+ if(!response.ok){
+  const detail=data?.detail||data||{}
+  const reason=response.status===401?'UPSTREAM_AUTH_DENIED':String(detail.reason||detail.error||data.error||'UPSTREAM_REJECTED')
+  return unavailable(reason,{upstream_status:response.status})
+ }
+ const projection=stripSensitive(data)
+ return {...projection,monde_proxy_schema:'OBSIDIA_MONDE_SUPERVISED_MISSION_PROXY_V1',readonly:true,authority:'NONE',decision_authority:'KX108_ONLY',emits_act:false,approval_created:false,executor_invoked:false,memory_write:false,native_memory_write:false,kx108_called:false,binder_mutation:false}
+}
 function agentFamilies(root){
  const sigma=sigmaDomains(root).map(d=>({id:'sigma:'+d.id,label:d.displayName,sourceRepo:'obsidia-x108-proofs',sourcePath:d.sourcePath,localPresent:d.runtimeFilePresent,kind:'sigma',agents:d.agents}))
  const periphery=peripheryAgents(root)
@@ -277,6 +322,10 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  try{
  if(req.method==='GET'&&url.pathname==='/services'){res.end(JSON.stringify({brody:await brodyServiceStatus()}));return}
  if(req.method==='GET'&&url.pathname==='/jarjar/status'){res.end(JSON.stringify(jarjarObservedStatus()));return}
+ if(req.method==='GET'&&url.pathname==='/supervised-mission/projection'){
+  const projection=await supervisedMissionReadonlyProjection(url.searchParams.get('mission_id'),url.searchParams.get('checkpoint_id'))
+  res.end(JSON.stringify(projection));return
+ }
  if(req.method==='POST'&&url.pathname==='/jarjar/stop'){
   if(req.headers.origin!==`http://${req.headers.host}`)throw Error('Origine refusée')
   const managed=[...processes.entries()].find(([,p])=>p.tool==='jarjar'&&p.active)

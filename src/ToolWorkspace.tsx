@@ -1,5 +1,6 @@
 import {useEffect,useState,type FormEvent} from 'react'
 import {sessionAction} from './SessionControls'
+import SupervisedMissionPanel from './SupervisedMissionPanel'
 
 type RuntimeEvent={kind:string;phase:string;message:string;timestamp:string;objective?:string;result?:Record<string,unknown>}
 type Session={sessionId:string;agentId:string;name:string;presence:'live'|'unknown'|'ended';phase:string;message:string;objective:string|null;events:RuntimeEvent[]}
@@ -39,7 +40,7 @@ export default function ToolWorkspace({tool,sessions,onSelect}:{tool:Tool;sessio
     <form className="workspace-composer" onSubmit={submit}><textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Écris à Brody…" maxLength={4096}/><button disabled={busy||!text.trim()}>{busy?'Envoi…':'Envoyer'}</button></form>
    </div>:tool==='obsidure'?<div className="mission-workspace">
     <div className="mission-main"><h3>Donner une mission</h3><form className="workspace-composer" onSubmit={submit}><textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Décris précisément ce qu’Obsidure doit auditer ou construire…" maxLength={4096}/><button disabled={busy||!text.trim()}>{busy?'Démarrage…':'Lancer la mission'}</button></form><div className="office-toolbar"><button disabled={busy} onClick={()=>act('run',{mode:'audit'})}>Audit rapide</button><button disabled={busy} onClick={()=>act('run',{mode:'audit-long'})}>Audit long</button></div></div>
-    <div className="mission-output"><h3>Résultat / activité</h3><p>{current?.objective||'Aucune mission active.'}</p><pre className="source-content">{process?.output||current?.message||'Le résultat apparaîtra ici.'}</pre></div>
+    <div className="mission-output"><h3>Résultat / activité</h3><p>{current?.objective||'Aucune mission active.'}</p><pre className="source-content">{process?.output||current?.message||'Le résultat apparaîtra ici.'}</pre><SupervisedMissionPanel/></div>
    </div>:<div className="cli-workspace">
     <div className="cli-console"><pre>{process?.output||'CLI Obsidia prête. Lance une session et sa sortie apparaîtra ici.'}</pre></div>
     <form className="workspace-composer" onSubmit={submit}><input value={text} onChange={e=>setText(e.target.value)} placeholder="Commande / demande CLI" maxLength={4096}/><button disabled={busy||!text.trim()}>{busy?'Envoi…':'Envoyer'}</button></form>

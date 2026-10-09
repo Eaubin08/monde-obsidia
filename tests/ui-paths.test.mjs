@@ -6,6 +6,7 @@ import {resolve} from 'node:path'
 const pokemon=readFileSync(resolve(process.cwd(),'src/LivePokemon.tsx'),'utf8')
 const ecosystem=readFileSync(resolve(process.cwd(),'src/Ecosystem.tsx'),'utf8')
 const workspace=readFileSync(resolve(process.cwd(),'src/ToolWorkspace.tsx'),'utf8')
+const supervisedPanel=readFileSync(resolve(process.cwd(),'src/SupervisedMissionPanel.tsx'),'utf8')
 const bridge=readFileSync(resolve(process.cwd(),'server/local-bridge.mjs'),'utf8')
 const stateProjection=readFileSync(resolve(process.cwd(),'server/obsidia-state.mjs'),'utf8')
 const jarjarLauncher=readFileSync(resolve(process.cwd(),'scripts/start-jarjar-full.ps1'),'utf8')
@@ -33,6 +34,35 @@ test('Workspace integrated controls map to real bridge actions',()=>{
   "act('focus/'+current!.sessionId)",
  ]) assert.ok(workspace.includes(invariant),invariant)
  for(const route of ['/run','/input/','/stop/','/focus/','/open/'])assert.ok(bridge.includes(route),route)
+})
+
+test('Workspace exposes supervised mission readonly projection without authority controls',()=>{
+ for(const invariant of [
+  "import SupervisedMissionPanel",
+  '<SupervisedMissionPanel/>',
+ ]) assert.ok(workspace.includes(invariant),invariant)
+ for(const invariant of [
+  '/obsidia-local/supervised-mission/projection',
+  'MISSION SUPERVISÉE · READONLY',
+  'PREPARED',
+  'AUTHORIZED',
+  'EXECUTED_OBSERVED',
+  'AWAITING_VERIFICATION',
+  'VERIFIED',
+  'CLOSED',
+  'MISSION_DONE_VERIFIED',
+  'HOLD',
+  'Binder',
+  'Checkpoint / reprise',
+ ]) assert.ok(supervisedPanel.includes(invariant),invariant)
+ for(const forbidden of ['dangerouslySetInnerHTML','APPROVE','RESUME_EXECUTE','REPAIR'])assert.equal(supervisedPanel.includes(forbidden),false,forbidden)
+ for(const invariant of [
+  "'/supervised-mission/projection'",
+  'supervisedMissionReadonlyProjection',
+  'UPSTREAM_AUTH_DENIED',
+  'UPSTREAM_API_UNAVAILABLE',
+  'worktree_visible',
+ ]) assert.ok(bridge.includes(invariant),invariant)
 })
 
 test('Cross-view context remains shared',()=>{
