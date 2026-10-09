@@ -26,10 +26,18 @@ if(-not (Test-Path -LiteralPath $root)){
 }else{
   Write-Host "Dossier existant: $root" -ForegroundColor Green
   if(Test-Path -LiteralPath (Join-Path $root '.git')){
-    git -C $root fetch origin $obsidiaBranch
+    git -C $root fetch origin "$obsidiaBranch`:refs/remotes/origin/$obsidiaBranch"
     if($LASTEXITCODE -ne 0){ throw 'git fetch OpenJarvis Obsidia impossible' }
-    git -C $root switch $obsidiaBranch
-    if($LASTEXITCODE -ne 0){ throw "Branche $obsidiaBranch introuvable localement" }
+
+    git -C $root show-ref --verify --quiet "refs/heads/$obsidiaBranch"
+    if($LASTEXITCODE -eq 0){
+      git -C $root switch $obsidiaBranch
+      if($LASTEXITCODE -ne 0){ throw "Impossible de basculer sur $obsidiaBranch" }
+    }else{
+      git -C $root switch -c $obsidiaBranch --track "origin/$obsidiaBranch"
+      if($LASTEXITCODE -ne 0){ throw "Impossible de creer la branche locale $obsidiaBranch depuis origin/$obsidiaBranch" }
+    }
+
     git -C $root pull --ff-only origin $obsidiaBranch
     if($LASTEXITCODE -ne 0){ throw 'git pull OpenJarvis Obsidia impossible' }
   }
