@@ -9,6 +9,7 @@ const launchers=readFileSync(resolve(process.cwd(),'src/V5Launchers.tsx'),'utf8'
 const bridge=readFileSync(resolve(process.cwd(),'server/local-bridge.mjs'),'utf8')
 const stateProjection=readFileSync(resolve(process.cwd(),'server/obsidia-state.mjs'),'utf8')
 const jarjarLauncher=readFileSync(resolve(process.cwd(),'scripts/start-jarjar-full.ps1'),'utf8')
+const serviceLauncher=readFileSync(resolve(process.cwd(),'scripts/start-service-colored.ps1'),'utf8')
 
 test('V5 cross-view navigation stays wired',()=>{
  for(const invariant of [
@@ -30,10 +31,35 @@ test('Workspace launchers map to real bridge routes',()=>{
   "'/obsidia-local/jarjar/stop'",
   "['kernel-x108','Kernel X108','service']",
   "['obsidia-api','API Obsidia + Brody + Native Memory','service']",
+  "['qwen-text','Qwen texte · :8080','service']",
+  "['qwen-vl','Qwen-VL · :8081','service']",
   "['gps-defense','GPS / Defense / Aviation','service']",
   "['trading-x108','Trading → X108','service']",
  ]) assert.ok(launchers.includes(invariant),invariant)
  for(const route of ["/run","/input/","/stop/","/focus/","/open/","/jarjar/status","/jarjar/stop"])assert.ok(bridge.includes(route),route)
+})
+
+test('Workspace system services expose Qwen live state and lit buttons',()=>{
+ for(const invariant of [
+  "nativeServiceIds=new Set(['kernel-x108','obsidia-api','qwen-text','qwen-vl'",
+  "{id:'qwen-text',label:'Qwen texte · :8080'",
+  "{id:'qwen-vl',label:'Qwen-VL · :8081'",
+  "PORT_8080_CANONICAL_PROCESS",
+  "PORT_8081_CANONICAL_PROCESS",
+ ]) assert.ok(bridge.includes(invariant),invariant)
+ for(const invariant of [
+  "status==='READY'?<button disabled>ALLUMÉ</button>",
+  "status==='STARTING'?<button disabled>ALLUMAGE…</button>",
+  "jarjar.state==='READY'?'ALLUMÉ · Ouvrir'",
+ ]) assert.ok(launchers.includes(invariant),invariant)
+ for(const invariant of [
+  "'qwen-text' {",
+  "'qwen-vl' {",
+  "Desktop\\llama-b11193\\llama-server.exe",
+  "Desktop\\MODELS\\QWEN\\qwen2.5-3b-instruct-q4_k_m.gguf",
+  "scripts\\start_qwen_vl.ps1",
+  "Aucun telechargement automatique",
+ ]) assert.ok(serviceLauncher.includes(invariant),invariant)
 })
 
 test('Jarjar runtime is shared across state and views',()=>{
