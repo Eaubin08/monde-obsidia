@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import LegacyWorld from './LegacyWorld'
+import EnterpriseOrganizations from './EnterpriseOrganizations'
 import './App.css'
 import './Office.css'
 
@@ -17,7 +18,8 @@ function valid(v:unknown):v is Office {
   return Array.isArray(x.zones) && x.zones.every(z=>typeof z==='string' && z.trim()) && new Set(x.zones).size===x.zones.length && Array.isArray(x.agents) && new Set(x.agents.map(a=>a?.id)).size===x.agents.length && x.agents.every(a=>a && ['id','name','role','zone','mission','state','rights','exchanges'].every(k=>typeof a[k as keyof Agent]==='string') && a.id && a.name.trim() && states.includes(a.state) && (a.zone==='' || x.zones.includes(a.zone)))
 }
 export default function App() {
-  const [view,setView]=useState(location.hash==='#world'?'world':'agents')
+  const resolveView = () => location.hash === '#world' ? 'world' : location.hash === '#organizations' ? 'organizations' : 'agents'
+  const [view,setView]=useState<'world'|'agents'|'organizations'>(resolveView)
   const [office,setOffice]=useState<Office>(read)
   const [selected,setSelected]=useState('')
   const [zone,setZone]=useState('')
@@ -25,7 +27,7 @@ export default function App() {
   const [error,setError]=useState('')
   useEffect(()=>{
     const sync=(e:StorageEvent)=>{if(e.key===key) setOffice(read())}
-    const hash=()=>setView(location.hash==='#world'?'world':'agents')
+    const hash=()=>setView(resolveView())
     window.addEventListener('storage',sync); window.addEventListener('hashchange',hash)
     return()=>{window.removeEventListener('storage',sync);window.removeEventListener('hashchange',hash)}
   },[])
@@ -36,8 +38,8 @@ export default function App() {
   function exportOffice() {const url=URL.createObjectURL(new Blob([JSON.stringify(office,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='obsidia-bureau-rd.json';a.click();URL.revokeObjectURL(url)}
   return <div className="observatory">
     <header className="obs-header"><a href="#agents" className="brand">◈ OBSIDIA <small>ÉCOSYSTÈME / BUREAU R&D</small></a><span className="authority">KX108_ONLY</span></header>
-    <nav className="view-nav" aria-label="Vues de l’écosystème"><a href="#agents" aria-current={view==='agents'?'page':undefined}>Pokémon View <small>Qui travaille</small></a><a href="#world" aria-current={view==='world'?'page':undefined}>Obsidia Monde <small>Carte précédente</small></a><span>Workspace <small>Étape suivante</small></span><a href="#agents" target="_blank" rel="noreferrer">↗ Fenêtre indépendante</a></nav>
-    {view==='world'?<LegacyWorld/>:<>
+    <nav className="view-nav" aria-label="Vues de l’écosystème"><a href="#agents" aria-current={view==='agents'?'page':undefined}>Pokémon View <small>Qui travaille</small></a><a href="#world" aria-current={view==='world'?'page':undefined}>Obsidia Monde <small>Carte précédente</small></a><a href="#organizations" aria-current={view==='organizations'?'page':undefined}>Entreprises & Organisations <small>CSSA</small></a><span>Workspace <small>Étape suivante</small></span><a href="#agents" target="_blank" rel="noreferrer">↗ Fenêtre indépendante</a></nav>
+    {view==='world'?<LegacyWorld/>:view==='organizations'?<EnterpriseOrganizations/>:<>
     <section className="office-heading"><div><span className="eyebrow">LÀ OÙ TU VOIS LES AGENTS TRAVAILLER</span><h1>Bureau Pokémon R&D</h1><p>Zones · missions · états · échanges</p></div><div className="office-actions"><button onClick={exportOffice}>Exporter le bureau</button><label className="import-button">Importer une copie<input type="file" accept=".json,application/json" onChange={async e=>{const file=e.target.files?.[0];if(!file)return;try{const data:unknown=JSON.parse(await file.text());if(!valid(data))throw Error();if(!window.confirm('Remplacer le bureau local par cette copie ?'))return;save(data);setSelected('')}catch{setError('Fichier invalide : bureau inchangé.')}e.target.value=''}}/></label></div></section>
     <p className="connection"><span/> Suivi manuel · runtime non raccordé · états déclarés, sans exécution</p>
     {error&&<p role="alert">{error}</p>}
