@@ -11,7 +11,7 @@ import {projectRoot,repository,observer,pythonFor} from './paths.mjs'
 export {repository} from './paths.mjs'
 export function contained(root,path){const r=realpathSync(root),p=realpathSync(resolve(r,path));const rel=relative(r,p);if(rel.startsWith('..'+sep)||rel==='..'||rel.startsWith(sep))throw Error('Chemin hors projet');return p}
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
-const nativeServiceIds=new Set(['kernel-x108','obsidia-api','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
+const nativeServiceIds=new Set(['kernel-x108','obsidia-api','qwen-text','qwen-vl','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
 function nativeServiceSpec(id,root){
  const q=s=>"'" + String(s).replaceAll("'","''") + "'"
  const rt=resolve(root,'runtime_terrain_bank_trading_gps')
@@ -24,6 +24,14 @@ function nativeServiceSpec(id,root){
   'obsidia-api':{
    title:'OBSIDIA API 8000 - LIVE KERNEL BRIDGE',
    command:`& ${q(resolve(projectRoot,'scripts','start-service-colored.ps1'))} -Service 'obsidia-api' -Root ${q(root)}`
+  },
+  'qwen-text':{
+   title:'QWEN TEXT 8080 - LOCAL GGUF',
+   command:`& ${q(resolve(projectRoot,'scripts','start-service-colored.ps1'))} -Service 'qwen-text' -Root ${q(root)}`
+  },
+  'qwen-vl':{
+   title:'QWEN-VL 8081 - VISION LOCAL',
+   command:`& ${q(resolve(projectRoot,'scripts','start-service-colored.ps1'))} -Service 'qwen-vl' -Root ${q(root)}`
   },
   'gps-defense':{
    title:'GPS/AVIATION LIVE -> KERNEL BRIDGE',
@@ -91,11 +99,17 @@ function nativeServicesObservedStatus(){
  const managedFor=id=>[...processes.entries()].find(([,p])=>p.tool===id&&p.active)
  const kernelPid=listeningPid(3001)
  const apiPid=listeningPid(8000)
+ const qwenPid=listeningPid(8080)
+ const qwenVlPid=listeningPid(8081)
  const kernelReady=!!kernelPid&&canonicalPortOwner('kernel-x108',kernelPid)
  const apiReady=!!apiPid&&canonicalPortOwner('obsidia-api',apiPid)
+ const qwenReady=!!qwenPid&&canonicalPortOwner('qwen-text',qwenPid)
+ const qwenVlReady=!!qwenVlPid&&canonicalPortOwner('qwen-vl',qwenVlPid)
  const definitions=[
   {id:'kernel-x108',label:'Kernel X108',ready:kernelReady,evidence:kernelReady?'PORT_3001_CANONICAL_PROCESS':kernelPid?'PORT_3001_FOREIGN_PROCESS':'PORT_3001'},
   {id:'obsidia-api',label:'API Obsidia + Brody + Native Memory',ready:apiReady,evidence:apiReady?'PORT_8000_CANONICAL_PROCESS':apiPid?'PORT_8000_FOREIGN_PROCESS':'PORT_8000'},
+  {id:'qwen-text',label:'Qwen texte · :8080',ready:qwenReady,evidence:qwenReady?'PORT_8080_CANONICAL_PROCESS':qwenPid?'PORT_8080_FOREIGN_PROCESS':'PORT_8080'},
+  {id:'qwen-vl',label:'Qwen-VL · :8081',ready:qwenVlReady,evidence:qwenVlReady?'PORT_8081_CANONICAL_PROCESS':qwenVlPid?'PORT_8081_FOREIGN_PROCESS':'PORT_8081'},
   {id:'gps-defense',label:'GPS / Defense / Aviation',ready:hasProcess(/connectors[\\/]aviation_robo\.py/i),evidence:'PROCESS_AVIATION_ROBO'},
   {id:'trading-x108',label:'Trading → X108',ready:hasProcess(/connectors[\\/]trading_live\.py/i),evidence:'PROCESS_TRADING_LIVE'},
   {id:'brody-enriched',label:'Brody Enriched',ready:hasProcess(/run_brody_terminal_enriched\.ps1/i),evidence:'PROCESS_BRODY_ENRICHED'},
