@@ -140,8 +140,8 @@ function jarjarObservedStatus(){
  const components={
   kernel:{port:3001,ready:!!kernelPid&&canonicalPortOwner('kernel-x108',kernelPid)},
   brodyApi:{port:8000,ready:!!apiPid&&canonicalPortOwner('obsidia-api',apiPid)},
-  qwenText:{port:8080,ready:!!qwenPid&&canonicalPortOwner('qwen-text',qwenPid)},
-  qwenVL:{port:8081,ready:!!qwenVlPid&&canonicalPortOwner('qwen-vl',qwenVlPid)},
+  qwenText:{port:8080,ready:portOpen(8080)},
+  qwenVL:{port:8081,ready:portOpen(8081)},
   hud:{port:null,ready:jarjarProcess}
  }
  let state='OFFLINE'
