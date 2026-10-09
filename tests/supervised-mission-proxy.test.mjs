@@ -27,6 +27,26 @@ const fixture={
  readonly:true,authority:'NONE',decision_authority:'KX108_ONLY',executor_invoked:false,approval_created:false,memory_write:false
 }
 
+const prepareFixture={
+ schema_version:'OBSIDURE_SUPERVISED_MISSION_PREPARE_INGRESS_API_V1',
+ status:'R12_F6_C1_PREPARE_ONLY_ACCEPTED',
+ state:'PREPARED_AWAITING_APPROVAL',
+ reason:null,
+ mission_id:'mission-f6c2',
+ checkpoint_id:'smc-f6c2',
+ checkpoint_projection_available:true,
+ hold_reasons:[],
+ provider_provenance:{provider:'QWEN_LOCAL',model:'qwen2.5-3b-instruct-q4_k_m',model_call_used:true,api_key:'hidden'},
+ evidence_references:['ev-f6c2'],
+ authority:'NONE',
+ decision_authority:'KX108_ONLY',
+ executor_invoked:false,
+ approval_created:false,
+ memory_write:false,
+ local_root:'C:/secret/root',
+ token:'hidden',
+}
+
 async function withServers(handler){
  const api=createServer(handler)
  await new Promise(resolve=>api.listen(0,'127.0.0.1',resolve))
@@ -92,4 +112,72 @@ test('supervised mission proxy rejects path-like selectors before upstream acces
   assert.equal(data.error,'Checkpoint invalide')
   assert.equal(called,false)
  }finally{servers.api.close();servers.monde.close()}
+})
+
+test('prepare-only proxy posts mandate contract with server-side API key and reloads checkpoint projection',async()=>{
+ let auth='',posted=null
+ const servers=await withServers((req,res)=>{
+  auth=req.headers['x-api-key']||''
+  if(req.method==='POST'){
+   assert.equal(req.url,'/api/supervised-missions/prepare-only')
+   let body=''
+   req.on('data',chunk=>{body+=chunk})
+   req.on('end',()=>{
+    posted=JSON.parse(body)
+    res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify(prepareFixture))
+   })
+   return
+  }
+  assert.equal(req.url,'/api/supervised-missions/mission-f6c2/projection?checkpoint_id=smc-f6c2')
+  res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({...fixture,mission_id:'mission-f6c2',checkpoint:{checkpoint_id:'smc-f6c2'}}))
+ })
+ try{
+  const response=await fetch(servers.base+'/obsidia-local/supervised-mission/prepare-only',{
+   method:'POST',
+   headers:{Origin:servers.base,'Content-Type':'application/json'},
+   body:JSON.stringify({
+    human_request:'Prepare a supervised mission',
+    repository_context:{repository_identity:'repo://f6c2',worktree:'C:/worktree',branch:'main',base_sha:'a'.repeat(40)},
+    proposed_scope:{target_paths:['src/a.ts'],operations:['MODIFY']},
+    human_mandate:{human_mandate_reference:'mandate-f6c2',status:'ACTIVE',mission_authority:'KX108_ONLY',authorized_target_paths:['src/a.ts'],authorized_operations:['MODIFY'],permitted_tools:['npm test'],test_requirements:['npm test'],budgets:{max_actions:1}},
+    provider_config:{status:'VERIFIED',provider:'QWEN_LOCAL',model:'qwen2.5-3b-instruct-q4_k_m'},
+    phase1_candidate:{},inventory_snapshot:{},deficiency_evidence:{},validation_evidence:{},
+   })
+  })
+  const data=await response.json()
+  assert.equal(response.status,200)
+  assert.equal(auth,'secret')
+  assert.equal(posted.human_mandate.mission_authority,'KX108_ONLY')
+  assert.equal(data.monde_proxy_schema,'OBSIDIA_MONDE_SUPERVISED_MISSION_PREPARE_PROXY_V1')
+  assert.equal(data.state,'PREPARED_AWAITING_APPROVAL')
+  assert.equal(data.checkpoint_projection.monde_proxy_schema,'OBSIDIA_MONDE_SUPERVISED_MISSION_PROXY_V1')
+  assert.equal(data.provider_provenance.api_key,undefined)
+  assert.equal(data.local_root,undefined)
+  assert.equal(data.token,undefined)
+  assert.equal(data.executor_invoked,false)
+  assert.equal(data.approval_created,false)
+  assert.equal(data.memory_write,false)
+ }finally{servers.api.close();servers.monde.close()}
+})
+
+test('prepare-only proxy preserves HOLD and upstream failures without green success',async()=>{
+ const hold=await withServers((_req,res)=>{
+  res.writeHead(200,{'Content-Type':'application/json'})
+  res.end(JSON.stringify({schema_version:'OBSIDURE_SUPERVISED_MISSION_PREPARE_INGRESS_API_V1',status:'R12_F6_C1_PREPARE_ONLY_HELD',state:'HOLD',reason:'PROVIDER_UNAVAILABLE',hold_reasons:['PROVIDER_UNAVAILABLE'],executor_invoked:false,approval_created:false,memory_write:false}))
+ })
+ try{
+  const response=await fetch(hold.base+'/obsidia-local/supervised-mission/prepare-only',{method:'POST',headers:{Origin:hold.base,'Content-Type':'application/json'},body:JSON.stringify({human_request:'x'})})
+  const data=await response.json()
+  assert.equal(data.state,'HOLD')
+  assert.equal(data.reason,'PROVIDER_UNAVAILABLE')
+  assert.equal(data.executor_invoked,false)
+ }finally{hold.api.close();hold.monde.close()}
+ const denied=await withServers((_req,res)=>{res.writeHead(401,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'unauthorized'}))})
+ try{
+  const response=await fetch(denied.base+'/obsidia-local/supervised-mission/prepare-only',{method:'POST',headers:{Origin:denied.base,'Content-Type':'application/json'},body:JSON.stringify({human_request:'x'})})
+  const data=await response.json()
+  assert.equal(data.status,'UNAVAILABLE')
+  assert.equal(data.reason,'UPSTREAM_AUTH_DENIED')
+  assert.equal(data.executor_invoked,false)
+ }finally{denied.api.close();denied.monde.close()}
 })

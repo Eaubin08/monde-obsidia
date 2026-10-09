@@ -65,6 +65,27 @@ test('Workspace exposes supervised mission readonly projection without authority
  ]) assert.ok(bridge.includes(invariant),invariant)
 })
 
+test('Workspace exposes prepare-only supervised mission control without execution authority',()=>{
+ for(const invariant of [
+  '/obsidia-local/supervised-mission/prepare-only',
+  'PRÉPARER UNE MISSION',
+  'PREPARE_ONLY · KX108_ONLY',
+  'PREPARED_AWAITING_APPROVAL',
+  'Provider JSON',
+  'Artefacts R9 existants JSON',
+  'phase1_candidate',
+  'validation_evidence',
+ ]) assert.ok(supervisedPanel.includes(invariant),invariant)
+ for(const invariant of [
+  "'/supervised-mission/prepare-only'",
+  'supervisedMissionPrepareOnly',
+  'OBSIDIA_MONDE_SUPERVISED_MISSION_PREPARE_PROXY_V1',
+  "'/api/supervised-missions/prepare-only'",
+  'checkpoint_projection',
+ ]) assert.ok(bridge.includes(invariant),invariant)
+ for(const forbidden of ['RESUME_EXECUTE','REPAIR'])assert.equal(supervisedPanel.includes(forbidden),false,forbidden)
+})
+
 test('Cross-view context remains shared',()=>{
  for(const invariant of ['obsidia-focus-entity','obsidia-context',"switchView('workspace')","switchView('agents')"])assert.ok(ecosystem.includes(invariant),invariant)
  for(const invariant of ['obsidia-selected-session','obsidia-context'])assert.ok(pokemon.includes(invariant),invariant)
