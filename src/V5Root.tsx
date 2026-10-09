@@ -654,16 +654,6 @@ export default function V5Root(){
      {contextEntity&&worldZone!=='territories'&&<><span>›</span><strong>{contextEntity.label}</strong></>}
     </nav>
     <nav className="v5-zonebar">{zones.map(([id,label])=><button key={id} aria-pressed={worldZone===id} onClick={()=>{setSelectedMechanism('');setWorldZone(id)}}>{label}</button>)}</nav>
-     {worldZone==='governance'&&<section className="v5-panel" aria-label="C5.3 observations non attribuées">
-      <header><div><small>UNIVERSAL C5.3 · OBSERVATIONS</small><h2>Preuves non attribuées</h2></div><span>Lecture seule</span></header>
-      <p>Identité organisationnelle non vérifiée. Liens décision-reçu observés, sans validation cryptographique ni autorisation d'action.</p>
-      <p><strong>{observedC53?.status||'NON_OBSERVÉ'}</strong> · {observedC53?.recordCount||0} décision(s)</p>
-      {(observedC53?.records||[]).slice(-20).map(record=><article key={record.decisionRecordId}>
-       <strong>{record.domainId||'Domaine inconnu'} · {record.gate}</strong>
-       <p>{record.evidenceStatus} · {record.organizationAttribution}</p>
-       <small>Décision : {record.decisionRecordId} · Reçus observés : {record.receiptRefs.length}</small>
-      </article>)}
-     </section>}
      {currentTerritory&&<section className="v5-territory-health">
      <article><small>ÉTAT</small><strong>{currentTerritory.status}</strong><p>Projection readonly du territoire.</p></article>
      <article className={currentTerritory.blocker==='Aucun blocage observé'?'':'warn'}><small>BLOCAGE</small><strong>{currentTerritory.blocker}</strong><p>Uniquement à partir des signaux observés.</p></article>
