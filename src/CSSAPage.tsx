@@ -10,7 +10,7 @@ const businessModules = [
 ] as const
 
 const cockpit = [
-  ['État général','Prototype organisationnel'],
+  ['État général','Prototype'],
   ['Priorités','À définir / raccorder'],
   ['Activité','Aucune activité live reliée'],
   ['Échéances','Aucune échéance reliée'],
@@ -22,12 +22,12 @@ export default function CSSAPage(){
   return <main className="cssa-page">
     <header className="cssa-hero">
       <div>
-        <span className="cssa-kicker">ENTREPRISES & ORGANISATIONS · ORGANISATION SÉLECTIONNÉE</span>
-        <h1>CSSA — Vue entreprise</h1>
-        <p>Le Club Sportif Sedan Ardennes est ici traité comme une organisation complète. Les métiers restent internes à l’organisation ; ils ne deviennent pas des domaines du Monde.</p>
+        <span className="cssa-kicker">ENTREPRISES & STRUCTURES · VUE SÉLECTIONNÉE</span>
+        <h1>Vue d’ensemble</h1>
+        <p>Le Club Sportif Sedan Ardennes est présenté comme une structure complète. Ses métiers restent internes à cette vue ; ils ne deviennent pas des domaines du Monde.</p>
       </div>
       <aside className="cssa-identity">
-        <small>ORGANISATION PILOTE</small>
+        <small>STRUCTURE PILOTE</small>
         <strong>CSSA</strong>
         <span>Club Sportif Sedan Ardennes</span>
         <em>Club sportif</em>
@@ -38,8 +38,8 @@ export default function CSSAPage(){
       <header>
         <div>
           <span className="cssa-kicker">VUE D’ENSEMBLE ENTREPRISE</span>
-          <h2>Cockpit organisationnel</h2>
-          <p>La page commence par l’organisation elle-même : état, priorités, activité, échéances, projets et décisions importantes.</p>
+          <h2>Cockpit général</h2>
+          <p>La page commence par la vue d’ensemble : état, priorités, activité, échéances, projets et décisions importantes.</p>
         </div>
         <span className="cssa-prototype">PROTOTYPE</span>
       </header>
@@ -55,7 +55,7 @@ export default function CSSAPage(){
       <header>
         <div>
           <span className="cssa-kicker">MÉTIERS INTERNES</span>
-          <h2>Domaines et cas métiers du CSSA</h2>
+          <h2>Domaines et cas métiers</h2>
           <p>Ces rubriques sont des modules à concevoir ou raccorder. Elles représentent les métiers propres au club, pas des fonctions déjà opérationnelles.</p>
         </div>
       </header>
@@ -66,7 +66,7 @@ export default function CSSAPage(){
           <p>{description}</p>
           <div className="cssa-module-foot">
             <span>À concevoir / raccorder</span>
-            <small>Configuration propre au CSSA</small>
+            <small>Configuration propre au club</small>
           </div>
         </article>)}
       </div>
@@ -76,7 +76,7 @@ export default function CSSAPage(){
       <div>
         <span className="cssa-kicker">GOUVERNANCE TRANSVERSALE</span>
         <h2>KX108 gouverne les métiers sans devenir un métier supplémentaire</h2>
-        <p>Décisions, permissions, validations humaines, receipts et preuves traversent l’ensemble des modules du CSSA. Cette couche encadre les cas métiers sans remplacer leur logique propre.</p>
+        <p>Décisions, permissions, validations humaines, receipts et preuves traversent l’ensemble des modules. Cette couche encadre les cas métiers sans remplacer leur logique propre.</p>
       </div>
       <div className="cssa-governance-flow">
         <span>Métier</span><b>→</b><span>Proposition</span><b>→</b><span>Validation</span><b>→</b><span>KX108</span><b>→</b><span>Receipt / preuve</span>
@@ -87,8 +87,8 @@ export default function CSSAPage(){
       <header>
         <div>
           <span className="cssa-kicker">PROJETS À VENIR</span>
-          <h2>Chantiers propres à l’organisation</h2>
-          <p>Le CSSA peut accueillir de nouveaux projets sans modifier l’architecture générale de Monde ni celle des autres organisations.</p>
+          <h2>Projets et chantiers</h2>
+          <p>De nouveaux projets peuvent être ajoutés ici sans modifier l’architecture générale de Monde ni celle des autres structures.</p>
         </div>
       </header>
       <div className="cssa-project-grid">
@@ -101,8 +101,7 @@ export default function CSSAPage(){
     </section>
 
     <footer className="cssa-footer">
-      <span>CSSA = organisation</span>
-      <span>Métiers = internes à l’organisation</span>
+      <span>Métiers = internes à cette vue</span>
       <span>Gouvernance = transverse</span>
     </footer>
   </main>
