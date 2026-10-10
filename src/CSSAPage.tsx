@@ -1,6 +1,16 @@
+import {useState} from 'react'
 import './CSSAPage.css'
 
-const businessModules = [
+type StructureId='cssa'|'trading'|'association'|'entreprise'
+
+const structures:{id:StructureId;name:string;subtitle:string;kind:string}[]=[
+  {id:'cssa',name:'CSSA',subtitle:'Club Sportif Sedan Ardennes',kind:'Club sportif'},
+  {id:'trading',name:'Trading',subtitle:'Structure de trading gouverné',kind:'Activité financière'},
+  {id:'association',name:'Association',subtitle:'Structure associative',kind:'Association'},
+  {id:'entreprise',name:'Entreprise X',subtitle:'Structure commerciale',kind:'Entreprise'},
+]
+
+const businessModules=[
   ['Administration','Documents, demandes, contrats, conventions et traitement administratif.'],
   ['CRM & relations','Membres, supporters, partenaires, sponsors, institutions et historique des échanges.'],
   ['Communication','Mails, campagnes, contenus, publications et cohérence des messages.'],
@@ -9,7 +19,7 @@ const businessModules = [
   ['Opérations','Missions, processus, automatisations, responsables, blocages et livrables.'],
 ] as const
 
-const cockpit = [
+const cockpit=[
   ['État général','Prototype'],
   ['Priorités','À définir / raccorder'],
   ['Activité','Aucune activité live reliée'],
@@ -19,27 +29,43 @@ const cockpit = [
 ] as const
 
 export default function CSSAPage(){
+  const [selected,setSelected]=useState<StructureId>('cssa')
+  const current=structures.find(s=>s.id===selected)!
+
   return <main className="cssa-page">
+    <section className="cssa-selector">
+      <header>
+        <div>
+          <span className="cssa-kicker">ENTREPRISES & ORGANISATIONS</span>
+          <h1>Structures</h1>
+        </div>
+        <button className="cssa-add-structure">+ Ajouter</button>
+      </header>
+      <div className="cssa-structure-tabs">
+        {structures.map(s=><button key={s.id} className={selected===s.id?'active':''} onClick={()=>setSelected(s.id)}>
+          <strong>{s.name}</strong><small>{s.kind}</small>
+        </button>)}
+      </div>
+    </section>
+
     <header className="cssa-hero">
       <div>
-        <span className="cssa-kicker">ENTREPRISES & STRUCTURES · VUE SÉLECTIONNÉE</span>
-        <h1>Vue d’ensemble</h1>
-        <p>Le Club Sportif Sedan Ardennes est présenté comme une structure complète. Ses métiers restent internes à cette vue ; ils ne deviennent pas des domaines du Monde.</p>
+        <span className="cssa-kicker">VUE SÉLECTIONNÉE</span>
+        <h1>{current.name}</h1>
+        <p>{current.subtitle}</p>
       </div>
       <aside className="cssa-identity">
-        <small>STRUCTURE PILOTE</small>
-        <strong>CSSA</strong>
-        <span>Club Sportif Sedan Ardennes</span>
-        <em>Club sportif</em>
+        <small>TYPE</small>
+        <strong>{current.kind}</strong>
+        <span>{current.subtitle}</span>
       </aside>
     </header>
 
     <section className="cssa-section cssa-cockpit">
       <header>
         <div>
-          <span className="cssa-kicker">VUE D’ENSEMBLE ENTREPRISE</span>
+          <span className="cssa-kicker">VUE D’ENSEMBLE</span>
           <h2>Cockpit général</h2>
-          <p>La page commence par la vue d’ensemble : état, priorités, activité, échéances, projets et décisions importantes.</p>
         </div>
         <span className="cssa-prototype">PROTOTYPE</span>
       </header>
@@ -54,9 +80,8 @@ export default function CSSAPage(){
     <section className="cssa-section">
       <header>
         <div>
-          <span className="cssa-kicker">MÉTIERS INTERNES</span>
+          <span className="cssa-kicker">MÉTIERS</span>
           <h2>Domaines et cas métiers</h2>
-          <p>Ces rubriques sont des modules à concevoir ou raccorder. Elles représentent les métiers propres au club, pas des fonctions déjà opérationnelles.</p>
         </div>
       </header>
       <div className="cssa-module-grid">
@@ -66,7 +91,6 @@ export default function CSSAPage(){
           <p>{description}</p>
           <div className="cssa-module-foot">
             <span>À concevoir / raccorder</span>
-            <small>Configuration propre au club</small>
           </div>
         </article>)}
       </div>
@@ -74,12 +98,11 @@ export default function CSSAPage(){
 
     <section className="cssa-governance">
       <div>
-        <span className="cssa-kicker">GOUVERNANCE TRANSVERSALE</span>
-        <h2>KX108 gouverne les métiers sans devenir un métier supplémentaire</h2>
-        <p>Décisions, permissions, validations humaines, receipts et preuves traversent l’ensemble des modules. Cette couche encadre les cas métiers sans remplacer leur logique propre.</p>
+        <span className="cssa-kicker">GOUVERNANCE</span>
+        <h2>KX108 · validations · décisions · preuves</h2>
       </div>
       <div className="cssa-governance-flow">
-        <span>Métier</span><b>→</b><span>Proposition</span><b>→</b><span>Validation</span><b>→</b><span>KX108</span><b>→</b><span>Receipt / preuve</span>
+        <span>Métier</span><b>→</b><span>Proposition</span><b>→</b><span>Validation</span><b>→</b><span>KX108</span><b>→</b><span>Preuve</span>
       </div>
     </section>
 
@@ -88,21 +111,11 @@ export default function CSSAPage(){
         <div>
           <span className="cssa-kicker">PROJETS À VENIR</span>
           <h2>Projets et chantiers</h2>
-          <p>De nouveaux projets peuvent être ajoutés ici sans modifier l’architecture générale de Monde ni celle des autres structures.</p>
         </div>
       </header>
       <div className="cssa-project-grid">
-        {[1,2,3].map(i=><article key={i}>
-          <span>+</span>
-          <strong>Projet futur</strong>
-          <small>Emplacement libre</small>
-        </article>)}
+        {[1,2,3].map(i=><article key={i}><span>+</span><strong>Projet futur</strong><small>Emplacement libre</small></article>)}
       </div>
     </section>
-
-    <footer className="cssa-footer">
-      <span>Métiers = internes à cette vue</span>
-      <span>Gouvernance = transverse</span>
-    </footer>
   </main>
 }
