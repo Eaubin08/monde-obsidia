@@ -11,6 +11,7 @@ type Structure={
 }
 type Project={id:string;title:string;status:string}
 type CockpitKey='État général'|'Priorités'|'Activité'|'Échéances'|'Projets'|'Alertes / décisions'
+type RealSource={label:string;path:string;status:string}
 
 const defaultStructures:Structure[]=[
   {
@@ -71,6 +72,52 @@ const defaultStructures:Structure[]=[
   },
 ]
 
+const CSSA_REPO='https://github.com/Eaubin08/cssa-v01--entreprise-universelle-domaien-obsidia-'
+const CSSA_BRANCH='feat/cssa-native-ops-bridge-v0'
+const cssaSource=(path:string)=>CSSA_REPO+'/blob/'+CSSA_BRANCH+'/'+path
+
+const cssaRealModules:Record<string,RealSource[]>={
+  'Administration':[
+    {label:'Administration publique',path:'organizations/cssa/public_admin_v0.py',status:'PROVEN'},
+    {label:'Contrats & conformité',path:'organizations/cssa/compliance/contract_compliance_v0.py',status:'PROVEN'},
+    {label:'Workflows officiels',path:'organizations/cssa/workflows/official_correspondence_public_v0.yaml',status:'PROVEN'},
+  ],
+  'CRM & relations':[
+    {label:'Bridge CRM/TASKS natif',path:'organizations/cssa/native_ops/cssa_native_ops_bridge_v0.py',status:'PROVEN'},
+    {label:'Relations institutionnelles',path:'organizations/cssa/institutions/institutional_relations_v0.py',status:'PROVEN'},
+    {label:'Progression bridge',path:'organizations/cssa/native_ops/f3h_d_native_ops_progress_v0.json',status:'181 PASS'},
+  ],
+  'Communication':[
+    {label:'Mail gouverné',path:'organizations/cssa/execution/mail_governed_execution_v0.py',status:'PREFLIGHT PROVEN'},
+    {label:'Reporting',path:'organizations/cssa/reporting/report_engine_v0.py',status:'PROVEN'},
+    {label:'Veille publique',path:'organizations/cssa/watch/watchlist_v0.json',status:'14 SOURCES'},
+  ],
+  'Événements':[
+    {label:'Matchday buvette/restauration',path:'organizations/cssa/matchday_food/buvette_restauration_v0.py',status:'PROVEN'},
+    {label:'Modèle saison',path:'organizations/cssa/season/operating_map_v0.json',status:'PROVEN'},
+    {label:'Changement de rencontre',path:'organizations/cssa/workflows/fixture_change_public_v0.yaml',status:'PROVEN'},
+  ],
+  'Finances':[
+    {label:'Finance saison',path:'organizations/cssa/season/finance_v0.py',status:'PROVEN'},
+    {label:'Primitives de gestion',path:'organizations/cssa/season/fm_management_primitives_v0.json',status:'PROVEN'},
+    {label:'Bilan V0.1',path:'reports/CSSA_V01_BILAN_2026-10-07.md',status:'AUDITED'},
+  ],
+  'Opérations':[
+    {label:'Native Ops bridge',path:'organizations/cssa/native_ops/cssa_native_ops_bridge_v0.py',status:'PROVEN'},
+    {label:'Root cause / récurrence',path:'organizations/cssa/root_cause/root_cause_recurrence_v0.py',status:'PROVEN'},
+    {label:'Stress organisationnel',path:'organizations/cssa/stress/organizational_stress_v0.py',status:'PROVEN'},
+  ],
+}
+
+const cssaRealCockpit:Record<CockpitKey,{value:string;detail:string}>={
+  'État général':{value:'Native bridge PROVEN',detail:'Branche de travail feat/cssa-native-ops-bridge-v0. CSSA → CRM/TASKS natifs prouvé.'},
+  'Priorités':{value:'Terrain réel à valider',detail:'La réalité interne CSSA reste ouverte : rôles réels, outils, validations, boîtes mail et pratiques terrain.'},
+  'Activité':{value:'181 tests PASS',detail:'F3H-D : 181 tests passés en 0,91 s pour le bridge CRM/TASKS natif.'},
+  'Échéances':{value:'Watch public planifié',detail:'14 sources publiques sont définies avec cadences weekly / biweekly / monthly. Le cron reste dormant hors main.'},
+  'Projets':{value:'Bridge + terrain',detail:'Le bridge natif est prouvé ; la prochaine frontière est la validation terrain réelle et l’activation contrôlée.'},
+  'Alertes / décisions':{value:'Action externe HOLD',detail:'KX108_ONLY est préservé. Les actions externes réelles restent bloquées et la preuve terrain interne reste ouverte.'},
+}
+
 const cockpit:Record<CockpitKey,{value:string;detail:string}>={
   'État général':{value:'Prototype',detail:'Vue synthétique de la structure sélectionnée. Le raccordement runtime viendra ensuite.'},
   'Priorités':{value:'À définir / raccorder',detail:'Espace destiné aux priorités actives et à leur ordre de traitement.'},
@@ -97,6 +144,8 @@ export default function CSSAPage(){
   const current=useMemo(()=>structures.find(s=>s.id===selected)??structures[0],[structures,selected])
   const currentProjects=projects[current.id]??[]
   const module=current.modules.find(m=>m.title===selectedModule)??null
+  const activeCockpit=current.id==='cssa'?cssaRealCockpit:cockpit
+  const realSources=current.id==='cssa'&&module?cssaRealModules[module.title]??[]:[]
 
   const chooseStructure=(id:string)=>{
     setSelected(id)
@@ -159,19 +208,19 @@ export default function CSSAPage(){
     </section>
 
     <header className="cssa-hero">
-      <div><span className="cssa-kicker">VUE SÉLECTIONNÉE</span><h1>{current.name}</h1><p>{current.subtitle}</p></div>
+      <div><span className="cssa-kicker">VUE SÉLECTIONNÉE</span><h1>{current.name}</h1><p>{current.subtitle}</p>{current.id==='cssa'&&<div className="cssa-live-strip"><span>READONLY RÉEL</span><b>F3H-D · NATIVE CRM/TASKS PROVEN</b><a href={CSSA_REPO+'/tree/'+CSSA_BRANCH} target="_blank" rel="noreferrer">Repo de travail ↗</a></div>}</div>
       <aside className="cssa-identity"><small>TYPE</small><strong>{current.kind}</strong><span>{current.subtitle}</span></aside>
     </header>
 
     <section className="cssa-section cssa-cockpit">
       <header><div><span className="cssa-kicker">VUE D’ENSEMBLE</span><h2>Cockpit général</h2></div><span className="cssa-prototype">PROTOTYPE</span></header>
       <div className="cssa-cockpit-grid">
-        {(Object.entries(cockpit) as [CockpitKey,typeof cockpit[CockpitKey]][]).map(([label,data])=><button key={label} className={selectedCockpit===label?'active':''} onClick={()=>setSelectedCockpit(label)}>
-          <small>{label}</small><strong>{label==='Projets'?currentProjects.length+' projet(s)':data.value}</strong>
+        {(Object.entries(activeCockpit) as [CockpitKey,typeof activeCockpit[CockpitKey]][]).map(([label,data])=><button key={label} className={selectedCockpit===label?'active':''} onClick={()=>setSelectedCockpit(label)}>
+          <small>{label}</small><strong>{label==='Projets'&&current.id!=='cssa'?currentProjects.length+' projet(s)':data.value}</strong>
         </button>)}
       </div>
       {selectedCockpit&&<aside className="cssa-detail-panel">
-        <div><small>{selectedCockpit}</small><h3>{selectedCockpit==='Projets'?currentProjects.length+' projet(s)':cockpit[selectedCockpit].value}</h3><p>{cockpit[selectedCockpit].detail}</p></div>
+        <div><small>{selectedCockpit}</small><h3>{selectedCockpit==='Projets'&&current.id!=='cssa'?currentProjects.length+' projet(s)':activeCockpit[selectedCockpit].value}</h3><p>{activeCockpit[selectedCockpit].detail}</p></div>
         <button onClick={()=>setSelectedCockpit(null)}>Fermer</button>
       </aside>}
     </section>
@@ -189,10 +238,22 @@ export default function CSSAPage(){
 
       {module&&<aside className="cssa-detail-panel cssa-module-detail">
         <div><span className="cssa-kicker">MODULE SÉLECTIONNÉ</span><h3>{module.title}</h3><p>{module.description}</p>
-          <div className="cssa-detail-actions">
-            <button disabled>Documents</button><button disabled>Activité</button><button disabled>Processus</button><button disabled>Résultats</button>
-          </div>
-          <small>Les sous-vues sont préparées visuellement mais pas encore raccordées aux données.</small>
+          {current.id==='cssa'?<div className="cssa-real-sources">
+            <div className="cssa-real-head">
+              <span>RACCORD RÉEL · READONLY</span>
+              <a href={CSSA_REPO+'/tree/'+CSSA_BRANCH} target="_blank" rel="noreferrer">Ouvrir la branche ↗</a>
+            </div>
+            {realSources.map(source=><a className="cssa-real-source" key={source.path} href={cssaSource(source.path)} target="_blank" rel="noreferrer">
+              <span><strong>{source.label}</strong><small>{source.path}</small></span>
+              <b>{source.status}</b>
+            </a>)}
+            {!realSources.length&&<small>Aucun artefact réel mappé pour ce module.</small>}
+          </div>:<>
+            <div className="cssa-detail-actions">
+              <button disabled>Documents</button><button disabled>Activité</button><button disabled>Processus</button><button disabled>Résultats</button>
+            </div>
+            <small>Cette structure n’est pas encore raccordée au réel.</small>
+          </>}
         </div>
         <button onClick={()=>setSelectedModule(null)}>Fermer</button>
       </aside>}
