@@ -1066,6 +1066,191 @@
   font-size: 9.5px;
 }
 
+/* Tranche 2 : Calendrier Global & Conflits de Terrains */
+.spx-global-card {
+  margin: 8px 8px 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #11283d 0%, #0d1e2e 100%);
+  border: 1px solid #28557a;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.spx-global-card:hover {
+  background: #15344e;
+  border-color: #3e7cae;
+}
+
+.spx-global-card.active {
+  background: #183e60;
+  border-color: #4998d8;
+  box-shadow: 0 0 12px rgba(45, 140, 220, 0.25);
+}
+
+.spx-global-card strong {
+  display: block;
+  font-size: 9.5px;
+  color: #e2f1ff;
+}
+
+.spx-global-card span {
+  display: block;
+  font-size: 7.5px;
+  color: #8bb3d6;
+  margin-top: 2px;
+}
+
+.spx-team-tag {
+  font: 7px ui-monospace, monospace;
+  font-weight: bold;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #162c42;
+  color: #7dc5f7;
+  border: 1px solid #224363;
+  margin-right: 6px;
+  display: inline-block;
+}
+
+.spx-team-tag.r1 { background: #2b1f09; color: #f0bd5a; border-color: #5c4112; }
+.spx-team-tag.r2 { background: #0e2d27; color: #4ee0b5; border-color: #176352; }
+.spx-team-tag.u20 { background: #191c36; color: #a4affc; border-color: #383e78; }
+
+.spx-pitch-tag {
+  display: inline-block;
+  font-size: 7.5px;
+  color: #8da4be;
+  margin-top: 3px;
+}
+
+.spx-conflict-banner {
+  margin: 10px 0 14px;
+  padding: 12px 14px;
+  background: #25140b;
+  border: 1px solid #824719;
+  border-radius: 8px;
+}
+
+.spx-conflict-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.spx-conflict-title strong {
+  font-size: 9.5px;
+  color: #f79d5c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.spx-conflict-item {
+  padding: 8px 10px;
+  background: #1a0e08;
+  border: 1px solid #5a2f11;
+  border-radius: 6px;
+  margin-top: 6px;
+}
+
+.spx-conflict-item p {
+  margin: 0;
+  font-size: 8.5px;
+  color: #fad3b2;
+  line-height: 1.4;
+}
+
+.spx-conflict-item small {
+  display: block;
+  font-size: 7.5px;
+  color: #d19a73;
+  margin: 4px 0 6px;
+}
+
+.spx-btn-conflict-task {
+  background: #3a1d0b;
+  border: 1px solid #8c471c;
+  color: #ffd2b3;
+  font-size: 8px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.spx-btn-conflict-task:hover {
+  background: #542b12;
+  border-color: #b55e25;
+}
+
+.spx-logistics-bar {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: #0b1a2b;
+  border: 1px solid #1a3552;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.spx-logistics-bar strong {
+  font-size: 9px;
+  color: #cfe1f5;
+}
+
+.spx-logistics-bar span {
+  font-size: 8px;
+  color: #7d9cb8;
+  display: flex;
+  gap: 12px;
+}
+
+.spx-unconnected-banner {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  background: #16181f;
+  border: 1px solid #363a4e;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.spx-unconnected-banner div strong {
+  display: block;
+  font-size: 9px;
+  color: #d4d8ea;
+}
+
+.spx-unconnected-banner div p {
+  margin: 2px 0 0;
+  font-size: 8px;
+  color: #8c93b0;
+}
+
+.spx-unconnected-banner button {
+  background: #232736;
+  border: 1px solid #4a506e;
+  color: #cfd4ee;
+  font-size: 8px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.spx-unconnected-banner button:hover {
+  background: #2e3347;
+}
+
+
 /* Responsive */
 @media (max-width: 1250px) {
   .spx { grid-template-columns: 200px minmax(0, 1fr); }

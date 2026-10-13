@@ -66,3 +66,60 @@
 1. Les 18 équipes hors Seniors R1 restent en mode synthétique (`SIMULATED_NOT_OBSERVED`).
 2. La synchronisation automatique des compositions de match et feuilles de match officielles FFF n'est pas encore connectée à l'API FFF (fédérale) fermée.
 3. Les tâches créées sur un match sont stockées au niveau du dossier sportif CSSA, pas encore reliées à l'orchestrateur général de tâches multi-organisations.
+
+---
+
+## TRANCHE 2 — CSSA Autres Équipes (R2, U20, Jeunes) & Calendrier Global Club
+
+- **Date d'exécution** : 13 octobre 2026
+- **Responsable** : Antigravity Agent
+- **Cible locale** : `C:\Users\Aubin\Desktop\OBSIDIA_WORLDS\monde-obsidia-git`
+- **Branche** : `main`
+
+---
+
+### 1. Objectifs de la tranche
+
+1. Raccordement réaliste et corroboré de **Seniors R2 (Réserve)** :
+   - 22 journées réelles de championnat Régional 2 Poule A.
+   - Les 11 clubs réels du groupe R2_A issus du modèle public : Rethel SF, Reims Murigny FP, AS Val de l’Aisne, ES Fagnières, Reims FC Christo, Val de l’Orne FC, AS Saint-Brice-Courcelles, UL Plantières, US Étain-Buzy, Reims Sainte-Anne 2, CS Veymerange.
+   - Résultats réels J1 à J5 et J6 (Rethel 1–1 Sedan 2 avec alerte de discordance horaire DNA vs Miroir CSSA).
+   - Domicile : `Complexe Montvillers (Bazeilles)` pour éviter les conflits avec le Stade Louis-Dugauguez.
+2. Raccordement réaliste et corroboré de **U20 R1 (Développement)** :
+   - 22 journées en U20 Régional 1 (LGEF).
+   - Confirmation de création via le site officiel (`https://cs-sedan.fr/groupe-de-developpement`).
+   - Match réel corroboré du 03/10/2026 (OBS_U20_R1_WEEKEND) : Sedan U20 2–0 Reims Sainte-Anne U20 au Complexe Montvillers.
+3. Intégration des résultats réels observés pour les équipes de jeunes :
+   - U16 R1 vs OCPAM (1–1, source Est Républicain).
+   - U15 R1 vs MIFA (2–1, source Le Progrès).
+   - U15 D1 vs Bazeilles, U17 R1 chez Academy FC, U13 Fanion chez Bourg-Rocroi.
+   - Transparence totale pour les catégories non raccordées : bandeau d'alerte explicite `DONNÉES RÉELLES NON RACCORDÉES` et bouton pour basculer la simulation F3E sans mélanger les vérités.
+4. Construction du **Calendrier Global Consolidé du Club** (`#cssa/sportif/CALENDRIER_GLOBAL`) :
+   - Regroupement multi-équipes transversal.
+   - Filtres : Tout, Ce week-end (17–18 oct.), Week-end passé (03–04 oct.), Domicile, Extérieur, Conflits.
+   - Barre logistique : total matchs, domicile (FMI obligatoire LGEF Art. 24), extérieur (minibus à réserver).
+   - Détecteur de conflits d'occupation de terrain (`detectPitchConflicts`) avec alertes réglementaires (LGEF Art. 20-7) et création en 1 clic de tâches de conciliation de créneau sur le disque.
+5. Préservation absolue des acquis de la Passe 01 :
+   - Build TypeScript vert (`tsc -b`).
+   - Tests automatisés portés de 75 à 80 tests (100% PASS).
+   - Persistance universelle des notes, checklists et tâches sur `.obsidia-live/cssa_sport_state.json`.
+
+---
+
+### 2. Fichiers modifiés
+
+- `src/CSSASportPage.tsx` : Intégration des datasets R2, U20, Jeunes, du calendrier global, du détecteur de collision de terrain et de la barre logistique.
+- `src/CSSASport.css` : Styles CSS pour la carte globale du club, les tags d'équipes (`r1`, `r2`, `u20`), les alertes de conflits de terrain et la barre logistique.
+- `tests/cssa-sport.test.mjs` : Extension à 10 tests unitaires et d'intégration validant R2, U20, Jeunes, le Calendrier Global, les collisions et la persistance multi-équipes.
+- `docs/audits/MONDE_OBSIDIA_REBUILD_LOG.md` : Mise à jour du journal de reconstruction.
+
+---
+
+### 3. Résultats des tests et vérifications
+
+| Commande | Résultat | Détail |
+|---|---|---|
+| `npm.cmd run build` | **PASS** | `tsc -b` (0 erreur TS) + Vite build (28 modules compilés en 179ms) |
+| `npm.cmd test` | **PASS** | 80 passés / 0 échoué (100%) |
+| `node --test tests/cssa-sport.test.mjs` | **PASS** | 10 passés / 0 échoué (100%) |
+

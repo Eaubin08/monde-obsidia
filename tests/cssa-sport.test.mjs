@@ -129,3 +129,139 @@ test('local-bridge : endpoint /obsidia-local/cssa-sport-state is present in brid
   assert.ok(bridgeSource.includes('readCssaSportState()'))
   assert.ok(bridgeSource.includes('writeCssaSportState(patch)'))
 })
+
+test('CSSASportPage : verifies Seniors R2 calendar, 12 R2_A clubs, Rethel conflict, and Montvillers venue', () => {
+  const sportSrc = readFileSync(resolve(process.cwd(), 'src/CSSASportPage.tsx'), 'utf8')
+
+  // Verify R2 team elevation to real / corroborated
+  assert.ok(sportSrc.includes("id: 'SENIORS_R2'"))
+  assert.ok(sportSrc.includes("RÉGIONAL 2 — POULE A"))
+
+  // Verify all 22 R2 fixtures exist
+  for (let i = 1; i <= 22; i++) {
+    assert.ok(sportSrc.includes(`id:'r2-j${i}'`), `R2 match day ${i} must exist`)
+  }
+
+  // Verify 11 R2 opponents from public model are present
+  const r2Clubs = [
+    'Rethel SF',
+    'Reims Murigny FP',
+    'AS Val de l’Aisne',
+    'ES Fagnières',
+    'Reims FC Christo',
+    'Val de l’Orne FC',
+    'AS Saint-Brice-Courcelles',
+    'UL Plantières',
+    'US Étain-Buzy',
+    'Reims Sainte-Anne 2',
+    'CS Veymerange'
+  ]
+  for (const club of r2Clubs) {
+    assert.ok(sportSrc.includes(club), `Club ${club} must be present in R2 calendar`)
+  }
+
+  // Verify J6 Rethel conflict alert (DNA vs Association mirror)
+  assert.ok(sportSrc.includes("'r2-j6'"), 'Match r2-j6 must exist')
+  assert.ok(sportSrc.includes('DNA (Dernières Nouvelles d’Alsace)'), 'DNA source corroboration')
+
+  // Verify Home pitch is Complexe Montvillers (Bazeilles)
+  assert.ok(sportSrc.includes('Complexe Montvillers (Bazeilles)'), 'Home matches assigned to Complexe Montvillers')
+})
+
+test('CSSASportPage : verifies U20 R1 calendar, Reims Ste-Anne fixture, and development pipeline', () => {
+  const sportSrc = readFileSync(resolve(process.cwd(), 'src/CSSASportPage.tsx'), 'utf8')
+
+  // Verify U20 team elevation
+  assert.ok(sportSrc.includes("id: 'U20_R1'"))
+  assert.ok(sportSrc.includes("U20 RÉGIONAL 1"))
+
+  // Verify all 22 U20 fixtures exist
+  for (let i = 1; i <= 22; i++) {
+    assert.ok(sportSrc.includes(`id:'u20-j${i}'`), `U20 match day ${i} must exist`)
+  }
+
+  // Verify observed match of 03/10/2026 vs Reims Sainte-Anne (OBS_U20_R1_WEEKEND)
+  assert.ok(sportSrc.includes("'u20-j6'"), 'Match u20-j6 must exist')
+  assert.ok(sportSrc.includes('Reims Sainte-Anne U20'), 'Reims Ste-Anne U20 opponent present')
+  assert.ok(sportSrc.includes('OBS_U20_R1_WEEKEND'), 'Observation reference present')
+  assert.ok(sportSrc.includes('groupe-de-developpement'), 'CSSA development pipeline URL referenced')
+})
+
+test('CSSASportPage : verifies observed youth results and transparency for unconnected categories', () => {
+  const sportSrc = readFileSync(resolve(process.cwd(), 'src/CSSASportPage.tsx'), 'utf8')
+
+  // Observed youth matches from public snapshot
+  assert.ok(sportSrc.includes('obs-u16-ocpam'), 'Observed U16 match vs OCPAM must exist')
+  assert.ok(sportSrc.includes('obs-u15-mifa'), 'Observed U15 match vs MIFA must exist')
+  assert.ok(sportSrc.includes('Est Républicain'), 'Est Républicain citation present')
+  assert.ok(sportSrc.includes('Le Progrès'), 'Le Progrès citation present')
+
+  // Transparency banner for unconnected categories
+  assert.ok(sportSrc.includes('DONNÉES RÉELLES NON RACCORDÉES'), 'Banner for unlinked youth categories present')
+  assert.ok(sportSrc.includes('Masquer la simulation F3E') || sportSrc.includes('Afficher la simulation F3E'), 'Simulation toggle present')
+})
+
+test('CSSASportPage : verifies Calendrier Global Club, pitch collision detection, and logistics matrix', () => {
+  const sportSrc = readFileSync(resolve(process.cwd(), 'src/CSSASportPage.tsx'), 'utf8')
+
+  // Global calendar invariants
+  assert.ok(sportSrc.includes('CALENDRIER_GLOBAL'), 'Global calendar route & mode present')
+  assert.ok(sportSrc.includes('CALENDRIER GLOBAL CLUB'), 'Global calendar button card label present')
+
+  // Pitch collision detector function and alerts
+  assert.ok(sportSrc.includes('detectPitchConflicts'), 'Collision detector function must be defined')
+  assert.ok(sportSrc.includes('spx-conflict-banner'), 'Conflict banner CSS class present')
+  assert.ok(sportSrc.includes('LGEF Art. 20-7'), 'LGEF Art. 20-7 regulation rule referenced')
+  assert.ok(sportSrc.includes('Créer tâche de conciliation'), 'Conflict task action button present')
+
+  // Weekend filters and logistics summary
+  assert.ok(sportSrc.includes('weekend_cur'), 'Current weekend filter present')
+  assert.ok(sportSrc.includes('weekend_prev'), 'Previous weekend filter present')
+  assert.ok(sportSrc.includes('spx-logistics-bar'), 'Logistics summary bar present')
+  assert.ok(sportSrc.includes('LGEF Art. 24'), 'FMI Art. 24 regulation referenced')
+})
+
+test('cssa-sport-store : multi-team persistence across R1, R2, U20, and youth matches', () => {
+  const tempDir = mkdtempSync(join(tmpdir(), 'obsidia-test-multiteam-'))
+  const testFile = join(tempDir, 'state.json')
+  try {
+    // Save notes and tasks across 3 different teams
+    const state = writeCssaSportState({
+      notes: {
+        'r1-j7': 'Pressing haut Bogny',
+        'r2-j7': 'Échauffement synthétique Montvillers',
+        'u20-j7': 'Départ minibus Nancy 12h15'
+      },
+      checks: {
+        'r1-j7': {convocation: true},
+        'r2-j7': {fmi: true},
+        'u20-j7': {transport: true}
+      },
+      tasks: {
+        'r1-j7': [{id: 't1', label: 'Appel délégué', done: true, createdAt: '2026-10-13T10:00:00Z'}],
+        'r2-j7': [{id: 't2', label: 'Valider feuille FMI', done: false, createdAt: '2026-10-13T10:05:00Z'}],
+        'u20-j7': [{id: 't3', label: 'Récupérer clés minibus', done: false, createdAt: '2026-10-13T10:10:00Z'}]
+      }
+    }, testFile)
+
+    assert.equal(state.notes['r1-j7'], 'Pressing haut Bogny')
+    assert.equal(state.notes['r2-j7'], 'Échauffement synthétique Montvillers')
+    assert.equal(state.notes['u20-j7'], 'Départ minibus Nancy 12h15')
+
+    assert.equal(state.checks['r1-j7'].convocation, true)
+    assert.equal(state.checks['r2-j7'].fmi, true)
+    assert.equal(state.checks['u20-j7'].transport, true)
+
+    assert.equal(state.tasks['r1-j7'][0].label, 'Appel délégué')
+    assert.equal(state.tasks['r2-j7'][0].label, 'Valider feuille FMI')
+    assert.equal(state.tasks['u20-j7'][0].label, 'Récupérer clés minibus')
+
+    // Read back from disk
+    const reloaded = readCssaSportState(testFile)
+    assert.equal(reloaded.notes['u20-j7'], 'Départ minibus Nancy 12h15')
+    assert.equal(reloaded.tasks['r2-j7'][0].done, false)
+  } finally {
+    rmSync(tempDir, {recursive: true, force: true})
+  }
+})
+
