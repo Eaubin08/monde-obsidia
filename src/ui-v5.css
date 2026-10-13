@@ -888,3 +888,12 @@ select:focus-visible {
 .v5pk-agent-operational>p{margin:8px 0 0;font-size:.62rem;color:#7f94a7}
 @media(max-width:620px){.v5pk-agent-operational-grid{grid-template-columns:1fr}.v5pk-agent-operational-grid article:last-child{grid-column:auto}}
 
+
+/* V6 global navigation: one top bar, no nested global sidebar */
+.v5{display:block;min-height:100vh}
+.v5-sidebar{position:sticky;top:0;z-index:80;height:72px;border-right:0;border-bottom:1px solid var(--line);background:rgba(6,15,24,.96);backdrop-filter:blur(14px);padding:0 20px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:22px}
+.v5-brand{padding:0;white-space:nowrap}.v5-brand>span{font-size:1.55rem}.v5-brand strong{font-size:1.08rem}.v5-brand small{font-size:.64rem}
+.v5-primary-nav{display:flex;gap:4px;align-items:stretch;height:100%}.v5-primary-nav a{display:flex;grid-template-columns:none;align-items:center;gap:8px;border-radius:0;border:0;border-bottom:2px solid transparent;padding:0 15px}.v5-primary-nav a>span{font-size:1.15rem}.v5-primary-nav a div{display:flex;flex-direction:column}.v5-primary-nav a strong{font-size:.83rem}.v5-primary-nav a small{font-size:.63rem}.v5-primary-nav a[aria-current="page"]{background:linear-gradient(180deg,rgba(60,111,255,.13),rgba(67,60,180,.05));border-bottom-color:#5c83ff;box-shadow:none}
+.v5-sidebar-foot{margin:0;border:0;padding:0;display:flex;align-items:center;gap:12px}.v5-context-mini{border:1px solid var(--line2);border-radius:8px;padding:7px 10px;min-width:155px}.v5-context-mini span{font-size:.58rem}.v5-context-mini strong{margin:2px 0 0;font-size:.72rem;max-width:170px}.v5-sidebar-foot>small{border:1px solid #1a7e63;color:#58e4b6;border-radius:8px;padding:8px 10px;white-space:nowrap}
+.v5-app{min-width:0}.v5-main-cssa{max-width:none;margin:0;padding:0}
+@media(max-width:1000px){.v5-sidebar{height:auto;grid-template-columns:1fr;padding:10px 14px;gap:8px}.v5-primary-nav{height:auto;overflow:auto}.v5-primary-nav a{padding:8px 10px;border-bottom:0;border-radius:8px}.v5-sidebar-foot{display:none}}
