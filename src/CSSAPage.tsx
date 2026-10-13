@@ -37,6 +37,153 @@ type NativeReadModel={
   reason?:string;entities?:NativeEntity[];relations?:{from:string;type:string;to:string}[];
   availability?:Record<string,string>;projection_hash?:string
 }
+
+type SemanticFrame={purpose:string;context:string;observes?:string;feeds:string;impact:string;limits:string;provenance?:string}
+type SourceCatalogItem={
+  id:string;title:string;url:string;truthClass:'PUBLIC_CONFIRMED'|'SECONDARY_CORROBORATED';
+  cadence:'WEEKLY'|'BIWEEKLY'|'MONTHLY';criticality:'LOW'|'MEDIUM'|'HIGH';
+  semantics:SemanticFrame
+}
+
+const cssaSourceCatalog:SourceCatalogItem[]=[
+  {id:'CSSA_HOME',title:'Site officiel CSSA',url:'https://cs-sedan.fr/',truthClass:'PUBLIC_CONFIRMED',cadence:'WEEKLY',criticality:'MEDIUM',semantics:{
+    purpose:'Point d’entrée public général du club.',
+    context:'Source officielle utilisée pour repérer les annonces et changements publics généraux.',
+    observes:'Actualités, annonces, informations institutionnelles et liens publics.',
+    feeds:'Veille publique, communication, revue administrative.',
+    impact:'Peut déclencher une revue lorsqu’un contenu public important change.',
+    limits:'Ne décrit pas le fonctionnement interne réel du club.'
+  }},
+  {id:'CSSA_ORGANIGRAMME_ASSOCIATION',title:'Organigramme association',url:'https://cs-sedan.fr/organigramme-association',truthClass:'PUBLIC_CONFIRMED',cadence:'WEEKLY',criticality:'HIGH',semantics:{
+    purpose:'Suivre la structure dirigeante et administrative publiée.',
+    context:'Référence publique pour les rôles et fonctions affichés par le club.',
+    observes:'Dirigeants, fonctions, responsabilités et changements d’organigramme.',
+    feeds:'Administration, CRM organisation, circuits de validation à confirmer.',
+    impact:'Un changement peut modifier les interlocuteurs ou responsabilités supposées.',
+    limits:'Ne prouve ni les droits réels, ni les délégations informelles, ni les accès outils.'
+  }},
+  {id:'CSSA_MANAGER_RECRUITMENT',title:'Recrutement manager général',url:'https://cs-sedan.fr/recrutement-manager-general',truthClass:'PUBLIC_CONFIRMED',cadence:'WEEKLY',criticality:'HIGH',semantics:{
+    purpose:'Suivre le statut public du besoin ou du rôle de manager général.',
+    context:'Annonce officielle pouvant signaler une évolution de gouvernance opérationnelle.',
+    observes:'Existence de l’annonce, contenu du poste, évolution ou retrait.',
+    feeds:'Administration, organisation, revue des responsables.',
+    impact:'Peut remettre en cause un organigramme ou un rôle supposé.',
+    limits:'Une annonce ne prouve pas qu’un recrutement a été finalisé.'
+  }},
+  {id:'CSSA_ACADEMY_ORG',title:'Organigramme académie',url:'https://cs-sedan.fr/organigramme-academie',truthClass:'PUBLIC_CONFIRMED',cadence:'BIWEEKLY',criticality:'MEDIUM',semantics:{
+    purpose:'Suivre l’organisation publique de l’académie.',
+    context:'Source officielle pour les rôles publiés côté formation.',
+    observes:'Responsables, fonctions et structure académique.',
+    feeds:'Organisation, CRM, activités académie.',
+    impact:'Aide à identifier les bons interlocuteurs publics.',
+    limits:'Ne prouve pas les pratiques, handoffs ou droits internes.'
+  }},
+  {id:'CSSA_VOLUNTEER_RECRUITMENT',title:'Recrutement bénévoles',url:'https://cs-sedan.fr/recrutement-benevole',truthClass:'PUBLIC_CONFIRMED',cadence:'BIWEEKLY',criticality:'MEDIUM',semantics:{
+    purpose:'Suivre les besoins bénévoles publiquement exprimés.',
+    context:'Signal public sur les besoins humains et opérationnels du club.',
+    observes:'Missions recherchées, besoins, campagnes de recrutement.',
+    feeds:'Matchday, opérations, organisation des ressources.',
+    impact:'Peut révéler une tension ou un besoin opérationnel.',
+    limits:'Ne donne pas les effectifs réellement disponibles ni leurs disponibilités.'
+  }},
+  {id:'CSSA_ACCREDITATIONS',title:'Accréditations',url:'https://cs-sedan.fr/accreditations',truthClass:'PUBLIC_CONFIRMED',cadence:'BIWEEKLY',criticality:'MEDIUM',semantics:{
+    purpose:'Suivre les règles publiques d’accréditation.',
+    context:'Référence officielle pour les procédures d’accès publiées.',
+    observes:'Modalités, formulaires, délais et conditions d’accréditation.',
+    feeds:'Administration, matchday, procédures.',
+    impact:'Un changement peut modifier une procédure ou une échéance.',
+    limits:'Ne prouve pas les validations internes réelles d’une demande donnée.'
+  }},
+  {id:'CSSA_LICENSE_2026_2027',title:'Licences 2026–2027',url:'https://cs-sedan.fr/renouvellement-licence-2026-2027',truthClass:'PUBLIC_CONFIRMED',cadence:'MONTHLY',criticality:'MEDIUM',semantics:{
+    purpose:'Suivre les informations publiques de renouvellement de licence.',
+    context:'Source saisonnière officielle pour procédures et montants publiés.',
+    observes:'Tarifs, dates, modalités et pièces demandées.',
+    feeds:'Administration, finance publique, reporting saison.',
+    impact:'Peut affecter les démarches et estimations de coûts.',
+    limits:'Ne prouve pas le nombre réel de licenciés ni les paiements internes.'
+  }},
+  {id:'CSSA_SUBSCRIPTION_2026_2027',title:'Abonnements 2026–2027',url:'https://cs-sedan.fr/abonnement-26-27',truthClass:'PUBLIC_CONFIRMED',cadence:'MONTHLY',criticality:'MEDIUM',semantics:{
+    purpose:'Suivre l’offre publique d’abonnement de la saison.',
+    context:'Référence officielle pour tarifs et modalités annoncés.',
+    observes:'Prix, catégories, conditions et campagne d’abonnement.',
+    feeds:'Finance publique, communication, modèle saison.',
+    impact:'Alimente les hypothèses publiques de revenus ou d’offre.',
+    limits:'Ne prouve ni ventes réelles, ni encaissements, ni budget certifié.'
+  }},
+  {id:'CSSA_ASSOCIATION_MIRROR',title:'Miroir public association',url:'https://www.localgymsandfitness.com/FR/Sedan/100338915052339/CSSA---Association',truthClass:'SECONDARY_CORROBORATED',cadence:'WEEKLY',criticality:'MEDIUM',semantics:{
+    purpose:'Corroborer des informations publiques de l’association.',
+    context:'Source secondaire utilisée comme miroir, jamais comme vérité principale.',
+    observes:'Présence, informations publiques reprises et changements visibles.',
+    feeds:'Corroboration de veille.',
+    impact:'Peut signaler une divergence à revoir.',
+    limits:'Source secondaire : ne remplace jamais une source officielle.'
+  }},
+  {id:'LEBALLONROND_CSSA',title:'LeBallonRond · CSSA',url:'https://www.leballonrond.fr/equipe/cs-sedan/129',truthClass:'SECONDARY_CORROBORATED',cadence:'WEEKLY',criticality:'HIGH',semantics:{
+    purpose:'Corroborer l’état sportif public de l’équipe.',
+    context:'Source sportive secondaire utile pour recouper calendrier, niveau et résultats.',
+    observes:'Équipe, compétition, rencontres et résultats publiés.',
+    feeds:'Matchday, modèle saison, vérification sportive.',
+    impact:'Une divergence avec une autre source déclenche une revue.',
+    limits:'Ne remplace ni le club ni l’autorité de compétition.'
+  }},
+  {id:'LEPROGRES_R1',title:'Le Progrès · Régional 1',url:'https://www.leprogres.fr/sport/calendrier-resultats/football/regional-ligue-grand-est-regional-1-poule-a',truthClass:'SECONDARY_CORROBORATED',cadence:'WEEKLY',criticality:'HIGH',semantics:{
+    purpose:'Suivre un calendrier/résultats R1 comme source de corroboration.',
+    context:'Source secondaire de compétition utilisée pour détecter dates et résultats publics.',
+    observes:'Matchs, adversaires, dates, domicile/extérieur, résultats.',
+    feeds:'Matchday, calendrier, contrôle de cohérence.',
+    impact:'Peut révéler un changement de calendrier ou une divergence de niveau.',
+    limits:'Ne constitue pas une autorité officielle de compétition.'
+  }},
+  {id:'DNA_R2',title:'DNA · Régional 2',url:'https://www.dna.fr/sport/calendrier-resultats/football/regional-ligue-grand-est-regional-2-poule-a',truthClass:'SECONDARY_CORROBORATED',cadence:'WEEKLY',criticality:'HIGH',semantics:{
+    purpose:'Corroborer les informations publiques R2.',
+    context:'Source secondaire explicitement surveillée car une divergence R2/R3 a déjà été identifiée.',
+    observes:'Compétition, calendrier et résultats.',
+    feeds:'Contradictions sportives, revue de saison.',
+    impact:'Peut créer une contradiction à résoudre avant promotion en vérité.',
+    limits:'Une page secondaire ne tranche pas seule le niveau sportif réel.'
+  }},
+  {id:'ESTREP_U16',title:'Est Républicain · U16 R1',url:'https://www.estrepublicain.fr/sport/calendrier-resultats/football/regional-ligue-grand-est-u16-regional-1-poule-a',truthClass:'SECONDARY_CORROBORATED',cadence:'BIWEEKLY',criticality:'LOW',semantics:{
+    purpose:'Suivre le calendrier public U16.',
+    context:'Source secondaire pour la composante formation.',
+    observes:'Matchs, dates, adversaires et résultats U16.',
+    feeds:'Académie, calendrier, matchday formation.',
+    impact:'Aide à maintenir un contexte sportif public cohérent.',
+    limits:'Ne prouve pas les opérations internes de l’académie.'
+  }},
+  {id:'LEPROGRES_U15',title:'Le Progrès · U15 R1',url:'https://www.leprogres.fr/sport/calendrier-resultats/football/regional-ligue-grand-est-u15-regional-1-poule-a',truthClass:'SECONDARY_CORROBORATED',cadence:'BIWEEKLY',criticality:'LOW',semantics:{
+    purpose:'Suivre le calendrier public U15.',
+    context:'Source secondaire pour la composante formation.',
+    observes:'Matchs, dates, adversaires et résultats U15.',
+    feeds:'Académie, calendrier, matchday formation.',
+    impact:'Aide à maintenir le contexte sportif public à jour.',
+    limits:'Ne constitue pas une preuve de fonctionnement interne.'
+  }},
+]
+
+const capabilitySemantics:Record<string,SemanticFrame>={
+  crm:{purpose:'Conserver les dossiers et relations métier structurés.',context:'Le CRM sert de mémoire opérationnelle native, pas d’autorité.',observes:'CASE, interactions, follow-ups et relations.',feeds:'TASKS, reporting, revues et décisions futures.',impact:'Structure le suivi d’un dossier dans le temps.',limits:'Créer ou lire un dossier CRM n’autorise aucune action externe.'},
+  tasks:{purpose:'Transformer un besoin validé en travail suivi.',context:'TASKS représente le travail canonique à faire, avec état et échéance.',observes:'Tâches, statut, priorité, responsable, dépendances et due date.',feeds:'Suivi opérationnel, CRM, reporting.',impact:'Rend visible ce qui doit être fait et ce qui bloque.',limits:'Une TASK n’est ni une décision KX108 ni une exécution externe.'},
+  admin:{purpose:'Structurer contrats, conformité et procédures.',context:'Couche métier administrative fondée sur sources et règles identifiées.',observes:'Obligations, dossiers, canaux, échéances et conformité.',feeds:'CASE, TASKS, reporting, gouvernance.',impact:'Permet de détecter manques, risques et actions à préparer.',limits:'Les règles publiques ne prouvent pas les pratiques internes réelles.'},
+  mail:{purpose:'Préparer des communications gouvernées.',context:'Le preflight valide la forme et les préconditions avant toute possibilité d’envoi.',observes:'Destinataire prévu, contenu préparé, approbation et contraintes.',feeds:'World action / exécution seulement si toute la chaîne l’autorise.',impact:'Peut préparer une communication mais pas l’envoyer seul.',limits:'MAIL HOLD signifie qu’aucun envoi réel ne doit être supposé.'},
+  reporting:{purpose:'Rendre l’état compréhensible selon le destinataire.',context:'Projection structurée des faits et preuves disponibles.',observes:'Indicateurs, changements, risques, tâches et preuves.',feeds:'Pilotage humain et revue.',impact:'Aide à décider quoi regarder ensuite.',limits:'Un rapport ne crée pas de vérité nouvelle.'},
+  watch:{purpose:'Observer les sources publiques et détecter leurs changements.',context:'Veille GET-only avec empreintes et revue explicite.',observes:'Disponibilité, contenu visible et dérive de pages publiques.',feeds:'Source runtime, revue sémantique, administration, matchday, finance.',impact:'Un changement peut déclencher une revue mais jamais une conclusion automatique.',limits:'PAGE CHANGED ≠ SEMANTIC FACT CHANGED.'},
+  matchday:{purpose:'Structurer les opérations liées aux jours de match.',context:'Couche métier pour readiness, stocks, shifts et fournisseurs.',observes:'Besoins opérationnels et préparation.',feeds:'TASKS, fournisseurs, reporting.',impact:'Aide à préparer et détecter les points bloquants.',limits:'Les données publiques ne prouvent pas l’état terrain réel.'},
+  finance:{purpose:'Projeter les éléments financiers disponibles.',context:'V0 fondée sur tarifs et informations publiques, pas sur comptabilité interne.',observes:'Tarifs, hypothèses saison et données publiques liées aux coûts/revenus.',feeds:'Reporting et scénarios.',impact:'Permet des estimations et comparaisons.',limits:'Ne prouve pas le budget certifié, la trésorerie ou les encaissements réels.'},
+  governance:{purpose:'Préserver la frontière d’autorité.',context:'Le domaine décrit et propose ; KX108 tranche.',observes:'Unknowns, contradictions, risques, preuves et décisions.',feeds:'Gates d’exécution et receipts.',impact:'Empêche qu’une interface ou un domaine s’auto-autorise.',limits:'Afficher KX108_ONLY ne signifie pas qu’une action a été autorisée.'},
+  field:{purpose:'Identifier ce qui manque pour connaître la réalité interne.',context:'Zone volontairement OPEN tant que le terrain n’a pas été audité.',observes:'Droits, handoffs, checklists, pratiques, accès et validations.',feeds:'Futures corrections du modèle métier.',impact:'Empêche de confondre modèle public et fonctionnement réel.',limits:'Aucun fait interne ne doit être inventé pour fermer cette zone.'},
+}
+
+function nativeSemantic(entity:NativeEntity):SemanticFrame{
+  const kind=String(entity.kind||'object').toLowerCase()
+  if(kind==='source')return {purpose:'Conserver une observation sourcée et vérifiable.',context:'Objet issu du source runtime ; il décrit ce qui a été observé, pas ce qui est vrai métier.',observes:'Source, date d’observation, provenance et empreintes disponibles.',feeds:'Interprétation métier et revue.',impact:'Peut déclencher une analyse ou une contradiction.',limits:'SOURCE ≠ TRUST et observation ≠ conclusion.'}
+  if(kind==='case')return {purpose:'Regrouper un dossier métier à suivre.',context:'Objet CRM canonique créé à partir d’un intake gouverné.',observes:'État, propriétaire connu, priorité et liens de suivi.',feeds:'TASKS, interactions et follow-ups.',impact:'Structure le traitement d’un sujet.',limits:'Un CASE ne décide et n’exécute rien.'}
+  if(kind==='task')return capabilitySemantics.tasks
+  if(kind==='followup')return {purpose:'Relier un dossier CRM à une prochaine action suivie.',context:'Objet de continuité entre CASE et TASK.',observes:'Référence de dossier, task_ref et échéance.',feeds:'CRM et suivi opérationnel.',impact:'Évite qu’un dossier perde sa prochaine étape.',limits:'Le follow-up ne vaut ni validation ni exécution.'}
+  if(kind==='decision')return {purpose:'Conserver une décision de gouvernance observée.',context:'Record KX108 associé à une proposition ou mutation.',observes:'Gate, raison, domaine et références de décision.',feeds:'Execution gate et preuve.',impact:'Peut autoriser, bloquer ou mettre en HOLD une étape.',limits:'DECISION ≠ ACTION.'}
+  if(kind==='receipt')return {purpose:'Prouver qu’une mutation ou exécution déterminée a eu lieu.',context:'Trace append-only vérifiable selon son type.',observes:'Identifiants, hashes, état avant/après ou outcome.',feeds:'Replay, audit et preuve.',impact:'Permet de vérifier ce qui a réellement été appliqué.',limits:'RECEIPT ≠ DECISION.'}
+  return {purpose:'Rendre cet objet compréhensible dans son contexte métier.',context:'Objet observé via le read model natif.',observes:'Métadonnées persistées exposées par le read model.',feeds:'Inspection et audit.',impact:'Donne du contexte sans ajouter d’autorité.',limits:'L’interface ne complète pas les champs absents et n’invente pas de vérité.'}
+}
+
 type WorldState={
   schema?:string;readonly?:boolean;entities?:NativeEntity[];relations?:unknown[];
   observedAt?:string;decisionAuthority?:string
@@ -345,6 +492,16 @@ export default function CSSAPage(){
         </div>
         <aside className="cssa-native-inspector">
           {selectedNativeEntity?<><span className="cssa-kicker">OBJET RÉEL</span><h3>{selectedNativeEntity.label}</h3>
+            {(()=>{
+              const semantic=nativeSemantic(selectedNativeEntity)
+              return <div className="cssa-native-semantic">
+                <div><small>BUT</small><p>{semantic.purpose}</p></div>
+                <div><small>CONTEXTE</small><p>{semantic.context}</p></div>
+                <div><small>ALIMENTE</small><p>{semantic.feeds}</p></div>
+                <div><small>IMPACT</small><p>{semantic.impact}</p></div>
+                <div><small>LIMITE</small><p>{semantic.limits}</p></div>
+              </div>
+            })()}
             <div className="cssa-native-fields">
               {Object.entries(selectedNativeEntity).filter(([key])=>!['label'].includes(key)).map(([key,value])=><div key={key}><small>{key}</small><strong>{String(value??'—')}</strong></div>)}
             </div>
@@ -352,6 +509,44 @@ export default function CSSAPage(){
         </aside>
       </div>}
     </section>
+
+
+    {current.id==='cssa'&&<section className="cssa-section cssa-source-catalog">
+      <header>
+        <div>
+          <span className="cssa-kicker">CATALOGUE SÉMANTIQUE · 14 SOURCES</span>
+          <h2>Pourquoi chaque source existe</h2>
+          <p>Ce catalogue décrit le rôle attendu des sources. Il ne prétend pas qu’une observation runtime a déjà été persistée.</p>
+        </div>
+        <span className="cssa-contract-badge">CONTEXTE ≠ OBSERVATION</span>
+      </header>
+      <div className="cssa-source-grid">
+        {cssaSourceCatalog.map(source=>{
+          const observed=nativeEntities.find(e=>e.kind==='source'&&(e.id===source.id||String(e.label||'').includes(source.id)))
+          return <article key={source.id} className="cssa-source-card">
+            <div className="cssa-source-head">
+              <div><small>{source.id}</small><h3>{source.title}</h3></div>
+              <span className={observed?'observed':'catalog'}>{observed?'OBSERVED':'CATALOGUE'}</span>
+            </div>
+            <div className="cssa-source-meta">
+              <span>{source.truthClass}</span><span>{source.cadence}</span><span>{source.criticality}</span>
+            </div>
+            <div className="cssa-semantic-stack">
+              <div><small>BUT</small><p>{source.semantics.purpose}</p></div>
+              <div><small>CONTEXTE</small><p>{source.semantics.context}</p></div>
+              <div><small>CE QU’ON SURVEILLE</small><p>{source.semantics.observes}</p></div>
+              <div><small>ALIMENTE</small><p>{source.semantics.feeds}</p></div>
+              <div><small>IMPACT POSSIBLE</small><p>{source.semantics.impact}</p></div>
+              <div><small>LIMITE</small><p>{source.semantics.limits}</p></div>
+            </div>
+            <footer>
+              <span>{source.url}</span>
+              {observed&&<b>{String(observed.verification||observed.status||'OBSERVED')}</b>}
+            </footer>
+          </article>
+        })}
+      </div>
+    </section>}
 
     <section className="cssa-section cssa-cockpit-universal">
       <header>
@@ -394,6 +589,26 @@ export default function CSSAPage(){
           </div>
           <button onClick={()=>setSelectedCapability(null)}>Fermer</button>
         </header>
+        <div className="cssa-semantic-panel">
+          {(()=>{
+            const semantic=capabilitySemantics[activeCapability.id]??{
+              purpose:'Exposer une capacité métier sans lui donner d’autorité.',
+              context:activeCapability.summary,
+              observes:'État et métadonnées disponibles pour cette capacité.',
+              feeds:'Les vues et workflows qui dépendent de cette capacité.',
+              impact:'Rend visible ce que la structure sait réellement faire ou observer.',
+              limits:'Une capacité déclarée ne vaut ni décision ni action.'
+            }
+            return <div className="cssa-semantic-grid">
+              <div><small>BUT</small><p>{semantic.purpose}</p></div>
+              <div><small>CONTEXTE</small><p>{semantic.context}</p></div>
+              <div><small>OBSERVE / CONTIENT</small><p>{semantic.observes||'—'}</p></div>
+              <div><small>ALIMENTE</small><p>{semantic.feeds}</p></div>
+              <div><small>IMPACT</small><p>{semantic.impact}</p></div>
+              <div><small>LIMITE</small><p>{semantic.limits}</p></div>
+            </div>
+          })()}
+        </div>
         <div className="cssa-capability-details">
           {activeCapability.details.map(item=><article key={item}><span>◆</span><p>{item}</p></article>)}
         </div>
