@@ -1250,6 +1250,137 @@
   background: #2e3347;
 }
 
+/* Architecture par Pôles & Niveaux */
+.spx-nav-tier-title {
+  padding: 8px 10px 4px;
+  font: 7px ui-monospace, monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #647d96;
+  border-top: 1px solid #142230;
+  margin-top: 8px;
+}
+
+.spx-nav-tier-title:first-of-type {
+  border-top: none;
+  margin-top: 0;
+}
+
+.spx-tier-card {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  border: 1px solid #1a2c3f;
+  background: #0a1724;
+  color: #c7d3df;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.spx-tier-card:hover {
+  background: #0f2438;
+  border-color: #274766;
+}
+
+.spx-tier-card.active {
+  background: #113459;
+  border-color: #2d6fb3;
+  color: #ffffff;
+}
+
+.spx-tier-card strong {
+  display: block;
+  font-size: 9px;
+  color: #e0ecf7;
+}
+
+.spx-tier-card span {
+  display: block;
+  font-size: 7px;
+  color: #7992a8;
+  margin-top: 2px;
+}
+
+/* Supervision Formation Dashboard */
+.spx-formation-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.spx-formation-card {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #091726;
+  border: 1px solid #1c324a;
+}
+
+.spx-formation-card small {
+  display: block;
+  font: 7px ui-monospace, monospace;
+  color: #738b9f;
+}
+
+.spx-formation-card strong {
+  display: block;
+  font-size: 13px;
+  color: #61d5ab;
+  margin-top: 3px;
+}
+
+.spx-formation-card span {
+  display: block;
+  font-size: 7.5px;
+  color: #9cb1c5;
+  margin-top: 2px;
+}
+
+/* Plateaux École de Foot Table */
+.spx-plateaux-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.spx-plateaux-table th {
+  padding: 8px 10px;
+  text-align: left;
+  font: 7.5px ui-monospace, monospace;
+  color: #728c9e;
+  border-bottom: 1px solid #1a2f42;
+  background: #081523;
+}
+
+.spx-plateaux-table td {
+  padding: 10px;
+  font-size: 8px;
+  color: #cdd9e5;
+  border-bottom: 1px solid #112233;
+}
+
+.spx-plateaux-table tr:hover td {
+  background: #0c1c2e;
+}
+
+.spx-cat-badge {
+  font: 7px ui-monospace, monospace;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #172a3d;
+  color: #70baf7;
+  border: 1px solid #24415e;
+}
+
+
 
 /* Responsive */
 @media (max-width: 1250px) {

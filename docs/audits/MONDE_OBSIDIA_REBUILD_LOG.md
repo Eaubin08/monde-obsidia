@@ -104,22 +104,32 @@
    - Tests automatisés portés de 75 à 80 tests (100% PASS).
    - Persistance universelle des notes, checklists et tâches sur `.obsidia-live/cssa_sport_state.json`.
 
+### 4. Architecture à 4 Niveaux déployée (Version Corrigée)
+
+Conformément à la directive du club (ne pas créer 19 copies plates de tableaux de bord, mais structurer selon la réalité opérationnelle) :
+
+1. **Niveau 1 — Équipes Majeures (Profondeur)** :
+   - *Seniors R1*, *Seniors R2*, *U20 R1*.
+   - Dossier opérationnel complet : checklist de préparation à 6 items, notes du staff, tâches dynamiques, historique, sources officielles, diffuseur DVCR et analyse d'impact.
+2. **Niveau 2 — Formation / Académie (Supervision globale)** :
+   - Regroupement des catégories *U17 R1*, *U16 R1*, *U15 R1*, *U15 D1*, *U13 Fanion*, *U13/U12 Espoir*, *U12 Avenir*.
+   - Vue de supervision synthétique : indicateurs clés, filtrage par catégorie, résultats réels observés (*U16 vs OCPAM 1–1*, *U15 vs MIFA 2–1*, *U15 D1 vs Bazeilles*), fiche inspecteur allégée (notes éducateur & source, sans surcharge de checklist senior).
+3. **Niveau 3 — École de Foot (Programme Week-end / Plateaux)** :
+   - Regroupement des catégories *U11 Fanion*, *U11/U10 Espoir*, *U10 Avenir*, *U9*, *U8*, *U7*, *U6*.
+   - Tableau unifié des rassemblements départementaux et plateaux : catégorie, équipe, horaire, format (Foot à 8 / Foot à 5), site/terrain (Montvillers synthétique ou déplacements), adversaires, source officielle (District des Ardennes FFF), statut de confirmation.
+4. **Niveau 4 — Pôle Féminin (Groupe dédié)** :
+   - Regroupement de *Seniors Féminines* et *U18F R2* dans un espace dédié commun avec sélecteur d'équipe.
+5. **Calendrier Global du Club (Vue transversale)** :
+   - Regroupement de l'ensemble des rencontres et créneaux du club avec filtres transversaux (*Tout*, *Seniors*, *Formation*, *Féminines*, *Domicile*, *Extérieur*, *Ce week-end*, *Week-end passé*, *Conflits*).
+   - Détecteur de collisions de terrain (`detectPitchConflicts`) appliquant les règles LGEF (Art. 20-7) avec bouton de création immédiate de tâche de conciliation.
+   - Séparation stricte de la simulation F3E : bandeau explicite `DONNÉES RÉELLES NON RACCORDÉES` et bouton de bascule indépendant.
+
 ---
 
-### 2. Fichiers modifiés
+### 5. Limites restantes pour la tranche suivante
 
-- `src/CSSASportPage.tsx` : Intégration des datasets R2, U20, Jeunes, du calendrier global, du détecteur de collision de terrain et de la barre logistique.
-- `src/CSSASport.css` : Styles CSS pour la carte globale du club, les tags d'équipes (`r1`, `r2`, `u20`), les alertes de conflits de terrain et la barre logistique.
-- `tests/cssa-sport.test.mjs` : Extension à 10 tests unitaires et d'intégration validant R2, U20, Jeunes, le Calendrier Global, les collisions et la persistance multi-équipes.
-- `docs/audits/MONDE_OBSIDIA_REBUILD_LOG.md` : Mise à jour du journal de reconstruction.
+1. Raccordement direct aux flux automatisés du District des Ardennes et de la LGEF via un robot de veille périodique.
+2. Gestion des convocations nominatives des joueurs par catégorie une fois la base d'effectif raccordée.
+3. Extension du module aux aspects financiers, licences et billetterie pour les matchs à Dugauguez.
 
----
-
-### 3. Résultats des tests et vérifications
-
-| Commande | Résultat | Détail |
-|---|---|---|
-| `npm.cmd run build` | **PASS** | `tsc -b` (0 erreur TS) + Vite build (28 modules compilés en 179ms) |
-| `npm.cmd test` | **PASS** | 80 passés / 0 échoué (100%) |
-| `node --test tests/cssa-sport.test.mjs` | **PASS** | 10 passés / 0 échoué (100%) |
 

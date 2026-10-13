@@ -78,10 +78,25 @@ export type Fixture = {
 export type Team = {
   id: string
   label: string
-  tier: string
+  tier: 'MAJEURES' | 'FORMATION' | 'ECOLE_FOOT' | 'FEMININES'
   competition: string
   fixtureCount: number
   isReal: boolean
+}
+
+export type PlateauItem = {
+  id: string
+  category: 'U11' | 'U10' | 'U9' | 'U8' | 'U7' | 'U6'
+  teamLabel: string
+  date: string
+  time: string
+  format: 'FOOT_8' | 'FOOT_5'
+  venue: string
+  pitch?: string
+  opponents: string
+  source: string
+  truth: string
+  status: 'CONFIRMED' | 'TO_VERIFY'
 }
 
 export type PitchConflict = {
@@ -94,27 +109,35 @@ export type PitchConflict = {
 }
 
 export const TEAMS: Team[] = [
-  {id: 'SENIORS_R1', label: 'Seniors R1 (Fanion)', tier: 'SENIORS_POST_FORMATION', competition: 'RÉGIONAL 1 — POULE A', fixtureCount: 26, isReal: true},
-  {id: 'SENIORS_R2', label: 'Seniors R2 (Réserve)', tier: 'SENIORS_POST_FORMATION', competition: 'RÉGIONAL 2 — POULE A', fixtureCount: 22, isReal: true},
-  {id: 'U20_R1', label: 'U20 R1 (Développement)', tier: 'SENIORS_POST_FORMATION', competition: 'U20 RÉGIONAL 1', fixtureCount: 22, isReal: true},
+  // NIVEAU 1 : ÉQUIPES MAJEURES
+  {id: 'SENIORS_R1', label: 'Seniors R1 (Fanion)', tier: 'MAJEURES', competition: 'RÉGIONAL 1 — POULE A', fixtureCount: 26, isReal: true},
+  {id: 'SENIORS_R2', label: 'Seniors R2 (Réserve)', tier: 'MAJEURES', competition: 'RÉGIONAL 2 — POULE A', fixtureCount: 22, isReal: true},
+  {id: 'U20_R1', label: 'U20 R1 (Développement)', tier: 'MAJEURES', competition: 'U20 RÉGIONAL 1', fixtureCount: 22, isReal: true},
+
+  // NIVEAU 2 : FORMATION / ACADÉMIE
   {id: 'U17_R1', label: 'U17 R1', tier: 'FORMATION', competition: 'U17_R1', fixtureCount: 22, isReal: false},
   {id: 'U16_R1', label: 'U16 R1', tier: 'FORMATION', competition: 'U16_R1', fixtureCount: 22, isReal: false},
   {id: 'U15_R1', label: 'U15 R1', tier: 'FORMATION', competition: 'U15_R1', fixtureCount: 22, isReal: false},
-  {id: 'U15_D1', label: 'U15 D1', tier: 'FORMATION_PREFORMATION', competition: 'DISTRICT_D1', fixtureCount: 18, isReal: false},
-  {id: 'SENIORS_F', label: 'Seniors féminines', tier: 'FEMININES', competition: 'R2_F_CENTRE_OUEST', fixtureCount: 18, isReal: false},
-  {id: 'U18F_R2', label: 'U18 F R2', tier: 'FEMININES', competition: 'U18_R2_F', fixtureCount: 18, isReal: false},
-  {id: 'U13_FANION', label: 'U13 Fanion', tier: 'FOOT_8', competition: 'U13_D1', fixtureCount: 18, isReal: false},
-  {id: 'U13_U12_ESPOIR', label: 'U13/U12 Espoir', tier: 'FOOT_8', competition: 'U13_D2', fixtureCount: 16, isReal: false},
-  {id: 'U12_AVENIR', label: 'U12 Avenir', tier: 'FOOT_8', competition: 'DISTRICT_PHASES', fixtureCount: 16, isReal: false},
-  {id: 'U11_FANION', label: 'U11 Fanion', tier: 'FOOT_8', competition: 'PLATEAUX', fixtureCount: 14, isReal: false},
-  {id: 'U11_U10_ESPOIR', label: 'U11/U10 Espoir', tier: 'FOOT_8', competition: 'PLATEAUX', fixtureCount: 14, isReal: false},
-  {id: 'U10_AVENIR', label: 'U10 Avenir', tier: 'FOOT_8', competition: 'PLATEAUX', fixtureCount: 14, isReal: false},
-  {id: 'U9', label: 'U9', tier: 'FOOT_5', competition: 'PLATEAUX', fixtureCount: 12, isReal: false},
-  {id: 'U8', label: 'U8', tier: 'FOOT_5', competition: 'PLATEAUX', fixtureCount: 12, isReal: false},
-  {id: 'U7', label: 'U7', tier: 'FOOT_5', competition: 'PLATEAUX', fixtureCount: 12, isReal: false},
-  {id: 'U6', label: 'U6', tier: 'FOOT_5', competition: 'PLATEAUX', fixtureCount: 12, isReal: false}
+  {id: 'U15_D1', label: 'U15 D1', tier: 'FORMATION', competition: 'DISTRICT_D1', fixtureCount: 18, isReal: false},
+  {id: 'U13_FANION', label: 'U13 Fanion', tier: 'FORMATION', competition: 'U13_D1', fixtureCount: 18, isReal: false},
+  {id: 'U13_U12_ESPOIR', label: 'U13/U12 Espoir', tier: 'FORMATION', competition: 'U13_D2', fixtureCount: 16, isReal: false},
+  {id: 'U12_AVENIR', label: 'U12 Avenir', tier: 'FORMATION', competition: 'DISTRICT_PHASES', fixtureCount: 16, isReal: false},
+
+  // NIVEAU 3 : ÉCOLE DE FOOT
+  {id: 'U11_FANION', label: 'U11 Fanion', tier: 'ECOLE_FOOT', competition: 'PLATEAUX_FOOT_8', fixtureCount: 14, isReal: false},
+  {id: 'U11_U10_ESPOIR', label: 'U11/U10 Espoir', tier: 'ECOLE_FOOT', competition: 'PLATEAUX_FOOT_8', fixtureCount: 14, isReal: false},
+  {id: 'U10_AVENIR', label: 'U10 Avenir', tier: 'ECOLE_FOOT', competition: 'PLATEAUX_FOOT_8', fixtureCount: 14, isReal: false},
+  {id: 'U9', label: 'U9', tier: 'ECOLE_FOOT', competition: 'PLATEAUX_FOOT_5', fixtureCount: 12, isReal: false},
+  {id: 'U8', label: 'U8', tier: 'ECOLE_FOOT', competition: 'PLATEAUX_FOOT_5', fixtureCount: 12, isReal: false},
+  {id: 'U7', label: 'U7', tier: 'ECOLE_FOOT', competition: 'PLATEAUX_FOOT_5', fixtureCount: 12, isReal: false},
+  {id: 'U6', label: 'U6', tier: 'ECOLE_FOOT', competition: 'PLATEAUX_FOOT_5', fixtureCount: 12, isReal: false},
+
+  // NIVEAU 4 : FÉMININES
+  {id: 'SENIORS_F', label: 'Seniors Féminines', tier: 'FEMININES', competition: 'R2_F_CENTRE_OUEST', fixtureCount: 18, isReal: false},
+  {id: 'U18F_R2', label: 'U18 F R2', tier: 'FEMININES', competition: 'U18_R2_F', fixtureCount: 18, isReal: false}
 ]
 
+// FIXTURES SENIORS R1
 export const R1_MATCHES: Fixture[] = [
   {id:'r1-j1',teamId:'SENIORS_R1',competition:'RÉGIONAL 1',date:'2026-08-23',time:'16:00',home:'Marnaval SC',away:'CS Sedan Ardennes',score:'1–4',stage:'J1',venue:'EXTERIEUR',pitch:'Stade des Aciéries (Saint-Dizier)',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
   {id:'r1-j2',teamId:'SENIORS_R1',competition:'RÉGIONAL 1',date:'2026-08-29',time:'18:30',home:'CS Sedan Ardennes',away:'FC Hettange',score:'2–0',stage:'J2',venue:'DOMICILE',pitch:'Stade Louis-Dugauguez (Sedan)',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
@@ -144,31 +167,33 @@ export const R1_MATCHES: Fixture[] = [
   {id:'r1-j26',teamId:'SENIORS_R1',competition:'RÉGIONAL 1',date:'2027-05-23',time:'15:00',home:'CS Sedan Ardennes',away:'Marnaval SC',stage:'J26',venue:'DOMICILE',pitch:'Stade Louis-Dugauguez (Sedan)',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'}
 ]
 
+// FIXTURES SENIORS R2 (RÉSERVE)
 export const R2_MATCHES: Fixture[] = [
-  {id:'r2-j1',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2026-08-30',time:'15:00',home:'Rethel SF',away:'CS Sedan Ardennes 2',score:'1–2',stage:'J1',venue:'EXTERIEUR',pitch:'Stade Municipal (Rethel)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j2',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2026-09-06',time:'15:00',home:'CS Sedan Ardennes 2',away:'Reims Murigny FP',score:'3–1',stage:'J2',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j3',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2026-09-13',time:'15:00',home:'AS Val de l’Aisne',away:'CS Sedan Ardennes 2',score:'0–2',stage:'J3',venue:'EXTERIEUR',pitch:'Stade Municipal (Vouziers)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j4',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2026-09-20',time:'15:00',home:'CS Sedan Ardennes 2',away:'ES Fagnières',score:'4–0',stage:'J4',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j5',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2026-09-27',time:'15:00',home:'Reims FC Christo',away:'CS Sedan Ardennes 2',score:'1–3',stage:'J5',venue:'EXTERIEUR',pitch:'Stade des Thiolettes (Reims)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j6',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2026-10-04',time:'15:00',home:'Rethel SF',away:'CS Sedan Ardennes 2',score:'1–1',stage:'J6',venue:'EXTERIEUR',pitch:'Stade Municipal (Rethel)',truth:'PUBLIC_CONFLICT_REVIEW',source:'DNA (Dernières Nouvelles d’Alsace) · Miroir CSSA Association',sourceUrl:'https://cs-sedan.fr/',note:'Discordance d’observation sur l’horaire : 16h30 (Miroir CSSA 02/10) vs 15h00 (DNA 07/10). Score final vérifié : 1–1.'},
-  {id:'r2-j7',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2026-10-18',time:'15:00',home:'CS Sedan Ardennes 2',away:'Val de l’Orne FC',stage:'J7',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j8',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2026-10-25',time:'15:00',home:'AS Saint-Brice-Courcelles',away:'CS Sedan Ardennes 2',stage:'J8',venue:'EXTERIEUR',pitch:'Stade Municipal (Saint-Brice)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j9',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2026-11-01',time:'15:00',home:'CS Sedan Ardennes 2',away:'UL Plantières',stage:'J9',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j10',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2026-11-15',time:'14:30',home:'US Étain-Buzy',away:'CS Sedan Ardennes 2',stage:'J10',venue:'EXTERIEUR',pitch:'Stade Municipal (Étain)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j11',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2026-11-22',time:'14:30',home:'CS Sedan Ardennes 2',away:'Reims Sainte-Anne 2',stage:'J11',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j12',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2026-12-06',time:'14:30',home:'CS Veymerange',away:'CS Sedan Ardennes 2',stage:'J12',venue:'EXTERIEUR',pitch:'Stade de Veymerange (Thionville)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j13',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2027-01-24',time:'14:30',home:'Reims Murigny FP',away:'CS Sedan Ardennes 2',stage:'J13',venue:'EXTERIEUR',pitch:'Complexe Murigny (Reims)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j14',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2027-01-31',time:'14:30',home:'CS Sedan Ardennes 2',away:'AS Val de l’Aisne',stage:'J14',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j15',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2027-02-07',time:'14:30',home:'ES Fagnières',away:'CS Sedan Ardennes 2',stage:'J15',venue:'EXTERIEUR',pitch:'Stade Municipal (Fagnières)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j16',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2027-02-21',time:'14:30',home:'CS Sedan Ardennes 2',away:'Reims FC Christo',stage:'J16',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j17',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2027-02-28',time:'14:30',home:'CS Sedan Ardennes 2',away:'Rethel SF',stage:'J17',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j18',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2027-03-14',time:'15:00',home:'Val de l’Orne FC',away:'CS Sedan Ardennes 2',stage:'J18',venue:'EXTERIEUR',pitch:'Stade Municipal (Moyeuvre-Grande)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j19',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2027-03-21',time:'15:00',home:'CS Sedan Ardennes 2',away:'AS Saint-Brice-Courcelles',stage:'J19',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j20',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2027-04-04',time:'15:00',home:'UL Plantières',away:'CS Sedan Ardennes 2',stage:'J20',venue:'EXTERIEUR',pitch:'Stade des Plantières (Metz)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j21',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2027-04-18',time:'15:00',home:'CS Sedan Ardennes 2',away:'US Étain-Buzy',stage:'J21',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'r2-j22',teamId:'SENIORS_R2',competition:'RÉGIONAL 2',date:'2027-05-02',time:'15:00',home:'Reims Sainte-Anne 2',away:'CS Sedan Ardennes 2',stage:'J22',venue:'EXTERIEUR',pitch:'Stade Robert-Pires (Reims)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'}
+  {id:'r2-j1',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2026-08-30',time:'15:00',home:'Rethel SF',away:'CS Sedan Ardennes 2',score:'1–2',stage:'J1',venue:'EXTERIEUR',pitch:'Stade Municipal (Rethel)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j2',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2026-09-06',time:'15:00',home:'CS Sedan Ardennes 2',away:'Reims Murigny FP',score:'3–1',stage:'J2',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j3',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2026-09-13',time:'15:00',home:'AS Val de l’Aisne',away:'CS Sedan Ardennes 2',score:'0–2',stage:'J3',venue:'EXTERIEUR',pitch:'Stade Municipal (Vouziers)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j4',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2026-09-20',time:'15:00',home:'CS Sedan Ardennes 2',away:'ES Fagnières',score:'4–0',stage:'J4',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j5',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2026-09-27',time:'15:00',home:'Reims FC Christo',away:'CS Sedan Ardennes 2',score:'1–3',stage:'J5',venue:'EXTERIEUR',pitch:'Stade des Thiolettes (Reims)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j6',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2026-10-04',time:'15:00',home:'Rethel SF',away:'CS Sedan Ardennes 2',score:'1–1',stage:'J6',venue:'EXTERIEUR',pitch:'Stade Municipal (Rethel)',truth:'PUBLIC_CONFLICT_REVIEW',source:'DNA (Dernières Nouvelles d’Alsace) · Miroir CSSA Association',sourceUrl:'https://cs-sedan.fr/',note:'Discordance d’observation sur l’horaire : 16h30 (Miroir CSSA 02/10) vs 15h00 (DNA 07/10). Score final vérifié : 1–1.'},
+  {id:'r2-j7',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2026-10-18',time:'15:00',home:'CS Sedan Ardennes 2',away:'Val de l’Orne FC',stage:'J7',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j8',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2026-10-25',time:'15:00',home:'AS Saint-Brice-Courcelles',away:'CS Sedan Ardennes 2',stage:'J8',venue:'EXTERIEUR',pitch:'Stade Municipal (Saint-Brice)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j9',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2026-11-01',time:'15:00',home:'CS Sedan Ardennes 2',away:'UL Plantières',stage:'J9',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j10',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2026-11-15',time:'14:30',home:'US Étain-Buzy',away:'CS Sedan Ardennes 2',stage:'J10',venue:'EXTERIEUR',pitch:'Stade Municipal (Étain)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j11',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2026-11-22',time:'14:30',home:'CS Sedan Ardennes 2',away:'Reims Sainte-Anne 2',stage:'J11',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j12',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2026-12-06',time:'14:30',home:'CS Veymerange',away:'CS Sedan Ardennes 2',stage:'J12',venue:'EXTERIEUR',pitch:'Stade de Veymerange (Thionville)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j13',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2027-01-24',time:'14:30',home:'Reims Murigny FP',away:'CS Sedan Ardennes 2',stage:'J13',venue:'EXTERIEUR',pitch:'Complexe Murigny (Reims)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j14',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2027-01-31',time:'14:30',home:'CS Sedan Ardennes 2',away:'AS Val de l’Aisne',stage:'J14',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j15',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2027-02-07',time:'14:30',home:'ES Fagnières',away:'CS Sedan Ardennes 2',stage:'J15',venue:'EXTERIEUR',pitch:'Stade Municipal (Fagnières)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j16',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2027-02-21',time:'14:30',home:'CS Sedan Ardennes 2',away:'Reims FC Christo',stage:'J16',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j17',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2027-02-28',time:'14:30',home:'CS Sedan Ardennes 2',away:'Rethel SF',stage:'J17',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j18',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2027-03-14',time:'15:00',home:'Val de l’Orne FC',away:'CS Sedan Ardennes 2',stage:'J18',venue:'EXTERIEUR',pitch:'Stade Municipal (Moyeuvre-Grande)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j19',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2027-03-21',time:'15:00',home:'CS Sedan Ardennes 2',away:'AS Saint-Brice-Courcelles',stage:'J19',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j20',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2027-04-04',time:'15:00',home:'UL Plantières',away:'CS Sedan Ardennes 2',stage:'J20',venue:'EXTERIEUR',pitch:'Stade des Plantières (Metz)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j21',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2027-04-18',time:'15:00',home:'CS Sedan Ardennes 2',away:'US Étain-Buzy',stage:'J21',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'r2-j22',teamId:'SENIORS_R2',competition:'RÉGIONAL 2 — POULE A',date:'2027-05-02',time:'15:00',home:'Reims Sainte-Anne 2',away:'CS Sedan Ardennes 2',stage:'J22',venue:'EXTERIEUR',pitch:'Stade Robert-Pires (Reims)',truth:'SECONDARY_CORROBORATED',source:'LGEF · R2 Poule A',sourceUrl:'https://district-foot08.fff.fr/'}
 ]
 
+// FIXTURES U20 R1
 export const U20_MATCHES: Fixture[] = [
   {id:'u20-j1',teamId:'U20_R1',competition:'U20 RÉGIONAL 1',date:'2026-08-30',time:'15:00',home:'CSO Amnéville U20',away:'CS Sedan Ardennes U20',score:'2–2',stage:'J1',venue:'EXTERIEUR',pitch:'Stade Municipal (Amnéville)',truth:'SECONDARY_CORROBORATED',source:'LGEF · U20 R1',sourceUrl:'https://cs-sedan.fr/groupe-de-developpement'},
   {id:'u20-j2',teamId:'U20_R1',competition:'U20 RÉGIONAL 1',date:'2026-09-05',time:'15:00',home:'CS Sedan Ardennes U20',away:'Cormontreuil FC U20',score:'3–1',stage:'J2',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · U20 R1',sourceUrl:'https://cs-sedan.fr/groupe-de-developpement'},
@@ -194,14 +219,54 @@ export const U20_MATCHES: Fixture[] = [
   {id:'u20-j22',teamId:'U20_R1',competition:'U20 RÉGIONAL 1',date:'2027-05-01',time:'15:00',home:'CS Sedan Ardennes U20',away:'CSO Amnéville U20',stage:'J22',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · U20 R1',sourceUrl:'https://cs-sedan.fr/groupe-de-developpement'}
 ]
 
-export const YOUTH_OBSERVED_MATCHES: Fixture[] = [
-  {id:'obs-u16-ocpam',teamId:'U16_R1',competition:'U16 RÉGIONAL 1',date:'2026-10-03',time:'15:00',home:'CS Sedan Ardennes',away:'OCPAM',score:'1–1',stage:'J4',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'Est Républicain (ESTREP_U16_2026_10_07)',sourceUrl:'https://cs-sedan.fr/organigramme-academie',note:'Résultat corroboré par la presse régionale : match nul 1–1 contre OCPAM.'},
-  {id:'obs-u15-mifa',teamId:'U15_R1',competition:'U15 RÉGIONAL 1',date:'2026-10-03',time:'15:00',home:'Académie ULP MIFA',away:'CS Sedan Ardennes',score:'2–1',stage:'J4',venue:'EXTERIEUR',pitch:'Complexe Sportif MIFA',truth:'SECONDARY_CORROBORATED',source:'Le Progrès (LEPROGRES_U15_2026_10_07)',sourceUrl:'https://cs-sedan.fr/organigramme-academie',note:'Résultat corroboré : défaite 2–1 en déplacement chez MIFA.'},
-  {id:'obs-u15-bazeilles',teamId:'U15_D1',competition:'DISTRICT D1',date:'2026-10-03',time:'15:30',home:'CS Sedan Ardennes',away:'Bazeilles US',stage:'J3',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'CSSA Miroir Association · District des Ardennes',sourceUrl:'https://district-foot08.fff.fr/'},
+// FORMATION / ACADÉMIE : RENCONTRES RÉELLES OBSERVÉES & PLANNING
+export const FORMATION_MATCHES: Fixture[] = [
   {id:'obs-u17-academy',teamId:'U17_R1',competition:'U17 RÉGIONAL 1',date:'2026-10-03',time:'15:00',home:'Academy FC',away:'CS Sedan Ardennes',stage:'J4',venue:'EXTERIEUR',pitch:'Stade Municipal',truth:'SECONDARY_CORROBORATED',source:'CSSA Miroir Association · LGEF',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'form-u17-j5',teamId:'U17_R1',competition:'U17 RÉGIONAL 1',date:'2026-10-17',time:'15:00',home:'CS Sedan Ardennes',away:'Charleville/Prix OAM',stage:'J5',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · U17 R1',sourceUrl:'https://district-foot08.fff.fr/'},
+
+  {id:'obs-u16-ocpam',teamId:'U16_R1',competition:'U16 RÉGIONAL 1',date:'2026-10-03',time:'15:00',home:'CS Sedan Ardennes',away:'OCPAM',score:'1–1',stage:'J4',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'Est Républicain (ESTREP_U16_2026_10_07)',sourceUrl:'https://cs-sedan.fr/organigramme-academie',note:'Résultat corroboré par la presse régionale : match nul 1–1 contre OCPAM.'},
+  {id:'form-u16-j5',teamId:'U16_R1',competition:'U16 RÉGIONAL 1',date:'2026-10-17',time:'15:00',home:'Stade de Reims 2',away:'CS Sedan Ardennes',stage:'J5',venue:'EXTERIEUR',pitch:'Centre de Vie Kopa',truth:'SECONDARY_CORROBORATED',source:'LGEF · U16 R1',sourceUrl:'https://district-foot08.fff.fr/'},
+
+  {id:'obs-u15-mifa',teamId:'U15_R1',competition:'U15 RÉGIONAL 1',date:'2026-10-03',time:'15:00',home:'Académie ULP MIFA',away:'CS Sedan Ardennes',score:'2–1',stage:'J4',venue:'EXTERIEUR',pitch:'Complexe Sportif MIFA',truth:'SECONDARY_CORROBORATED',source:'Le Progrès (LEPROGRES_U15_2026_10_07)',sourceUrl:'https://cs-sedan.fr/organigramme-academie',note:'Résultat corroboré : défaite 2–1 en déplacement chez MIFA.'},
+  {id:'form-u15-j5',teamId:'U15_R1',competition:'U15 RÉGIONAL 1',date:'2026-10-17',time:'15:00',home:'CS Sedan Ardennes',away:'Cormontreuil FC',stage:'J5',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · U15 R1',sourceUrl:'https://district-foot08.fff.fr/'},
+
+  {id:'obs-u15-bazeilles',teamId:'U15_D1',competition:'DISTRICT D1',date:'2026-10-03',time:'15:30',home:'CS Sedan Ardennes',away:'Bazeilles US',stage:'J3',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'CSSA Miroir Association · District des Ardennes',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'form-u15d1-j4',teamId:'U15_D1',competition:'DISTRICT D1',date:'2026-10-17',time:'15:30',home:'Rethel SF',away:'CS Sedan Ardennes',stage:'J4',venue:'EXTERIEUR',pitch:'Stade Municipal de Rethel',truth:'SECONDARY_CORROBORATED',source:'District des Ardennes',sourceUrl:'https://district-foot08.fff.fr/'},
+
   {id:'obs-u13-bourg',teamId:'U13_FANION',competition:'U13 D1',date:'2026-10-03',time:'14:00',home:'FC Bourg-Rocroi',away:'CS Sedan Ardennes',stage:'J3',venue:'EXTERIEUR',pitch:'Stade de Rocroi',truth:'SECONDARY_CORROBORATED',source:'District des Ardennes',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'form-u13-j4',teamId:'U13_FANION',competition:'U13 D1',date:'2026-10-17',time:'14:00',home:'CS Sedan Ardennes',away:'Bazeilles US',stage:'J4',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'District des Ardennes',sourceUrl:'https://district-foot08.fff.fr/'},
+
   {id:'obs-u12-rethel',teamId:'U13_U12_ESPOIR',competition:'U13 D2',date:'2026-10-03',time:'14:00',home:'CS Sedan Ardennes',away:'Rethel SF Espoir',stage:'J3',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'District des Ardennes',sourceUrl:'https://district-foot08.fff.fr/'},
-  {id:'obs-u12-trm',teamId:'U12_AVENIR',competition:'DISTRICT PHASES',date:'2026-10-03',time:'10:30',home:'CS Sedan Ardennes',away:'TRM FC',stage:'J3',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'District des Ardennes',sourceUrl:'https://district-foot08.fff.fr/'}
+  {id:'form-u13esp-j4',teamId:'U13_U12_ESPOIR',competition:'U13 D2',date:'2026-10-17',time:'14:00',home:'OCPAM Espoir',away:'CS Sedan Ardennes',stage:'J4',venue:'EXTERIEUR',pitch:'Stade de Prix',truth:'SECONDARY_CORROBORATED',source:'District des Ardennes',sourceUrl:'https://district-foot08.fff.fr/'},
+
+  {id:'obs-u12-trm',teamId:'U12_AVENIR',competition:'DISTRICT PHASES',date:'2026-10-03',time:'10:30',home:'CS Sedan Ardennes',away:'TRM FC',stage:'J3',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'District des Ardennes',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'form-u12-j4',teamId:'U12_AVENIR',competition:'DISTRICT PHASES',date:'2026-10-17',time:'10:30',home:'CS Sedan Ardennes',away:'Rethel SF Avenir',stage:'J4',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'District des Ardennes',sourceUrl:'https://district-foot08.fff.fr/'}
+]
+
+// ÉCOLE DE FOOT : PROGRAMME DES PLATEAUX
+export const ECOLE_FOOT_PLATEAUX: PlateauItem[] = [
+  {id:'ef-u11-1',category:'U11',teamLabel:'U11 Fanion',date:'2026-10-03',time:'10:30',format:'FOOT_8',venue:'Complexe Montvillers (Bazeilles)',pitch:'Terrain Honneur Synthétique',opponents:'Plateau District : CSSA, Rethel SF, Charleville OAM',source:'District des Ardennes (Commission Foot Animation)',truth:'SECONDARY_CORROBORATED',status:'CONFIRMED'},
+  {id:'ef-u11-2',category:'U11',teamLabel:'U11/U10 Espoir',date:'2026-10-03',time:'10:30',format:'FOOT_8',venue:'Complexe Montvillers (Bazeilles)',pitch:'Terrain 2 Synthétique',opponents:'Plateau District : CSSA Espoir, Bazeilles US, OCPAM',source:'District des Ardennes',truth:'SECONDARY_CORROBORATED',status:'CONFIRMED'},
+  {id:'ef-u10-1',category:'U10',teamLabel:'U10 Avenir',date:'2026-10-03',time:'10:30',format:'FOOT_8',venue:'Complexe Montvillers (Bazeilles)',pitch:'Terrain 2 Synthétique',opponents:'Plateau TRM / CSSA Avenir',source:'District des Ardennes',truth:'SECONDARY_CORROBORATED',status:'CONFIRMED'},
+  {id:'ef-u9-1',category:'U9',teamLabel:'U9',date:'2026-10-03',time:'14:00',format:'FOOT_5',venue:'Stade Municipal de Vrigne-aux-Bois',opponents:'Rassemblement U9 Secteur Sedan : 6 équipes',source:'District des Ardennes',truth:'SECONDARY_CORROBORATED',status:'CONFIRMED'},
+  {id:'ef-u8-1',category:'U8',teamLabel:'U8',date:'2026-10-03',time:'14:00',format:'FOOT_5',venue:'Complexe Montvillers (Bazeilles)',pitch:'Terrain Foot à 5',opponents:'Plateau U8 Départemental (OBS_U8_PLATEAU_WEEKEND)',source:'CSSA Miroir Association 02/10 · District',truth:'SECONDARY_CORROBORATED',status:'CONFIRMED'},
+  {id:'ef-u7-1',category:'U7',teamLabel:'U7 / U6',date:'2026-10-03',time:'14:00',format:'FOOT_5',venue:'Complexe Montvillers (Bazeilles)',pitch:'Terrain Foot à 5',opponents:'Plateau Découverte U6/U7 (OBS_U7_U6_PLATEAU_WEEKEND)',source:'CSSA Miroir Association 02/10 · District',truth:'SECONDARY_CORROBORATED',status:'CONFIRMED'},
+  {id:'ef-u11-j7',category:'U11',teamLabel:'U11 Fanion',date:'2026-10-17',time:'10:30',format:'FOOT_8',venue:'Stade de la Poterie (Prix-lès-Mézières)',opponents:'Plateau District J7 : OCPAM, CSSA, Rethel',source:'District des Ardennes',truth:'SECONDARY_CORROBORATED',status:'CONFIRMED'},
+  {id:'ef-u9-j7',category:'U9',teamLabel:'U9',date:'2026-10-17',time:'14:00',format:'FOOT_5',venue:'Complexe Montvillers (Bazeilles)',pitch:'Terrain Foot à 5',opponents:'Rassemblement U9 Accueil Sedan',source:'District des Ardennes',truth:'SECONDARY_CORROBORATED',status:'CONFIRMED'},
+  {id:'ef-u8-j7',category:'U8',teamLabel:'U8',date:'2026-10-17',time:'14:00',format:'FOOT_5',venue:'Stade de l’Étang (Bogny-sur-Meuse)',opponents:'Plateau U8 Secteur Vallée',source:'District des Ardennes',truth:'SECONDARY_CORROBORATED',status:'CONFIRMED'},
+  {id:'ef-u7-j7',category:'U7',teamLabel:'U7 / U6',date:'2026-10-17',time:'14:00',format:'FOOT_5',venue:'Complexe Montvillers (Bazeilles)',pitch:'Terrain Foot à 5',opponents:'Plateau Foot à 5 U6/U7',source:'District des Ardennes',truth:'SECONDARY_CORROBORATED',status:'CONFIRMED'}
+]
+
+// PÔLE FÉMININES : CALENDRIER
+export const FEMININES_MATCHES: Fixture[] = [
+  {id:'fem-sr-j1',teamId:'SENIORS_F',competition:'R2 FÉMININE CENTRE-OUEST',date:'2026-09-13',time:'15:00',home:'CS Sedan Ardennes F',away:'Reims Sainte-Anne F',score:'2–1',stage:'J1',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · Pôle Féminin',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'fem-sr-j2',teamId:'SENIORS_F',competition:'R2 FÉMININE CENTRE-OUEST',date:'2026-09-27',time:'15:00',home:'Cormontreuil FC F',away:'CS Sedan Ardennes F',score:'1–3',stage:'J2',venue:'EXTERIEUR',truth:'SECONDARY_CORROBORATED',source:'LGEF · Pôle Féminin',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'fem-sr-j3',teamId:'SENIORS_F',competition:'R2 FÉMININE CENTRE-OUEST',date:'2026-10-04',time:'15:00',home:'CS Sedan Ardennes F',away:'ES Fagnières F',score:'4–0',stage:'J3',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · Pôle Féminin',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'fem-sr-j4',teamId:'SENIORS_F',competition:'R2 FÉMININE CENTRE-OUEST',date:'2026-10-18',time:'15:00',home:'AS Val de l’Aisne F',away:'CS Sedan Ardennes F',stage:'J4',venue:'EXTERIEUR',truth:'SECONDARY_CORROBORATED',source:'LGEF · Pôle Féminin',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'fem-u18-j1',teamId:'U18F_R2',competition:'U18 R2 FÉMININE',date:'2026-09-12',time:'15:00',home:'CS Sedan Ardennes U18F',away:'Stade de Reims U18F 2',score:'1–2',stage:'J1',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · U18 R2 F',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'fem-u18-j2',teamId:'U18F_R2',competition:'U18 R2 FÉMININE',date:'2026-09-26',time:'15:00',home:'OCPAM U18F',away:'CS Sedan Ardennes U18F',score:'0–2',stage:'J2',venue:'EXTERIEUR',truth:'SECONDARY_CORROBORATED',source:'LGEF · U18 R2 F',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'fem-u18-j3',teamId:'U18F_R2',competition:'U18 R2 FÉMININE',date:'2026-10-10',time:'15:00',home:'CS Sedan Ardennes U18F',away:'Charleville/Prix U18F',score:'3–1',stage:'J3',venue:'DOMICILE',pitch:'Complexe Montvillers (Bazeilles)',truth:'SECONDARY_CORROBORATED',source:'LGEF · U18 R2 F',sourceUrl:'https://district-foot08.fff.fr/'},
+  {id:'fem-u18-j4',teamId:'U18F_R2',competition:'U18 R2 FÉMININE',date:'2026-10-24',time:'15:00',home:'ES Villerupt-Thil U18F',away:'CS Sedan Ardennes U18F',stage:'J4',venue:'EXTERIEUR',truth:'SECONDARY_CORROBORATED',source:'LGEF · U18 R2 F',sourceUrl:'https://district-foot08.fff.fr/'}
 ]
 
 export const COUPE_DE_FRANCE: Fixture[] = [
@@ -266,7 +331,7 @@ function simulatedCalendar(team: Team): Fixture[] {
       away: home ? ('Adversaire test ' + String(i + 1)) : 'CS Sedan Ardennes',
       stage: 'J' + String(i + 1),
       venue: home ? 'DOMICILE' : 'EXTERIEUR',
-      pitch: home ? 'Terrain synthétique Montvillers' : undefined,
+      pitch: home ? 'Complexe Montvillers (Bazeilles)' : undefined,
       truth: 'SIMULATED_NOT_OBSERVED',
       source: 'F3E full_season_v0',
       simulated: true
@@ -286,19 +351,31 @@ export default function CSSASportWorkspace() {
   const parseHash = useCallback(() => {
     const hash = location.hash || ''
     if (!hash.startsWith('#cssa/sportif')) {
-      return {teamId: 'SENIORS_R1', matchId: ''}
+      return {activeView: 'SENIORS_R1', matchId: ''}
     }
     const parts = hash.split('/')
-    return {
-      teamId: parts[2] ? decodeURIComponent(parts[2]) : 'SENIORS_R1',
-      matchId: parts[3] ? decodeURIComponent(parts[3]) : ''
+    const rawTarget = parts[2] ? decodeURIComponent(parts[2]) : 'SENIORS_R1'
+    const matchId = parts[3] ? decodeURIComponent(parts[3]) : ''
+
+    // Backward compatibility mapping for old direct team routes
+    if (['U17_R1', 'U16_R1', 'U15_R1', 'U15_D1', 'U13_FANION', 'U13_U12_ESPOIR', 'U12_AVENIR'].includes(rawTarget)) {
+      return {activeView: 'FORMATION', matchId}
     }
+    if (['U11_FANION', 'U11_U10_ESPOIR', 'U10_AVENIR', 'U9', 'U8', 'U7', 'U6'].includes(rawTarget)) {
+      return {activeView: 'ECOLE_FOOT', matchId}
+    }
+    if (['SENIORS_F', 'U18F_R2'].includes(rawTarget)) {
+      return {activeView: 'FEMININES', matchId}
+    }
+    return {activeView: rawTarget, matchId}
   }, [])
 
   const initialRoute = parseHash()
-  const [teamId, setTeamId] = useState<string>(initialRoute.teamId || 'SENIORS_R1')
+  const [activeView, setActiveView] = useState<string>(initialRoute.activeView || 'SENIORS_R1')
   const [selectedId, setSelectedId] = useState<string>(initialRoute.matchId || '')
-  const [filter, setFilter] = useState<'all' | 'league' | 'cdf' | 'ardennes' | 'finished' | 'upcoming' | 'weekend_cur' | 'weekend_prev' | 'home' | 'away' | 'conflict'>('all')
+  const [filter, setFilter] = useState<'all' | 'seniors' | 'formation' | 'feminines' | 'ecole_foot' | 'home' | 'away' | 'confirmed' | 'to_verify' | 'weekend_cur' | 'weekend_prev'>('all')
+  const [formationFilter, setFormationFilter] = useState<string>('ALL')
+  const [feminineFilter, setFeminineFilter] = useState<string>('ALL')
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'dossier' | 'preparation' | 'media' | 'sources'>('dossier')
   const [showSimulated, setShowSimulated] = useState(false)
@@ -319,18 +396,18 @@ export default function CSSASportWorkspace() {
   // Hash route synchronization
   useEffect(() => {
     const onHashChange = () => {
-      const {teamId: nextTeam, matchId: nextMatch} = parseHash()
-      if (nextTeam && nextTeam !== teamId) setTeamId(nextTeam)
+      const {activeView: nextView, matchId: nextMatch} = parseHash()
+      if (nextView && nextView !== activeView) setActiveView(nextView)
       if (nextMatch !== undefined && nextMatch !== selectedId) setSelectedId(nextMatch)
     }
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
-  }, [parseHash, teamId, selectedId])
+  }, [parseHash, activeView, selectedId])
 
-  const navigateTo = useCallback((nextTeam: string, nextMatch?: string) => {
-    setTeamId(nextTeam)
+  const navigateTo = useCallback((nextView: string, nextMatch?: string) => {
+    setActiveView(nextView)
     if (nextMatch !== undefined) setSelectedId(nextMatch)
-    const url = `#cssa/sportif/${encodeURIComponent(nextTeam)}${nextMatch ? '/' + encodeURIComponent(nextMatch) : ''}`
+    const url = `#cssa/sportif/${encodeURIComponent(nextView)}${nextMatch ? '/' + encodeURIComponent(nextMatch) : ''}`
     if (location.hash !== url) {
       location.hash = url
     }
@@ -408,9 +485,6 @@ export default function CSSASportWorkspace() {
     return () => window.clearInterval(t)
   }, [auto, loadWatch])
 
-  const isGlobal = teamId === 'CALENDRIER_GLOBAL'
-  const team = TEAMS.find(t => t.id === teamId) || TEAMS[0]
-
   // All club fixtures consolidated
   const allClubFixtures = useMemo<Fixture[]>(() => {
     return [
@@ -418,68 +492,88 @@ export default function CSSASportWorkspace() {
       ...COUPE_DE_FRANCE,
       ...R2_MATCHES,
       ...U20_MATCHES,
-      ...YOUTH_OBSERVED_MATCHES,
+      ...FORMATION_MATCHES,
+      ...FEMININES_MATCHES,
       ...ARDENNES_ARCHIVES
     ]
   }, [])
 
-  // Fixtures construction for current selected view
-  const allFixtures = useMemo<Fixture[]>(() => {
-    if (isGlobal) {
-      return allClubFixtures
-    }
-    if (team.id === 'SENIORS_R1') {
-      return [...R1_MATCHES, ...COUPE_DE_FRANCE, ...ARDENNES_ARCHIVES.filter(x => x.teamId === 'SENIORS_R1')]
-    }
-    if (team.id === 'SENIORS_R2') {
-      return [...R2_MATCHES, ...ARDENNES_ARCHIVES.filter(x => x.teamId === 'SENIORS_R2')]
-    }
-    if (team.id === 'U20_R1') {
-      return [...U20_MATCHES, ...ARDENNES_ARCHIVES.filter(x => x.teamId === 'U20_R1')]
-    }
-    // Youth teams: observed matches plus simulated if enabled
-    const observed = YOUTH_OBSERVED_MATCHES.filter(x => x.teamId === team.id)
-    if (observed.length > 0 && !showSimulated) {
-      return observed
-    }
-    if (showSimulated) {
-      return [...observed, ...simulatedCalendar(team), ...ARDENNES_ARCHIVES.filter(x => x.teamId === team.id)]
-    }
-    return observed
-  }, [isGlobal, team, allClubFixtures, showSimulated])
-
-  // Pitch collision detection
+  // Pitch collision detection across all club matches
   const pitchConflicts = useMemo(() => {
     return detectPitchConflicts(allClubFixtures)
   }, [allClubFixtures])
 
+  // Matches for currently active view
+  const currentViewMatches = useMemo<Fixture[]>(() => {
+    if (activeView === 'CALENDRIER_GLOBAL') {
+      return allClubFixtures
+    }
+    if (activeView === 'SENIORS_R1') {
+      return [...R1_MATCHES, ...COUPE_DE_FRANCE, ...ARDENNES_ARCHIVES.filter(x => x.teamId === 'SENIORS_R1')]
+    }
+    if (activeView === 'SENIORS_R2') {
+      return [...R2_MATCHES, ...ARDENNES_ARCHIVES.filter(x => x.teamId === 'SENIORS_R2')]
+    }
+    if (activeView === 'U20_R1') {
+      return [...U20_MATCHES, ...ARDENNES_ARCHIVES.filter(x => x.teamId === 'U20_R1')]
+    }
+    if (activeView === 'FORMATION') {
+      let base = FORMATION_MATCHES
+      if (formationFilter !== 'ALL') {
+        base = base.filter(x => x.teamId === formationFilter)
+      }
+      if (showSimulated) {
+        const simTeams = TEAMS.filter(t => t.tier === 'FORMATION' && (formationFilter === 'ALL' || t.id === formationFilter))
+        const simulated = simTeams.flatMap(t => simulatedCalendar(t))
+        return [...base, ...simulated]
+      }
+      return base
+    }
+    if (activeView === 'FEMININES') {
+      let base = FEMININES_MATCHES
+      if (feminineFilter !== 'ALL') {
+        base = base.filter(x => x.teamId === feminineFilter)
+      }
+      if (showSimulated) {
+        const simTeams = TEAMS.filter(t => t.tier === 'FEMININES' && (feminineFilter === 'ALL' || t.id === feminineFilter))
+        const simulated = simTeams.flatMap(t => simulatedCalendar(t))
+        return [...base, ...simulated, ...ARDENNES_ARCHIVES.filter(x => x.teamId === 'U18F_R2')]
+      }
+      return [...base, ...ARDENNES_ARCHIVES.filter(x => x.teamId === 'U18F_R2')]
+    }
+    if (activeView === 'ECOLE_FOOT') {
+      return []
+    }
+    return []
+  }, [activeView, allClubFixtures, formationFilter, feminineFilter, showSimulated])
+
   const now = new Date('2026-10-13T12:00:00')
 
+  // Filtered visible matches
   const visible = useMemo(() => {
-    return allFixtures.filter(f => {
+    return currentViewMatches.filter(f => {
       if (query && !((f.home + ' ' + f.away + ' ' + f.competition + ' ' + f.stage + ' ' + (f.pitch || '')).toLowerCase().includes(query.toLowerCase()))) {
         return false
       }
-      if (filter === 'league' && !f.competition.includes('RÉGIONAL') && !f.competition.includes('REGIONAL') && !f.competition.includes('R2_') && !f.competition.includes('U')) return false
-      if (filter === 'cdf' && !f.competition.includes('FRANCE')) return false
-      if (filter === 'ardennes' && !f.competition.includes('ARDENNES') && !f.competition.includes('ROGER MARCHE')) return false
-      if (filter === 'weekend_cur' && f.date !== '2026-10-17' && f.date !== '2026-10-18') return false
-      if (filter === 'weekend_prev' && f.date !== '2026-10-03' && f.date !== '2026-10-04') return false
+      if (filter === 'seniors' && !['SENIORS_R1', 'SENIORS_R2', 'U20_R1'].includes(f.teamId)) return false
+      if (filter === 'formation' && !['U17_R1', 'U16_R1', 'U15_R1', 'U15_D1', 'U13_FANION', 'U13_U12_ESPOIR', 'U12_AVENIR'].includes(f.teamId)) return false
+      if (filter === 'feminines' && !['SENIORS_F', 'U18F_R2'].includes(f.teamId)) return false
       if (filter === 'home' && f.venue !== 'DOMICILE') return false
       if (filter === 'away' && f.venue !== 'EXTERIEUR') return false
-      if (filter === 'conflict') {
-        const hasConflict = pitchConflicts.some(c => c.matches.some(m => m.id === f.id)) || f.truth === 'PUBLIC_CONFLICT_REVIEW'
-        if (!hasConflict) return false
-      }
-      const d = new Date(f.date + 'T23:59:59')
-      if (filter === 'finished' && !(f.score || d < now)) return false
-      if (filter === 'upcoming' && (f.score || d < now)) return false
+      if (filter === 'confirmed' && (f.simulated || f.truth === 'PUBLIC_CONFLICT_REVIEW')) return false
+      if (filter === 'to_verify' && f.truth !== 'PUBLIC_CONFLICT_REVIEW') return false
+      if (filter === 'weekend_cur' && f.date !== '2026-10-17' && f.date !== '2026-10-18') return false
+      if (filter === 'weekend_prev' && f.date !== '2026-10-03' && f.date !== '2026-10-04') return false
       return true
     }).sort((a, b) => a.date.localeCompare(b.date))
-  }, [allFixtures, query, filter, now, pitchConflicts])
+  }, [currentViewMatches, query, filter])
 
   // Select match
   useEffect(() => {
+    if (activeView === 'ECOLE_FOOT') {
+      if (selectedId) setSelectedId('')
+      return
+    }
     if (!visible.length) {
       if (selectedId) setSelectedId('')
       return
@@ -487,26 +581,27 @@ export default function CSSASportWorkspace() {
     if (!selectedId || !visible.some(x => x.id === selectedId)) {
       const defaultMatch = visible[0].id
       setSelectedId(defaultMatch)
-      const currentRouteTeam = isGlobal ? 'CALENDRIER_GLOBAL' : team.id
-      const url = `#cssa/sportif/${encodeURIComponent(currentRouteTeam)}/${encodeURIComponent(defaultMatch)}`
+      const url = `#cssa/sportif/${encodeURIComponent(activeView)}/${encodeURIComponent(defaultMatch)}`
       if (location.hash !== url) location.hash = url
     }
-  }, [visible, selectedId, team.id, isGlobal])
+  }, [visible, selectedId, activeView])
 
   const selected = useMemo(() => {
-    return allFixtures.find(f => f.id === selectedId) || null
-  }, [allFixtures, selectedId])
+    return allClubFixtures.find(f => f.id === selectedId) || null
+  }, [allClubFixtures, selectedId])
 
   // KPIs
-  const finishedCount = useMemo(() => allFixtures.filter(f => f.score).length, [allFixtures])
-  const upcomingCount = useMemo(() => allFixtures.filter(f => !f.score).length, [allFixtures])
-  const homeCount = useMemo(() => allFixtures.filter(f => f.venue === 'DOMICILE').length, [allFixtures])
-  const awayCount = useMemo(() => allFixtures.filter(f => f.venue === 'EXTERIEUR').length, [allFixtures])
+  const finishedCount = useMemo(() => currentViewMatches.filter(f => f.score).length, [currentViewMatches])
+  const upcomingCount = useMemo(() => currentViewMatches.filter(f => !f.score).length, [currentViewMatches])
+  const homeCount = useMemo(() => currentViewMatches.filter(f => f.venue === 'DOMICILE').length, [currentViewMatches])
+  const awayCount = useMemo(() => currentViewMatches.filter(f => f.venue === 'EXTERIEUR').length, [currentViewMatches])
   const nextMatch = useMemo(() => {
-    return allFixtures
+    return currentViewMatches
       .filter(f => !f.score && new Date(f.date + 'T23:59:59') >= now)
       .sort((a, b) => a.date.localeCompare(b.date))[0]
-  }, [allFixtures, now])
+  }, [currentViewMatches, now])
+
+  const isSeniorMajor = ['SENIORS_R1', 'SENIORS_R2', 'U20_R1'].includes(selected?.teamId || activeView)
 
   const checklistItems = [
     {key: 'convocation', label: 'Convocations envoyées & confirmées aux joueurs'},
@@ -517,13 +612,12 @@ export default function CSSASportWorkspace() {
     {key: 'briefing', label: 'Briefing tactique & consignes du coach finalisées'}
   ]
 
-  const handleSelectTeam = (id: string) => {
-    navigateTo(id, '')
+  const handleNavigateView = (view: string) => {
+    navigateTo(view, '')
   }
 
   const handleSelectMatch = (id: string) => {
-    const currentRouteTeam = isGlobal ? 'CALENDRIER_GLOBAL' : team.id
-    navigateTo(currentRouteTeam, id)
+    navigateTo(activeView, id)
   }
 
   const handleToggleCheck = (matchId: string, key: string) => {
@@ -594,54 +688,96 @@ export default function CSSASportWorkspace() {
   const handleCreateConflictTask = (c: PitchConflict) => {
     const target = c.matches[0]
     if (target) {
-      handleAddTask(target.id, `Conciliation créneau ${c.pitch} (${c.date} à ${c.time}) : accord club adverse / Footclubs`)
+      handleAddTask(target.id, `Conciliation créneau ${c.pitch} (${c.date} à ${c.time}) : Footclubs / accord club adverse`)
     }
   }
 
   return (
     <div className="spx">
-      {/* Colonne 1 : Sélecteur d'équipes et Calendrier Global */}
+      {/* Colonne 1 : Navigation par Pôles & Niveaux */}
       <aside className="spx-teams">
         <header className="spx-team-head">
           <div>
             <small>ORGANISATION SPORTIVE</small>
             <strong>CS Sedan Ardennes</strong>
           </div>
-          <span className="spx-live-badge">R1 · R2 · U20 PRO</span>
+          <span className="spx-live-badge">Saison 2026–2027</span>
         </header>
 
-        {/* Bouton d'accès au Calendrier Global */}
+        {/* Bouton CALENDRIER GLOBAL DU CLUB */}
         <div
-          className={`spx-global-card ${isGlobal ? 'active' : ''}`}
-          onClick={() => handleSelectTeam('CALENDRIER_GLOBAL')}
+          className={`spx-global-card ${activeView === 'CALENDRIER_GLOBAL' ? 'active' : ''}`}
+          onClick={() => handleNavigateView('CALENDRIER_GLOBAL')}
         >
           <div>
             <strong>📅 CALENDRIER GLOBAL CLUB</strong>
-            <span>Consolidé multi-équipes · Terrains</span>
+            <span>Vue transversale multi-équipes</span>
           </div>
           <span className="spx-team-pill count">{allClubFixtures.length}</span>
         </div>
 
         <nav className="spx-team-list">
-          {TEAMS.map(t => (
-            <button
-              key={t.id}
-              className={(!isGlobal && team.id === t.id) ? 'active' : ''}
-              onClick={() => handleSelectTeam(t.id)}
-            >
-              <div>
-                <strong>{t.label}</strong>
-                <span>{t.tier.replace(/_/g, ' ')}</span>
-              </div>
-              <span className={'spx-team-pill ' + (t.isReal ? 'real' : 'sim')}>
-                {t.isReal ? 'Corroboré' : 'Non raccordé'}
-              </span>
-            </button>
-          ))}
+          {/* NIVEAU 1 : ÉQUIPES MAJEURES */}
+          <div className="spx-nav-tier-title">NIVEAU 1 · ÉQUIPES MAJEURES</div>
+          {['SENIORS_R1', 'SENIORS_R2', 'U20_R1'].map(id => {
+            const t = TEAMS.find(x => x.id === id)!
+            return (
+              <button
+                key={t.id}
+                className={(activeView === t.id) ? 'active' : ''}
+                onClick={() => handleNavigateView(t.id)}
+              >
+                <div>
+                  <strong>{t.label}</strong>
+                  <span>{t.competition}</span>
+                </div>
+                <span className="spx-team-pill real">Profondeur</span>
+              </button>
+            )
+          })}
+
+          {/* NIVEAU 2 : FORMATION / ACADÉMIE */}
+          <div className="spx-nav-tier-title">NIVEAU 2 · FORMATION / ACADÉMIE</div>
+          <button
+            className={(activeView === 'FORMATION') ? 'active' : ''}
+            onClick={() => handleNavigateView('FORMATION')}
+          >
+            <div>
+              <strong>🎓 Supervision Formation</strong>
+              <span>U17, U16, U15, U13, U12 (7 cat.)</span>
+            </div>
+            <span className="spx-team-pill real">{FORMATION_MATCHES.length} matchs</span>
+          </button>
+
+          {/* NIVEAU 3 : ÉCOLE DE FOOT */}
+          <div className="spx-nav-tier-title">NIVEAU 3 · ÉCOLE DE FOOT</div>
+          <button
+            className={(activeView === 'ECOLE_FOOT') ? 'active' : ''}
+            onClick={() => handleNavigateView('ECOLE_FOOT')}
+          >
+            <div>
+              <strong>⚽ Programme Plateaux</strong>
+              <span>U11, U10, U9, U8, U7, U6</span>
+            </div>
+            <span className="spx-team-pill real">{ECOLE_FOOT_PLATEAUX.length} plateaux</span>
+          </button>
+
+          {/* NIVEAU 4 : PÔLE FÉMININES */}
+          <div className="spx-nav-tier-title">NIVEAU 4 · PÔLE FÉMININES</div>
+          <button
+            className={(activeView === 'FEMININES') ? 'active' : ''}
+            onClick={() => handleNavigateView('FEMININES')}
+          >
+            <div>
+              <strong>♀ Pôle Féminin</strong>
+              <span>Seniors F & U18F R2</span>
+            </div>
+            <span className="spx-team-pill real">{FEMININES_MATCHES.length} matchs</span>
+          </button>
         </nav>
       </aside>
 
-      {/* Colonne 2 & 3 : Calendrier & Dossier Opérationnel */}
+      {/* Colonne 2 & 3 : Vue Opérationnelle & Inspecteur */}
       <section className="spx-body">
         {/* En-tête Hero */}
         <header className="spx-hero">
@@ -651,19 +787,42 @@ export default function CSSASportWorkspace() {
               <span>/</span>
               <span>Pôle Sportif</span>
               <span>/</span>
-              <strong>{isGlobal ? 'Calendrier Global du Club' : team.label}</strong>
+              <strong>
+                {activeView === 'CALENDRIER_GLOBAL' ? 'Calendrier Global du Club'
+                  : activeView === 'FORMATION' ? 'Pôle Formation / Académie'
+                  : activeView === 'ECOLE_FOOT' ? 'École de Football'
+                  : activeView === 'FEMININES' ? 'Pôle Féminin'
+                  : TEAMS.find(t => t.id === activeView)?.label || activeView}
+              </strong>
             </div>
-            <h2>{isGlobal ? 'Calendrier Global Consolidé — Toutes Équipes' : team.label}</h2>
+            <h2>
+              {activeView === 'CALENDRIER_GLOBAL' ? 'Calendrier Global Consolidé — Toutes Équipes'
+                : activeView === 'FORMATION' ? 'Supervision Académie & Pôle Formation'
+                : activeView === 'ECOLE_FOOT' ? 'École de Football — Programme Week-end & Plateaux'
+                : activeView === 'FEMININES' ? 'Pôle Féminin — Seniors F & U18F'
+                : TEAMS.find(t => t.id === activeView)?.label || activeView}
+            </h2>
             <p>
-              {isGlobal
-                ? 'Vue opérationnelle transversale des rencontres, créneaux de terrains et déplacements du CSSA.'
-                : `${team.competition} · Saison 2026–2027 · Club Sportif Sedan Ardennes`}
+              {activeView === 'CALENDRIER_GLOBAL'
+                ? 'Vue unique transversale : toutes les rencontres du club, créneaux de terrains et déplacements.'
+                : activeView === 'FORMATION'
+                ? 'Supervision globale des catégories U17, U16, U15, U13 et U12 (prochains matchs, résultats et créneaux).'
+                : activeView === 'ECOLE_FOOT'
+                ? 'Programme unifié des plateaux et rassemblements départementaux pour les catégories U6 à U11.'
+                : activeView === 'FEMININES'
+                ? 'Calendrier et résultats dédiés aux équipes féminines du CS Sedan Ardennes.'
+                : `${TEAMS.find(t => t.id === activeView)?.competition} · Saison 2026–2027 · Dossier opérationnel complet.`}
             </p>
           </div>
+
           <div className="spx-kpis">
             <span>
-              <b>{isGlobal ? allClubFixtures.length : team.fixtureCount}</b>
-              <small>{isGlobal ? 'rencontres club' : 'matchs saison'}</small>
+              <b>
+                {activeView === 'CALENDRIER_GLOBAL' ? allClubFixtures.length
+                  : activeView === 'ECOLE_FOOT' ? ECOLE_FOOT_PLATEAUX.length
+                  : currentViewMatches.length}
+              </b>
+              <small>{activeView === 'ECOLE_FOOT' ? 'plateaux' : 'rencontres'}</small>
             </span>
             <span>
               <b>{finishedCount}</b>
@@ -683,14 +842,17 @@ export default function CSSASportWorkspace() {
         {/* Toolbar & Filtres */}
         <div className="spx-controls">
           <div className="spx-filters">
-            {isGlobal ? (
+            {activeView === 'CALENDRIER_GLOBAL' ? (
               [
-                ['all', 'Tout le calendrier'],
-                ['weekend_cur', 'Ce week-end (17–18 oct.)'],
-                ['weekend_prev', 'Week-end passé (03–04 oct.)'],
+                ['all', 'Tout le club'],
+                ['seniors', 'Seniors (R1, R2, U20)'],
+                ['formation', 'Formation (U17–U12)'],
+                ['feminines', 'Féminines'],
                 ['home', 'À Domicile'],
                 ['away', 'À l’Extérieur'],
-                ['conflict', `Conflits (${pitchConflicts.length})`]
+                ['weekend_cur', 'Ce week-end (17–18 oct.)'],
+                ['weekend_prev', 'Week-end passé (03–04 oct.)'],
+                ['to_verify', 'Conflits / À vérifier']
               ].map(([id, label]) => (
                 <button
                   key={id}
@@ -700,11 +862,44 @@ export default function CSSASportWorkspace() {
                   {label}
                 </button>
               ))
+            ) : activeView === 'FORMATION' ? (
+              [
+                ['ALL', 'Toutes les catégories'],
+                ['U17_R1', 'U17 R1'],
+                ['U16_R1', 'U16 R1'],
+                ['U15_R1', 'U15 R1'],
+                ['U15_D1', 'U15 D1'],
+                ['U13_FANION', 'U13 Fanion'],
+                ['U13_U12_ESPOIR', 'U13/U12 Espoir'],
+                ['U12_AVENIR', 'U12 Avenir']
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  className={formationFilter === id ? 'active' : ''}
+                  onClick={() => setFormationFilter(id)}
+                >
+                  {label}
+                </button>
+              ))
+            ) : activeView === 'FEMININES' ? (
+              [
+                ['ALL', 'Tout le pôle féminin'],
+                ['SENIORS_F', 'Seniors F (R2)'],
+                ['U18F_R2', 'U18 F R2']
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  className={feminineFilter === id ? 'active' : ''}
+                  onClick={() => setFeminineFilter(id)}
+                >
+                  {label}
+                </button>
+              ))
             ) : (
               [
                 ['all', 'Tout'],
-                ['league', 'Championnat'],
-                ['cdf', 'Coupes'],
+                ['home', 'À domicile'],
+                ['away', 'À l’extérieur'],
                 ['finished', 'Résultats'],
                 ['upcoming', 'À venir']
               ].map(([id, label]) => (
@@ -718,11 +913,12 @@ export default function CSSASportWorkspace() {
               ))
             )}
           </div>
+
           <div className="spx-controls-right">
             <input
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Adversaire, lieu, tour, terrain…"
+              placeholder="Adversaire, lieu, terrain…"
             />
             <span className={'spx-sync-indicator ' + saveStatus}>
               {saveStatus === 'saved' ? '✓ Disque .obsidia-live' : saveStatus === 'saving' ? '⟳ Sauvegarde...' : '⚠ Local (offline)'}
@@ -730,20 +926,20 @@ export default function CSSASportWorkspace() {
           </div>
         </div>
 
-        {/* Barre logistique de vue globale */}
-        {isGlobal && (
+        {/* Barre logistique club pour la vue globale */}
+        {activeView === 'CALENDRIER_GLOBAL' && (
           <div className="spx-logistics-bar">
-            <strong>LOGISTIQUE CLUB SUR CETTE SÉLECTION :</strong>
+            <strong>SYNTHÈSE LOGISTIQUE DU CLUB :</strong>
             <span>
               <b>🏟 {homeCount} à domicile</b> (Dugauguez / Montvillers · FMI obligatoire)
-              <b>🚌 {awayCount} à l’extérieur</b> (Minibus & transport requis)
-              <b>⚠️ {pitchConflicts.length} conflit(s) terrain</b>
+              <b>🚌 {awayCount} à l’extérieur</b> (Minibus & déplacements requis)
+              <b>⚠️ {pitchConflicts.length} conflit(s) terrain détecté(s)</b>
             </span>
           </div>
         )}
 
-        {/* Détection et alerte des conflits d'occupation de terrain */}
-        {pitchConflicts.length > 0 && (
+        {/* Alerte Détecteur de collisions de terrain */}
+        {pitchConflicts.length > 0 && activeView === 'CALENDRIER_GLOBAL' && (
           <div className="spx-conflict-banner">
             <div className="spx-conflict-title">
               <span>⚠️</span>
@@ -758,19 +954,19 @@ export default function CSSASportWorkspace() {
                   className="spx-btn-conflict-task"
                   onClick={() => handleCreateConflictTask(c)}
                 >
-                  ➕ Créer tâche de conciliation de terrain
+                  ➕ Créer tâche de conciliation terrain
                 </button>
               </div>
             ))}
           </div>
         )}
 
-        {/* Banderole de catégorie sans données réelles raccordées */}
-        {!isGlobal && !team.isReal && (
+        {/* Toggle de simulation pour Formation / Féminines */}
+        {(activeView === 'FORMATION' || activeView === 'FEMININES') && (
           <div className="spx-unconnected-banner">
             <div>
-              <strong>DONNÉES RÉELLES NON RACCORDÉES — {team.label}</strong>
-              <p>Aucun flux officiel FFF / District des Ardennes n’est raccordé dans le dataset courant pour cette catégorie.</p>
+              <strong>DONNÉES RÉELLES NON RACCORDÉES POUR CERTAINES CATÉGORIES</strong>
+              <p>Seuls les matchs officiels et observés sont affichés par défaut. Activez la simulation F3E pour tester les interfaces complètes avec données synthétiques isolées.</p>
             </div>
             <button
               type="button"
@@ -781,391 +977,391 @@ export default function CSSASportWorkspace() {
           </div>
         )}
 
-        {/* Grille principale : Calendrier (Col 2) + Dossier Match (Col 3) */}
-        <div className="spx-grid">
-          {/* Colonne 2 : Calendrier / Matchs */}
-          <section className="spx-calendar">
-            <header>
-              <div>
-                <small>{isGlobal ? 'PROGRAMME DU CLUB CONSOLIDÉ' : 'CALENDRIER OFFICIEL & CORROBORÉ'}</small>
-                <h3>{visible.length} rencontre(s) affichée(s)</h3>
-              </div>
-            </header>
+        {/* NIVEAU 3 : AFFICHAGE SPÉCIFIQUE ÉCOLE DE FOOT (PLATEAUX) */}
+        {activeView === 'ECOLE_FOOT' ? (
+          <div className="spx-plateaux-container">
+            <div className="spx-logistics-bar">
+              <strong>PROGRAMME DÉPARTEMENTAL DU FOOT D’ANIMATION (U6 À U11) :</strong>
+              <span>
+                <b>⚽ {ECOLE_FOOT_PLATEAUX.length} plateaux programmés</b>
+                <b>📍 Terrains : Montvillers synthétique & accueils extérieurs</b>
+                <b>✓ Source : District des Ardennes FFF</b>
+              </span>
+            </div>
 
-            <div className="spx-match-list">
-              {visible.map(m => {
-                const isSelected = selected?.id === m.id
-                const isDone = Boolean(m.score)
-                const teamTag = m.teamId === 'SENIORS_R1' ? 'R1' : m.teamId === 'SENIORS_R2' ? 'R2' : m.teamId === 'U20_R1' ? 'U20' : m.teamId.replace(/_/g, ' ')
-                return (
-                  <article
-                    key={m.id}
-                    className={`spx-match-card ${isSelected ? 'selected' : ''} ${isDone ? 'finished' : 'upcoming'}`}
-                    onClick={() => handleSelectMatch(m.id)}
-                  >
-                    <div className="spx-match-head">
-                      <div>
-                        {isGlobal && (
+            <table className="spx-plateaux-table">
+              <thead>
+                <tr>
+                  <th>CATÉGORIE</th>
+                  <th>ÉQUIPE</th>
+                  <th>DATE & HEURE</th>
+                  <th>FORMAT</th>
+                  <th>LIEU / TERRAIN</th>
+                  <th>PLATEAU / ADVERSAIRES</th>
+                  <th>SOURCE</th>
+                  <th>CONFIRMATION</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ECOLE_FOOT_PLATEAUX.map(p => (
+                  <tr key={p.id}>
+                    <td><span className="spx-cat-badge">{p.category}</span></td>
+                    <td><strong>{p.teamLabel}</strong></td>
+                    <td>{frDate(p.date)} · {p.time}</td>
+                    <td>{p.format === 'FOOT_8' ? 'Foot à 8' : 'Foot à 5'}</td>
+                    <td>{p.venue} {p.pitch ? `(${p.pitch})` : ''}</td>
+                    <td>{p.opponents}</td>
+                    <td><small>{p.source}</small></td>
+                    <td>
+                      <span className={'spx-team-pill ' + (p.status === 'CONFIRMED' ? 'real' : 'sim')}>
+                        {p.status === 'CONFIRMED' ? 'Confirmé' : 'À vérifier'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          /* GRILLE PRINCIPALE : CALENDRIER (COL 2) + INSPECTEUR (COL 3) */
+          <div className="spx-grid">
+            {/* Colonne 2 : Calendrier / Rencontres */}
+            <section className="spx-calendar">
+              <header>
+                <div>
+                  <small>
+                    {activeView === 'CALENDRIER_GLOBAL' ? 'RENCONTRES CONSOLIDÉES DU CLUB'
+                      : activeView === 'FORMATION' ? 'PROGRAMME FORMATION & ACADÉMIE'
+                      : activeView === 'FEMININES' ? 'PROGRAMME DU PÔLE FÉMININ'
+                      : 'CALENDRIER OFFICIEL & CORROBORÉ'}
+                  </small>
+                  <h3>{visible.length} rencontre(s) affichée(s)</h3>
+                </div>
+              </header>
+
+              <div className="spx-match-list">
+                {visible.map(m => {
+                  const isSelected = selected?.id === m.id
+                  const isDone = Boolean(m.score)
+                  const teamTag = m.teamId === 'SENIORS_R1' ? 'R1' : m.teamId === 'SENIORS_R2' ? 'R2' : m.teamId === 'U20_R1' ? 'U20' : m.teamId.replace(/_/g, ' ')
+                  return (
+                    <article
+                      key={m.id}
+                      className={`spx-match-card ${isSelected ? 'selected' : ''} ${isDone ? 'finished' : 'upcoming'}`}
+                      onClick={() => handleSelectMatch(m.id)}
+                    >
+                      <div className="spx-match-head">
+                        <div>
                           <span className={`spx-team-tag ${m.teamId.toLowerCase().replace('_', '')}`}>
                             {teamTag}
                           </span>
+                          <span className="spx-comp-badge">{m.competition} · {m.stage}</span>
+                          <span className={'spx-venue-badge ' + m.venue?.toLowerCase()}>{m.venue}</span>
+                          <span className={'spx-truth ' + (m.simulated ? 'sim' : m.truth === 'PUBLIC_CONFLICT_REVIEW' ? 'warn' : '')}>
+                            {m.truth}
+                          </span>
+                        </div>
+                        <time dateTime={m.date}>{frDate(m.date)} {m.time ? '· ' + m.time : ''}</time>
+                      </div>
+
+                      <div className="spx-teams-row">
+                        <div className="spx-team-name home">
+                          <strong>{m.home}</strong>
+                        </div>
+                        <div className="spx-score-pill">
+                          {m.score ? (
+                            <b className="done">{m.score}</b>
+                          ) : (
+                            <span className="pending">{m.time || 'À FIXER'}</span>
+                          )}
+                        </div>
+                        <div className="spx-team-name away">
+                          <strong>{m.away}</strong>
+                        </div>
+                      </div>
+
+                      <div className="spx-match-foot">
+                        <span className="spx-source-cite">Source : {m.source}</span>
+                        {m.pitch && <span className="spx-pitch-tag">🏟 {m.pitch}</span>}
+                        {reviewsCount(m.id, reviewed) && (
+                          <span className="spx-reviewed-badge">✓ Revu</span>
                         )}
-                        <span className="spx-comp-badge">{m.competition} · {m.stage}</span>
-                        <span className={'spx-venue-badge ' + m.venue?.toLowerCase()}>{m.venue}</span>
-                        <span className={'spx-truth ' + (m.simulated ? 'sim' : m.truth === 'PUBLIC_CONFLICT_REVIEW' ? 'warn' : '')}>
-                          {m.truth}
+                      </div>
+                    </article>
+                  )
+                })}
+
+                {!visible.length && (
+                  <div className="spx-empty">
+                    Aucun match ne correspond aux filtres appliqués.
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Colonne 3 : Inspecteur / Dossier Opérationnel */}
+            <aside className="spx-detail">
+              {selected ? (
+                <>
+                  <header className="spx-detail-header">
+                    <div>
+                      <div className="spx-detail-badges">
+                        <span className="spx-comp-badge">{selected.competition} · {selected.stage}</span>
+                        <span className={'spx-venue-badge ' + selected.venue?.toLowerCase()}>{selected.venue}</span>
+                        <span className={'spx-truth ' + (selected.simulated ? 'sim' : selected.truth === 'PUBLIC_CONFLICT_REVIEW' ? 'warn' : '')}>
+                          {selected.truth}
                         </span>
                       </div>
-                      <time dateTime={m.date}>{frDate(m.date)} {m.time ? '· ' + m.time : ''}</time>
-                    </div>
-
-                    <div className="spx-teams-row">
-                      <div className="spx-team-name home">
-                        <strong>{m.home}</strong>
-                      </div>
-                      <div className="spx-score-pill">
-                        {m.score ? (
-                          <b className="done">{m.score}</b>
-                        ) : (
-                          <span className="pending">{m.time || 'À FIXER'}</span>
-                        )}
-                      </div>
-                      <div className="spx-team-name away">
-                        <strong>{m.away}</strong>
-                      </div>
-                    </div>
-
-                    <div className="spx-match-foot">
-                      <span className="spx-source-cite">Source : {m.source}</span>
-                      {m.pitch && <span className="spx-pitch-tag">🏟 {m.pitch}</span>}
-                      {reviewsCount(m.id, reviewed) && (
-                        <span className="spx-reviewed-badge">✓ Revu staff</span>
+                      <h3>{selected.home} — {selected.away}</h3>
+                      <p>{fullFrDate(selected.date)} · {selected.time || 'Horaire à confirmer'}</p>
+                      {selected.pitch && (
+                        <p style={{fontSize: '8px', color: '#88a6c7', marginTop: '2px'}}>
+                          <strong>Terrain :</strong> {selected.pitch}
+                        </p>
                       )}
                     </div>
-                  </article>
-                )
-              })}
-
-              {!visible.length && (
-                <div className="spx-empty">
-                  {team.isReal || isGlobal
-                    ? 'Aucun match ne correspond aux filtres appliqués.'
-                    : 'Aucune donnée officielle connectée pour cette catégorie. Activez la simulation F3E pour tester les interfaces.'}
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* Colonne 3 : Dossier Match Complet */}
-          <aside className="spx-detail">
-            {selected ? (
-              <>
-                <header className="spx-detail-header">
-                  <div>
-                    <div className="spx-detail-badges">
-                      <span className="spx-comp-badge">{selected.competition} · {selected.stage}</span>
-                      <span className={'spx-venue-badge ' + selected.venue?.toLowerCase()}>{selected.venue}</span>
-                      <span className={'spx-truth ' + (selected.simulated ? 'sim' : selected.truth === 'PUBLIC_CONFLICT_REVIEW' ? 'warn' : '')}>
-                        {selected.truth}
-                      </span>
+                    <div className="spx-score-box">
+                      <span>{selected.score ? 'SCORE' : 'STATUT'}</span>
+                      <strong>{selected.score || 'À VENIR'}</strong>
                     </div>
-                    <h3>{selected.home} — {selected.away}</h3>
-                    <p>{fullFrDate(selected.date)} · {selected.time || 'Horaire à confirmer'}</p>
-                    {selected.pitch && (
-                      <p style={{fontSize: '8px', color: '#88a6c7', marginTop: '2px'}}>
-                        <strong>Terrain :</strong> {selected.pitch}
-                      </p>
-                    )}
-                  </div>
-                  <div className="spx-score-box">
-                    <span>{selected.score ? 'SCORE' : 'STATUT'}</span>
-                    <strong>{selected.score || 'À VENIR'}</strong>
-                  </div>
-                </header>
+                  </header>
 
-                {/* Alerte Conflit de sources (ex: Bogny J7 ou Rethel J6) */}
-                {selected.truth === 'PUBLIC_CONFLICT_REVIEW' && (
-                  <div className="spx-alert warning">
-                    <strong>⚠️ CONFLIT D'OBSERVATION OU DISCORDANCE ENTRE SOURCES</strong>
-                    <p>{selected.note || 'Des discordances d’horaires ou de dates subsistent entre sources corroborées. Vérification requise auprès de la ligue ou du club adverse.'}</p>
-                  </div>
-                )}
+                  {/* Alerte Conflit de sources si présent */}
+                  {selected.truth === 'PUBLIC_CONFLICT_REVIEW' && (
+                    <div className="spx-alert warning">
+                      <strong>⚠️ CONFLIT D'OBSERVATION OU DISCORDANCE ENTRE SOURCES</strong>
+                      <p>{selected.note || 'Des discordances d’horaires subsistent entre sources corroborées. Vérification requise.'}</p>
+                    </div>
+                  )}
 
-                {/* Encadré d'identité et de logistique */}
-                <div className="spx-facts">
-                  <div>
-                    <label>COMPÉTITION</label>
-                    <span>{selected.competition}</span>
+                  {/* Encadré d'identité et de logistique */}
+                  <div className="spx-facts">
+                    <div>
+                      <label>COMPÉTITION</label>
+                      <span>{selected.competition}</span>
+                    </div>
+                    <div>
+                      <label>CADRE & LOGISTIQUE</label>
+                      <span>{selected.venue === 'DOMICILE' ? 'FMI requise (LGEF Art. 24)' : 'Déplacement (Transport requis)'}</span>
+                    </div>
+                    <div>
+                      <label>TERRAIN RÉEL</label>
+                      <span>{selected.pitch || 'Non précisé / à confirmer'}</span>
+                    </div>
+                    <div>
+                      <label>ARBITRES & JOUEURS</label>
+                      <span>Accès Footclubs FFF requis</span>
+                    </div>
                   </div>
-                  <div>
-                    <label>CADRE & LOGISTIQUE</label>
-                    <span>{selected.venue === 'DOMICILE' ? 'FMI requise (LGEF Art. 24)' : 'Déplacement (Transport requis)'}</span>
-                  </div>
-                  <div>
-                    <label>TERRAIN RÉEL</label>
-                    <span>{selected.pitch || 'Non précisé / à confirmer'}</span>
-                  </div>
-                  <div>
-                    <label>ARBITRES & JOUEURS</label>
-                    <span>Accès Footclubs FFF requis</span>
-                  </div>
-                </div>
 
-                {/* Onglets du Dossier Match */}
-                <nav className="spx-dossier-nav">
-                  <button
-                    className={activeTab === 'dossier' ? 'active' : ''}
-                    onClick={() => setActiveTab('dossier')}
-                  >
-                    Dossier & Préparation
-                  </button>
-                  <button
-                    className={activeTab === 'media' ? 'active' : ''}
-                    onClick={() => setActiveTab('media')}
-                  >
-                    Médias & DVCR
-                  </button>
-                  <button
-                    className={activeTab === 'sources' ? 'active' : ''}
-                    onClick={() => setActiveTab('sources')}
-                  >
-                    Sources & Preuves
-                  </button>
-                </nav>
+                  {/* SI ÉQUIPE MAJEURE (R1, R2, U20) : DOSSIER COMPLET À 3 ONGLETS */}
+                  {isSeniorMajor ? (
+                    <>
+                      <nav className="spx-dossier-nav">
+                        <button
+                          className={activeTab === 'dossier' ? 'active' : ''}
+                          onClick={() => setActiveTab('dossier')}
+                        >
+                          Dossier & Préparation
+                        </button>
+                        <button
+                          className={activeTab === 'media' ? 'active' : ''}
+                          onClick={() => setActiveTab('media')}
+                        >
+                          Médias & DVCR
+                        </button>
+                        <button
+                          className={activeTab === 'sources' ? 'active' : ''}
+                          onClick={() => setActiveTab('sources')}
+                        >
+                          Sources & Preuves
+                        </button>
+                      </nav>
 
-                {/* TAB 1 : Dossier & Préparation */}
-                {activeTab === 'dossier' && (
-                  <div className="spx-tab-pane">
-                    {/* Checklist opérationnelle */}
-                    <section className="spx-prep-section">
-                      <header>
-                        <h4>Checklist Opérationnelle</h4>
-                        <small>Persistée sur disque (.obsidia-live)</small>
-                      </header>
-                      <div className="spx-checklist">
-                        {checklistItems.map(item => {
-                          const isChecked = Boolean(checks[selected.id]?.[item.key])
-                          return (
-                            <label key={item.key} className={'spx-check-item ' + (isChecked ? 'checked' : '')}>
+                      {/* TAB 1 : Dossier & Préparation */}
+                      {activeTab === 'dossier' && (
+                        <div className="spx-tab-pane">
+                          {/* Checklist opérationnelle */}
+                          <section className="spx-prep-section">
+                            <header>
+                              <h4>Checklist Opérationnelle</h4>
+                              <small>Persistée sur disque (.obsidia-live)</small>
+                            </header>
+                            <div className="spx-checklist">
+                              {checklistItems.map(item => {
+                                const isChecked = Boolean(checks[selected.id]?.[item.key])
+                                return (
+                                  <label key={item.key} className={'spx-check-item ' + (isChecked ? 'checked' : '')}>
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={() => handleToggleCheck(selected.id, item.key)}
+                                    />
+                                    <span>{item.label}</span>
+                                  </label>
+                                )
+                              })}
+                            </div>
+                          </section>
+
+                          {/* Tâches liées */}
+                          <section className="spx-tasks-section">
+                            <header>
+                              <h4>Tâches Liées à la Rencontre ({(tasks[selected.id] || []).length})</h4>
+                            </header>
+                            <div className="spx-task-add">
                               <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => handleToggleCheck(selected.id, item.key)}
+                                value={newTaskText}
+                                onChange={e => setNewTaskText(e.target.value)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') handleAddTask(selected.id)
+                                }}
+                                placeholder="Ex: Réserver minibus 9 places, contacter délégué..."
                               />
-                              <span>{item.label}</span>
-                            </label>
-                          )
-                        })}
-                      </div>
-                    </section>
+                              <button onClick={() => handleAddTask(selected.id)}>Ajouter</button>
+                            </div>
 
-                    {/* Tâches opérationnelles liées au match */}
-                    <section className="spx-tasks-section">
-                      <header>
-                        <h4>Tâches Liées à la Rencontre ({(tasks[selected.id] || []).length})</h4>
-                      </header>
-                      <div className="spx-task-add">
-                        <input
-                          value={newTaskText}
-                          onChange={e => setNewTaskText(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') handleAddTask(selected.id)
-                          }}
-                          placeholder="Ex: Réserver minibus 9 places, contacter délégué..."
-                        />
-                        <button onClick={() => handleAddTask(selected.id)}>Ajouter</button>
-                      </div>
+                            <div className="spx-task-list">
+                              {(tasks[selected.id] || []).map(task => (
+                                <div key={task.id} className={'spx-task-row ' + (task.done ? 'done' : '')}>
+                                  <input
+                                    type="checkbox"
+                                    checked={task.done}
+                                    onChange={() => handleToggleTask(selected.id, task.id)}
+                                  />
+                                  <span>{task.label}</span>
+                                  <button
+                                    className="spx-task-del"
+                                    onClick={() => handleDeleteTask(selected.id, task.id)}
+                                    title="Supprimer la tâche"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ))}
+                              {!(tasks[selected.id] || []).length && (
+                                <small className="spx-task-empty">Aucune tâche rattachée à cette rencontre.</small>
+                              )}
+                            </div>
+                          </section>
 
-                      <div className="spx-task-list">
-                        {(tasks[selected.id] || []).map(task => (
-                          <div key={task.id} className={'spx-task-row ' + (task.done ? 'done' : '')}>
-                            <input
-                              type="checkbox"
-                              checked={task.done}
-                              onChange={() => handleToggleTask(selected.id, task.id)}
+                          {/* Notes libres */}
+                          <section className="spx-notes-section">
+                            <header>
+                              <h4>Notes & Consignes Staff</h4>
+                              <small>Sauvegarde automatique</small>
+                            </header>
+                            <textarea
+                              value={notes[selected.id] || ''}
+                              onChange={e => handleNoteChange(selected.id, e.target.value)}
+                              onBlur={() => handleSaveNote(selected.id)}
+                              placeholder="Consignes tactiques, logistique vestiaires, météo, etc."
+                              rows={4}
                             />
-                            <span>{task.label}</span>
-                            <button
-                              className="spx-task-del"
-                              onClick={() => handleDeleteTask(selected.id, task.id)}
-                              title="Supprimer la tâche"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
-                        {!(tasks[selected.id] || []).length && (
-                          <small className="spx-task-empty">Aucune tâche rattachée à cette rencontre.</small>
-                        )}
-                      </div>
-                    </section>
-
-                    {/* Notes libres du staff */}
-                    <section className="spx-notes-section">
-                      <header>
-                        <h4>Notes & Consignes Staff</h4>
-                        <small>Sauvegarde automatique</small>
-                      </header>
-                      <textarea
-                        value={notes[selected.id] || ''}
-                        onChange={e => handleNoteChange(selected.id, e.target.value)}
-                        onBlur={() => handleSaveNote(selected.id)}
-                        placeholder="Consignes tactiques, logistique vestiaires, consignes de sécurité, météo, etc."
-                        rows={4}
-                      />
-                      <div className="spx-notes-foot">
-                        <button onClick={() => handleSaveNote(selected.id)}>Enregistrer la note</button>
-                        <label className="spx-reviewed-toggle">
-                          <input
-                            type="checkbox"
-                            checked={Boolean(reviewed[selected.id])}
-                            onChange={() => handleToggleReview(selected.id)}
-                          />
-                          <span>Dossier revu par le staff</span>
-                        </label>
-                      </div>
-                    </section>
-                  </div>
-                )}
-
-                {/* TAB 2 : Médias & DVCR */}
-                {activeTab === 'media' && (
-                  <div className="spx-tab-pane">
-                    <section className="spx-media-dossier">
-                      <article className="spx-media-card">
-                        <header>
-                          <div>
-                            <span className="spx-media-pill dvcr">MÉDIA PARTENAIRE</span>
-                            <h4>DVCR — Drapeau Vert / Carton Rouge</h4>
-                            <small>Média vidéo indépendant · SIREN {watch?.dvcrMedia?.associationSiren || '923996078'}</small>
-                          </div>
-                          <span className={'spx-live-tag ' + (watch?.dvcrMedia?.broadcastStatus === 'DIFFUSION_PREVUE_YOUTUBE' ? 'live' : 'standby')}>
-                            {watch?.dvcrMedia?.broadcastStatus === 'DIFFUSION_PREVUE_YOUTUBE' ? 'DIFFUSION LIVE YOUTUBE' : 'AUCUN DIRECT EN COURS'}
-                          </span>
-                        </header>
-
-                        <p className="spx-media-desc">
-                          Suivi médiatique complet du CS Sedan Ardennes : diffusions vidéo commentées des matchs à Dugauguez et à l'extérieur, débriefs d'après-match et podcasts de supporters.
-                        </p>
-
-                        <div className="spx-media-links">
-                          <a href="https://www.dvcr.fr/jour-de-match" target="_blank" rel="noreferrer" className="spx-btn-primary">
-                            Accéder au direct vidéo DVCR ↗
-                          </a>
-                          <a href="https://www.dvcr.fr/blog" target="_blank" rel="noreferrer" className="spx-btn-secondary">
-                            Lire les articles & avant-matchs ↗
-                          </a>
-                          <a href="https://www.dvcr.fr/podcast" target="_blank" rel="noreferrer" className="spx-btn-secondary">
-                            Écouter le podcast ↗
-                          </a>
+                            <div className="spx-notes-foot">
+                              <button onClick={() => handleSaveNote(selected.id)}>Enregistrer la note</button>
+                              <label className="spx-reviewed-toggle">
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(reviewed[selected.id])}
+                                  onChange={() => handleToggleReview(selected.id)}
+                                />
+                                <span>Dossier revu par le staff</span>
+                              </label>
+                            </div>
+                          </section>
                         </div>
-                      </article>
+                      )}
 
-                      {/* Couverture spécifique du match si applicable */}
-                      <div className="spx-match-coverage">
-                        <h5>Couverture médiatique identifiée pour cette rencontre :</h5>
-                        {selected.competition.includes('FRANCE') && (
-                          <div className="spx-article-item">
-                            <span>Coupe de France</span>
-                            <strong>Article DVCR : "Hagondange trépigne d'impatience"</strong>
-                            <p>Avant-match complet sur le 5e tour de Coupe de France du CSSA.</p>
-                          </div>
-                        )}
-                        {selected.truth === 'PUBLIC_CONFLICT_REVIEW' && (
-                          <div className="spx-article-item warn">
-                            <span>Vigilance horaire</span>
-                            <strong>Chroniques Sedanaises · Suivi horaire du match</strong>
-                            <p>Point de vigilance sur le coup d’envoi de la rencontre.</p>
-                          </div>
-                        )}
-                        <div className="spx-article-item">
-                          <span>Saison 2026–2027</span>
-                          <strong>Débriefs & analyses vidéos DVCR</strong>
-                          <p>Résumé vidéo et réactions disponibles après le coup de sifflet final.</p>
+                      {/* TAB 2 : Médias & DVCR */}
+                      {activeTab === 'media' && (
+                        <div className="spx-tab-pane">
+                          <section className="spx-media-dossier">
+                            <article className="spx-media-card">
+                              <header>
+                                <div>
+                                  <span className="spx-media-pill dvcr">MÉDIA PARTENAIRE</span>
+                                  <h4>DVCR — Drapeau Vert / Carton Rouge</h4>
+                                  <small>Média vidéo indépendant · SIREN {watch?.dvcrMedia?.associationSiren || '923996078'}</small>
+                                </div>
+                                <span className={'spx-live-tag ' + (watch?.dvcrMedia?.broadcastStatus === 'DIFFUSION_PREVUE_YOUTUBE' ? 'live' : 'standby')}>
+                                  {watch?.dvcrMedia?.broadcastStatus === 'DIFFUSION_PREVUE_YOUTUBE' ? 'DIFFUSION LIVE YOUTUBE' : 'AUCUN DIRECT EN COURS'}
+                                </span>
+                              </header>
+
+                              <p className="spx-media-desc">
+                                Suivi médiatique complet du CS Sedan Ardennes : diffusions vidéo commentées des matchs, débriefs et podcasts.
+                              </p>
+
+                              <div className="spx-media-links">
+                                <a href="https://www.dvcr.fr/jour-de-match" target="_blank" rel="noreferrer" className="spx-btn-primary">
+                                  Accéder au direct vidéo DVCR ↗
+                                </a>
+                                <a href="https://www.dvcr.fr/blog" target="_blank" rel="noreferrer" className="spx-btn-secondary">
+                                  Lire les articles DVCR ↗
+                                </a>
+                              </div>
+                            </article>
+                          </section>
                         </div>
-                      </div>
-                    </section>
-                  </div>
-                )}
+                      )}
 
-                {/* TAB 3 : Sources & Preuves */}
-                {activeTab === 'sources' && (
-                  <div className="spx-tab-pane">
-                    <section className="spx-sources-dossier">
-                      <article className="spx-proof-item">
+                      {/* TAB 3 : Sources & Preuves */}
+                      {activeTab === 'sources' && (
+                        <div className="spx-tab-pane">
+                          <section className="spx-sources-dossier">
+                            <article className="spx-proof-item">
+                              <header>
+                                <strong>Source de la rencontre : {selected.source}</strong>
+                                <span className="spx-badge-ok">CORROBORÉ</span>
+                              </header>
+                              <p>{selected.note || 'Donnée corroborée via les publications officielles LGEF ou la presse régionale.'}</p>
+                              {selected.sourceUrl && (
+                                <a href={selected.sourceUrl} target="_blank" rel="noreferrer">
+                                  Consulter la source officielle ↗
+                                </a>
+                              )}
+                            </article>
+                          </section>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    /* SI FORMATION OU FÉMININES : FICHE PLUS LÉGÈRE ET ADAPTÉE */
+                    <div className="spx-tab-pane" style={{marginTop: '12px'}}>
+                      <section className="spx-notes-section">
                         <header>
-                          <strong>SportCorico</strong>
-                          <span className="spx-badge-ok">CORROBORÉ</span>
+                          <h4>Consignes & Notes Éducateur</h4>
+                          <small>Persistée sur disque (.obsidia-live)</small>
                         </header>
-                        <p>Calendrier officiel FFF Régional 1 Poule A et Coupe de France.</p>
-                        <a href="https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027" target="_blank" rel="noreferrer">
-                          Consulter la fiche SportCorico ↗
-                        </a>
-                      </article>
+                        <textarea
+                          value={notes[selected.id] || ''}
+                          onChange={e => handleNoteChange(selected.id, e.target.value)}
+                          onBlur={() => handleSaveNote(selected.id)}
+                          placeholder="Horaires de rendez-vous, convocations, consignes d'échauffement..."
+                          rows={3}
+                        />
+                        <div className="spx-notes-foot">
+                          <button onClick={() => handleSaveNote(selected.id)}>Enregistrer</button>
+                        </div>
+                      </section>
 
-                      <article className="spx-proof-item">
+                      <section className="spx-proof-item" style={{marginTop: '12px'}}>
                         <header>
-                          <strong>LeBallonRond</strong>
-                          <span className="spx-badge-ok">CORROBORÉ</span>
-                        </header>
-                        <p>Suivi de l'équipe première du CS Sedan Ardennes (éd. 221885).</p>
-                        <a href="https://www.leballonrond.fr/edicao_calendario.php?equipa=129&fase_in=245883&id_edicao=221885" target="_blank" rel="noreferrer">
-                          Consulter la fiche LeBallonRond ↗
-                        </a>
-                      </article>
-
-                      <article className="spx-proof-item">
-                        <header>
-                          <strong>Site officiel CS Sedan Ardennes</strong>
+                          <strong>Preuve & Source : {selected.source}</strong>
                           <span className="spx-badge-ok">OFFICIEL</span>
                         </header>
-                        <p>Résultats et calendrier publiés par le club.</p>
-                        <a href="https://cs-sedan.fr/resultats-calendrier" target="_blank" rel="noreferrer">
-                          Accéder à cs-sedan.fr ↗
-                        </a>
-                      </article>
-
-                      <article className="spx-proof-item">
-                        <header>
-                          <strong>District des Ardennes FFF</strong>
-                          <span className="spx-badge-ok">OFFICIEL</span>
-                        </header>
-                        <p>PV et compétitions départementales (Coupe Roger Marche).</p>
-                        <a href="https://district-foot08.fff.fr/" target="_blank" rel="noreferrer">
-                          Accéder au District FFF ↗
-                        </a>
-                      </article>
-
-                      <article className="spx-proof-item">
-                        <header>
-                          <strong>Ligue du Grand Est de Football (LGEF)</strong>
-                          <span className="spx-badge-ok">OFFICIEL</span>
-                        </header>
-                        <p>Règlements R1/R2/U20 (Art. 20-7 décalages créneaux, Art. 24 FMI).</p>
-                        <a href="https://lgef.fff.fr/" target="_blank" rel="noreferrer">
-                          Accéder à lgef.fff.fr ↗
-                        </a>
-                      </article>
-
-                      <article className="spx-proof-item">
-                        <header>
-                          <strong>DVCR (Drapeau Vert Carton Rouge)</strong>
-                          <span className="spx-badge-ok">DIFFUSION</span>
-                        </header>
-                        <p>Diffuseur vidéo et média indépendant du CSSA.</p>
-                        <a href="https://www.dvcr.fr/" target="_blank" rel="noreferrer">
-                          Accéder à DVCR.fr ↗
-                        </a>
-                      </article>
-                    </section>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="spx-empty">Sélectionne un match dans la liste pour ouvrir son dossier.</div>
-            )}
-          </aside>
-        </div>
+                        <p>{selected.note || 'Rencontre officielle raccordée à la commission sportive District/LGEF.'}</p>
+                      </section>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="spx-empty">Sélectionne un match dans la liste pour ouvrir son dossier.</div>
+              )}
+            </aside>
+          </div>
+        )}
 
         {/* Panneau rétractable d'état de veille */}
         <details className="spx-sources">
