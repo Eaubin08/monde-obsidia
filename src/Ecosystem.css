@@ -470,3 +470,13 @@ linear-gradient(90deg,rgba(69,104,77,.08) 1px,transparent 1px),
  .obs-quick-links{grid-template-columns:1fr}
  .obs-quick-links small{max-width:none}
 }
+
+
+/* F23 — explicit readonly truth boundary */
+.world-truth-boundary{display:grid;grid-template-columns:1.4fr repeat(5,minmax(0,1fr));gap:8px;border:2px solid #45684d;background:#0a1710;padding:12px 14px}
+.world-truth-boundary>div{display:flex;flex-direction:column;gap:3px;border-left:1px solid #34563f;padding-left:10px;min-width:0}
+.world-truth-boundary>div:first-child{border-left:0;padding-left:0}
+.world-truth-boundary span,.world-truth-boundary small{color:#9bbfa4;font-size:.72rem}
+.world-truth-boundary strong{overflow-wrap:anywhere}
+@media(max-width:1050px){.world-truth-boundary{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){.world-truth-boundary{grid-template-columns:1fr 1fr}}

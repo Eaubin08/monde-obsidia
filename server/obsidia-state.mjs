@@ -267,6 +267,18 @@ export function buildObsidiaState(snapshot,live){
   readonly:true,
   canonicalTruth:false,
   decisionAuthority:'KX108_ONLY',
+  projectionContract:{
+   observationIsTruth:false,
+   worldStateIsMemory:false,
+   worldStateIsCognition:false,
+   domainIsAuthority:false,
+   provenanceIsEvidence:false,
+   generatedIsPhysicalTruth:false,
+   candidateRealityOnly:true,
+   decisionAuthority:'KX108_ONLY',
+   allowedToDecide:false,
+   allowedToAct:false
+  },
   sourceSchemas:['Event Schema Obsidia V4 (reference)','OBSIDIA_VISUAL_EVENT_V1 (runtime observation)','Git repository snapshot'],
   observedAt:live?.observedAt||snapshot?.observedAt||new Date().toISOString(),
   entities,relations,sessions,missions,agentFamilies:snapshot?.agentFamilies||[],
