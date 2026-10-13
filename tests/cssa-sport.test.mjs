@@ -265,3 +265,49 @@ test('cssa-sport-store : multi-team persistence across R1, R2, U20, and youth ma
   }
 })
 
+test('PASSE 02B · Audit de Vérité Sportive : invariants de vérité, frontières F3G-D et interdiction des données inventées', () => {
+  const sportSrc = readFileSync(resolve(process.cwd(), 'src/CSSASportPage.tsx'), 'utf8')
+
+  // 1. Organigramme officiel : 19 structures d'équipes canoniques
+  const expectedTeams = [
+    'SENIORS_R1', 'SENIORS_R2', 'U20_R1',
+    'U17_R1', 'U16_R1', 'U15_R1', 'U15_D1',
+    'U13_FANION', 'U13_U12_ESPOIR', 'U12_AVENIR',
+    'U11_FANION', 'U11_U10_ESPOIR', 'U10_AVENIR',
+    'U9', 'U8', 'U7', 'U6',
+    'SENIORS_F', 'U18F_R2'
+  ]
+  for (const tid of expectedTeams) {
+    assert.ok(sportSrc.includes(`id: '${tid}'`), `Team structure ${tid} must be declared in TEAMS`)
+  }
+
+  // 2. Équipes majeures à profondeur réelle
+  assert.ok(sportSrc.includes("id: 'SENIORS_R1', label: 'Seniors R1 (Fanion)', tier: 'MAJEURES', competition: 'RÉGIONAL 1 — POULE A', fixtureCount: 26, isReal: true"))
+  assert.ok(sportSrc.includes("id: 'SENIORS_R2', label: 'Seniors R2 (Réserve)', tier: 'MAJEURES', competition: 'RÉGIONAL 2 — POULE A', fixtureCount: 22, isReal: true"))
+  assert.ok(sportSrc.includes("id: 'U20_R1', label: 'U20 R1 (Développement)', tier: 'MAJEURES', competition: 'U20 RÉGIONAL 1', fixtureCount: 22, isReal: true"))
+
+  // 3. Contradictions publiques ouvertes (doctrine F3G-D : jamais réconciliées artificiellement)
+  assert.ok(sportSrc.includes("id:'r1-j7'"), 'R1 J7 Bogny must exist')
+  assert.ok(sportSrc.includes("truth:'PUBLIC_CONFLICT_REVIEW'"), 'PUBLIC_CONFLICT_REVIEW classification must be present')
+  assert.ok(sportSrc.includes("Discordance d’observation : SportCorico indique samedi 17/10 16h00 tandis que LeBallonRond et annonces antérieures indiquaient dimanche"), 'Bogny conflict explanation present')
+  assert.ok(sportSrc.includes("id:'r2-j6'"), 'R2 J6 Rethel fixture must exist')
+  assert.ok(sportSrc.includes("Discordance d’observation sur l’horaire : 16h30 (Miroir CSSA 02/10) vs 15h00 (DNA 07/10)"), 'Rethel time conflict explanation present')
+
+  // 4. Règle 7 : Interdiction d'inventer des arbitres, des compos ou des vestiaires
+  // Aucune mention d'arbitre synthétique ou de fausse composition dans les fixtures
+  assert.ok(!sportSrc.includes("arbitre: 'Arbitre"), 'No fabricated referee names')
+  assert.ok(!sportSrc.includes("composition: ['Joueur"), 'No fabricated starting 11 lineups')
+
+  // 5. Règle 8 : Transparence absolue et isolation F3E
+  assert.ok(sportSrc.includes('DONNÉES RÉELLES NON RACCORDÉES'), 'Unconnected categories banner present')
+  assert.ok(sportSrc.includes("truth: 'SIMULATED_NOT_OBSERVED'"), 'Simulated fixtures explicitly badged')
+  assert.ok(sportSrc.includes("source: 'F3E full_season_v0'"), 'Simulation engine source identified')
+
+  // 6. Tiers et pôles opérationnels réels
+  assert.ok(sportSrc.includes('NIVEAU 1 · ÉQUIPES MAJEURES'), 'Tier 1 present in UI')
+  assert.ok(sportSrc.includes('NIVEAU 2 · FORMATION / ACADÉMIE'), 'Tier 2 present in UI')
+  assert.ok(sportSrc.includes('NIVEAU 3 · ÉCOLE DE FOOT'), 'Tier 3 present in UI')
+  assert.ok(sportSrc.includes('NIVEAU 4 · PÔLE FÉMININES'), 'Tier 4 present in UI')
+  assert.ok(sportSrc.includes('CALENDRIER GLOBAL CLUB'), 'Cross-club calendar present in UI')
+})
+
