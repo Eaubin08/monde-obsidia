@@ -19,9 +19,8 @@ test('UX2 · CSSA navigation keeps Mail and uses an action-first Accueil',()=>{
 
 test('UX2 · duplicate global Ops subnavigation is removed',()=>{
   assert.doesNotMatch(ops,/ops-subnav-bar/)
-  assert.doesNotMatch(ops,/Tâches & Suivi/)
-  assert.doesNotMatch(ops,/Administration Club/)
-  assert.doesNotMatch(ops,/Dossiers CRM/)
+  assert.doesNotMatch(ops,/ops-subnav-tabs/)
+  assert.doesNotMatch(ops,/ops-subnav-btn/)
 })
 
 test('UX2 · Organisation has human-readable poles and detail navigation',()=>{
