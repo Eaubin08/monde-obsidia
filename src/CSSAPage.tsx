@@ -78,9 +78,10 @@ const cssaNavSections: {title: string; moduleIds: string[]}[] = [
   {title: 'ACCUEIL', moduleIds: ['dashboard']},
   {title: 'SPORTIF & TERRAIN', moduleIds: ['sportif', 'matchday']},
   {title: 'OPÉRATIONS & RELATIONS', moduleIds: ['tasks', 'admin', 'crm', 'mail']},
-  {title: 'LE CLUB', moduleIds: ['organisation', 'academy', 'commercial', 'finance']},
-  {title: 'AUDIT & SOURCES', moduleIds: ['sources', 'field', 'governance', 'tests', 'projects', 'reporting']}
+  {title: 'LE CLUB', moduleIds: ['organisation', 'commercial', 'finance']},
+  {title: 'SOURCES', moduleIds: ['sources']}
 ]
+const cssaAdvancedModuleIds=['tests','field','governance','projects','reporting']
 
 const profiles:Record<StructureId,Profile>={
  cssa:{domainId:'cssa',adapterId:'cssa_public_admin/native_ops',contract:'PORTABLE_DOMAIN_REGISTRATION_V0',source:'cssa-v01 · feat/cssa-native-ops-bridge-v0',sourceUrl:'https://github.com/Eaubin08/cssa-v01--entreprise-universelle-domaien-obsidia-',capabilities:[
@@ -604,7 +605,7 @@ export default function CSSAPage(){
  }
 
  const openItem=(id:string)=>{setSelectedId(id);setTab('overview');location.hash='cssa/'+moduleId+'/'+encodeURIComponent(id)}
- const openModule=(id:string,picked='')=>{setModuleId(id);setSelectedId(picked);setTab('overview');location.hash='cssa/'+id+(picked?'/'+encodeURIComponent(picked):'')}
+ const openModule=(id:string,picked='')=>{setModuleId(id);setSelectedId(picked);setQuery('');setTab('overview');location.hash='cssa/'+id+(picked?'/'+encodeURIComponent(picked):'')}
  const switchStructure=(id:StructureId)=>{setStructureId(id);setModuleId('dashboard');setSelectedId('');setQuery('');setTab('overview');setDashboardMode('capabilities');location.hash='cssa/dashboard'}
  const addProject=()=>{const title=projectName.trim();if(!title)return;setProjects(prev=>({...prev,[structureId]:[...prev[structureId],{id:'project:'+Date.now(),title,status:'LOCAL'}]}));setProjectName('')}
 
@@ -661,7 +662,16 @@ export default function CSSAPage(){
             ))}
           </div>
         )
-      })
+      }).concat(showTechDetails ? [(
+        <div key="advanced" className="u-nav-group u-nav-advanced">
+          <div className="u-nav-group-title">AVANCÉ / AUDIT</div>
+          {structure.modules.filter(m=>cssaAdvancedModuleIds.includes(m.id)).map(m=>(
+            <a key={m.id} href={'#cssa/'+m.id} className={moduleId===m.id?'active':''} onClick={()=>openModule(m.id)}>
+              <span><UiIcon name={m.icon}/></span><strong>{m.label}</strong>{moduleCount(m.id)>0&&<b>{moduleCount(m.id)}</b>}
+            </a>
+          ))}
+        </div>
+      )] : [])
     ) : (
       structure.modules.map(m => (
         <a
