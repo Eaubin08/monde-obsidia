@@ -9,7 +9,7 @@ type WorldState={entities?:NativeEntity[];decisionAuthority?:string;observedAt?:
 type ViewItem={id:string;title:string;subtitle:string;kind:string;status:string;semantic:Semantic;meta?:Record<string,string>;raw?:NativeEntity}
 type Project={id:string;title:string;status:string}
 type CapabilityInfo={id:string;label:string;status:string;summary:string;details:string[]}
-type Profile={domainId:string;adapterId:string;contract:string;source:string;capabilities:CapabilityInfo[];unknowns:string[];contradictions:string[];risks:string[];evidence:string[]}
+type Profile={domainId:string;adapterId:string;contract:string;source:string;sourceUrl:string;capabilities:CapabilityInfo[];unknowns:string[];contradictions:string[];risks:string[];evidence:string[]}
 
 type StructureId='cssa'|'trading'|'gps'
 type ModuleDef={id:string;label:string;icon:string;kindFilter?:string[]}
@@ -42,7 +42,7 @@ const structures:StructureDef[]=[
 ]
 
 const profiles:Record<StructureId,Profile>={
- cssa:{domainId:'cssa',adapterId:'cssa_public_admin/native_ops',contract:'PORTABLE_DOMAIN_REGISTRATION_V0',source:'cssa-v01 · feat/cssa-native-ops-bridge-v0',capabilities:[
+ cssa:{domainId:'cssa',adapterId:'cssa_public_admin/native_ops',contract:'PORTABLE_DOMAIN_REGISTRATION_V0',source:'cssa-v01 · feat/cssa-native-ops-bridge-v0',sourceUrl:'https://github.com/Eaubin08/cssa-v01--entreprise-universelle-domaien-obsidia-',capabilities:[
   {id:'crm',label:'CRM',status:'PROVEN',summary:'Cas CSSA → CRM CASE',details:['intake interaction créé','follow-up lié à task_ref','source de vérité CRM = Obsidia upstream']},
   {id:'tasks',label:'TASKS',status:'PROVEN',summary:'Cas CSSA → tâche native',details:['4 mutations natives exactes','HOLD/BLOCK → 0 mutation','pré-état revérifié avant commit']},
   {id:'admin',label:'ADMINISTRATION',status:'PROVEN',summary:'Contrats, conformité, procédures',details:['cycle contrat prouvé','compliance générique prouvée','canaux officiels gouvernés']},
@@ -54,7 +54,7 @@ const profiles:Record<StructureId,Profile>={
   {id:'governance',label:'GOVERNANCE',status:'PROVEN',summary:'KX108_ONLY',details:['external_action=false','memory_write=false','emits_act=false','kernel_mutation=false']},
   {id:'field',label:'FIELD REALITY',status:'OPEN',summary:'Validation terrain interne manquante',details:['boîtes mail réelles','droits réels','handoffs','checklists','pratiques non écrites']}
  ],unknowns:['REAL_INTERNAL_FIELD_EVIDENCE','REAL_ACCESS_RIGHTS','REAL_VALIDATION_CHAINS','2026_27_CERTIFIED_BUDGET'],contradictions:['Organigramme Manager Général potentiellement périmé','Réserve R3 sur une source vs R2 saison actuelle','12+ matchs domicile vs 13 championnat'],risks:['SOURCE_FRESHNESS','EXTERNAL_WORLD_ACTUATION_NOT_ACTIVATED'],evidence:['181 tests PASS · F3H-D','14 sources publiques surveillées','19 structures sportives publiques','800 abonnés snapshot officiel','50+ partenaires publics']},
- trading:{domainId:'trading',adapterId:'canonical_trading_adapter',contract:'PORTABLE_DOMAIN_REGISTRATION_V0',source:'OBSIDIA_TRADING · master',capabilities:[
+ trading:{domainId:'trading',adapterId:'canonical_trading_adapter',contract:'PORTABLE_DOMAIN_REGISTRATION_V0',source:'OBSIDIA_TRADING · master',sourceUrl:'https://github.com/Eaubin08/OBSIDIA_TRADING',capabilities:[
   {id:'market',label:'MARKET DATA',status:'PROVEN',summary:'État marché canonique',details:['adapters marché','état canonique','provenance conservée']},
   {id:'agents',label:'AGENTS',status:'PROVEN',summary:'17 agents natifs',details:['native reference implementation','adapter stack externe','convergence canonique avant autorité']},
   {id:'risk',label:'RISK',status:'PROVEN',summary:'Risque + calibration',details:['simulation','portfolio risk','signal structurel non souverain']},
@@ -62,7 +62,7 @@ const profiles:Record<StructureId,Profile>={
   {id:'proof',label:'PROOF / REPLAY',status:'PROVEN',summary:'Receipts chaînés + replay',details:['receipt ≠ decision','replay ≠ execution','preuve vérifiable']},
   {id:'kx',label:'KX108',status:'OPEN',summary:'Vrai kernel non branché dans ce repo',details:['FixtureKX108Client = test only','UnavailableKX108Client fail-closed','jamais ACT par défaut']}
  ],unknowns:['REAL_KX108_CONNECTION','MARKOV_REAL_CALIBRATION'],contradictions:[],risks:['PROOF_BEST_EFFORT','LIVE_TRADING_FORBIDDEN'],evidence:['283 passed','1 skipped','PAPER ONLY','Canonical convergence point']},
- gps:{domainId:'gps_defense_aviation',adapterId:'gps_evidence_adapter',contract:'PORTABLE_DOMAIN_REGISTRATION_V0',source:'obsidia-gps-defense- · main',capabilities:[
+ gps:{domainId:'gps_defense_aviation',adapterId:'gps_evidence_adapter',contract:'PORTABLE_DOMAIN_REGISTRATION_V0',source:'obsidia-gps-defense- · main',sourceUrl:'https://github.com/Eaubin08/obsidia-gps-defense-',capabilities:[
   {id:'gnss',label:'GNSS',status:'RECORDED_REAL',summary:'Chemin RINEX/GNSS réel documenté',details:['recorded real GNSS','observation envelope','Physical Reality Gate']},
   {id:'rf',label:'RF I/Q',status:'RECORDED_REAL',summary:'Chemin RF nominal réel documenté',details:['public nominal I/Q','provenance conservée','raw datasets exclus du repo public']},
   {id:'hostile',label:'HOSTILE RF',status:'PARTIAL',summary:'FGI hostile corpus partiel NAV/PVT',details:['FGI-GSRx / Octave','chaîne temporelle partielle','pas de claim attaque RF enregistrée']},
@@ -130,6 +130,68 @@ function semanticForNative(e:NativeEntity):Semantic{
  return {purpose:'Inspecter un objet natif observé.',context:'Objet exposé par le read model.',observes:'Métadonnées persistées.',feeds:'Audit et inspection.',impact:'Apporte du contexte sans autorité.',limits:'Les champs absents ne sont pas complétés.'}
 }
 
+
+function humanizeCode(value:string){
+ return value.toLowerCase().split('_').map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join(' ')
+}
+
+function semanticMetaItem(kind:'unknown'|'risk'|'contradiction'|'evidence',value:string,profile:Profile):ViewItem{
+ if(kind==='unknown'){
+  return {
+   id:'unknown:'+value,title:humanizeCode(value),subtitle:'Point encore non prouvé',kind:'unknown',status:'OPEN',
+   semantic:{
+    purpose:'Rendre explicite une information encore manquante avant de considérer le modèle comme complet.',
+    context:'Ce point est conservé volontairement comme inconnu au lieu d’être remplacé par une supposition.',
+    observes:'Absence de preuve, de validation terrain ou de donnée canonique suffisante.',
+    feeds:'Revue terrain, collecte de preuves, gouvernance et futures décisions.',
+    impact:'Peut empêcher une capacité ou un workflow d’être considéré comme pleinement validé.',
+    limits:'OPEN ne signifie ni faux ni vrai : cela signifie non démontré avec les preuves actuellement raccordées.'
+   },
+   meta:{Code:value,Domain:profile.domainId,Authority:'KX108_ONLY'}
+  }
+ }
+ if(kind==='risk'){
+  return {
+   id:'risk:'+value,title:humanizeCode(value),subtitle:'Risque explicitement conservé',kind:'risk',status:'OPEN',
+   semantic:{
+    purpose:'Rendre visible un risque qui peut dégrader la confiance ou bloquer une action.',
+    context:'Le risque est porté par le domaine mais ne devient pas automatiquement une décision.',
+    observes:'Conditions susceptibles de fragiliser fraîcheur, sûreté, exécution ou interprétation.',
+    feeds:'Gouvernance, priorisation, revue et décision KX108.',
+    impact:'Peut conduire à HOLD/BLOCK ou demander une preuve supplémentaire.',
+    limits:'Un risque déclaré n’est pas la preuve qu’un incident s’est produit.'
+   },
+   meta:{Code:value,Domain:profile.domainId,Authority:'KX108_ONLY'}
+  }
+ }
+ if(kind==='contradiction'){
+  return {
+   id:'contradiction:'+value,title:value,subtitle:'Informations incompatibles à résoudre',kind:'contradiction',status:'OPEN',
+   semantic:{
+    purpose:'Empêcher deux affirmations incompatibles d’être fusionnées silencieusement.',
+    context:'Plusieurs sources ou états décrivent différemment le même sujet.',
+    observes:'Valeurs, versions ou affirmations qui ne peuvent pas être simultanément acceptées sans revue.',
+    feeds:'Revue de source, clarification terrain et gouvernance.',
+    impact:'Réduit la confiance et peut bloquer la promotion d’une information en vérité métier.',
+    limits:'La présence d’une contradiction ne dit pas encore quelle source a raison.'
+   },
+   meta:{Domain:profile.domainId,Authority:'KX108_ONLY'}
+  }
+ }
+ return {
+  id:'evidence:'+value,title:value,subtitle:'Preuve ou état observable',kind:'evidence',status:'PROVEN',
+  semantic:{
+   purpose:'Montrer ce qui soutient concrètement une affirmation ou une capacité.',
+   context:'Élément de preuve déclaré dans le dossier de la structure.',
+   observes:'Tests, corpus, références ou observations explicitement conservées.',
+   feeds:'Audit, gouvernance, confiance et replay quand disponible.',
+   impact:'Augmente la traçabilité de ce qui est affirmé.',
+   limits:'Une preuve locale ne doit pas être étendue à un périmètre qu’elle ne couvre pas.'
+  },
+  meta:{Domain:profile.domainId,Source:profile.source}
+ }
+}
+
 export default function CSSAPage(){
  const [structureId,setStructureId]=useState<StructureId>('cssa')
  const [moduleId,setModuleId]=useState('dashboard')
@@ -141,6 +203,7 @@ export default function CSSAPage(){
  const [refreshing,setRefreshing]=useState(false)
  const [projects,setProjects]=useState<Record<StructureId,Project[]>>({cssa:[],trading:[],gps:[]})
  const [projectName,setProjectName]=useState('')
+ const [dashboardMode,setDashboardMode]=useState<'capabilities'|'unknowns'|'contradictions'|'risks'|'evidence'>('capabilities')
 
  const structure=structures.find(s=>s.id===structureId)!
  const profile=profiles[structureId]
@@ -199,6 +262,17 @@ export default function CSSAPage(){
  const decisions=worldEntities.filter(e=>e.kind==='decision_record'&&(!e.domainId||String(e.domainId)===profile.domainId))
  const provenCount=profile.capabilities.filter(c=>['PROVEN','RECORDED_REAL','PAPER','PARTIAL'].includes(c.status)).length
  const openCount=profile.capabilities.filter(c=>['OPEN','HOLD'].includes(c.status)).length
+ const dashboardItems:ViewItem[]=dashboardMode==='capabilities'
+  ?profile.capabilities.map(c=>mk('cap:'+c.id,c.label,c.summary,c.id,c.status,'Comprendre cette capacité dans le contexte de la structure.'))
+  :dashboardMode==='unknowns'
+   ?profile.unknowns.map(x=>semanticMetaItem('unknown',x,profile))
+   :dashboardMode==='contradictions'
+    ?profile.contradictions.map(x=>semanticMetaItem('contradiction',x,profile))
+    :dashboardMode==='risks'
+     ?profile.risks.map(x=>semanticMetaItem('risk',x,profile))
+     :profile.evidence.map(x=>semanticMetaItem('evidence',x,profile))
+ const selectedDashboardItem=dashboardItems.find(x=>x.id===selectedId)??dashboardItems[0]??null
+
 
  const moduleCount=(id:string)=>{
   if(structureId==='cssa'&&id==='sources')return cssaSources.length
@@ -208,7 +282,7 @@ export default function CSSAPage(){
   return catalogueItems[structureId][id]?.length??0
  }
 
- const switchStructure=(id:StructureId)=>{setStructureId(id);setModuleId('dashboard');setSelectedId('');setQuery('');setTab('overview')}
+ const switchStructure=(id:StructureId)=>{setStructureId(id);setModuleId('dashboard');setSelectedId('');setQuery('');setTab('overview');setDashboardMode('capabilities')}
  const addProject=()=>{const title=projectName.trim();if(!title)return;setProjects(prev=>({...prev,[structureId]:[...prev[structureId],{id:'project:'+Date.now(),title,status:'LOCAL'}]}));setProjectName('')}
 
  const relations=selected&&native?.relations?native.relations.filter(r=>r.from===selected.id||r.to===selected.id):[]
@@ -229,31 +303,47 @@ export default function CSSAPage(){
     <div className="u-top-actions"><span className="u-badge">{structure.badge}</span><button onClick={refresh} disabled={refreshing}>{refreshing?'Lecture…':'Rafraîchir'}</button></div>
    </header>
 
-   <div className="u-contract-line"><span>domain_id <b>{profile.domainId}</b></span><span>adapter <b>{profile.adapterId}</b></span><span>contract <b>{profile.contract}</b></span><span>source <b>{profile.source}</b></span></div>
+   <div className="u-contract-line"><span>domain_id <b>{profile.domainId}</b></span><span>adapter <b>{profile.adapterId}</b></span><span>contract <b>{profile.contract}</b></span><span>source <a href={profile.sourceUrl} target="_blank" rel="noreferrer">{profile.source} ↗</a></span></div>
 
    <div className="u-runtime-strip"><span className={world?'ok':'off'}>WORLD {world?'CONNECTED':'UNAVAILABLE'}</span><span className={native?.available?'ok':'off'}>STORE {native?.available?'CONNECTED':'UNAVAILABLE'}</span><span>{entities.length} objets natifs</span><span>{liveServices.length} services</span><span>{decisions.length} décisions</span>{native?.projection_hash&&<span>projection {native.projection_hash.slice(0,12)}…</span>}</div>
 
    {moduleId==='dashboard'?<div className="u-dashboard-grid">
     <section className="u-dashboard-summary">
      <div className="u-summary-cards">
-      <article><small>CAPACITÉS</small><strong>{profile.capabilities.length}</strong><span>{provenCount} établies</span></article>
-      <article><small>OUVERT / HOLD</small><strong>{openCount}</strong><span>à fermer</span></article>
-      <article><small>UNKNOWNS</small><strong>{profile.unknowns.length}</strong><span>conservés</span></article>
-      <article><small>RISQUES</small><strong>{profile.risks.length}</strong><span>visibles</span></article>
+      <button className={dashboardMode==='capabilities'?'active':''} onClick={()=>{setDashboardMode('capabilities');setSelectedId('')}}><small>CAPACITÉS</small><strong>{profile.capabilities.length}</strong><span>{provenCount} établies</span></button>
+      <button className={dashboardMode==='evidence'?'active':''} onClick={()=>{setDashboardMode('evidence');setSelectedId('')}}><small>PREUVES</small><strong>{profile.evidence.length}</strong><span>observables</span></button>
+      <button className={dashboardMode==='unknowns'?'active':''} onClick={()=>{setDashboardMode('unknowns');setSelectedId('')}}><small>UNKNOWNS</small><strong>{profile.unknowns.length}</strong><span>conservés</span></button>
+      <button className={dashboardMode==='risks'?'active':''} onClick={()=>{setDashboardMode('risks');setSelectedId('')}}><small>RISQUES</small><strong>{profile.risks.length}</strong><span>{openCount} ouverts / HOLD</span></button>
      </div>
      <section className="u-mini-panel"><header><h3>Runtime réel</h3><b>{liveServices.length}</b></header>{liveServices.length?liveServices.map(s=><div className="u-runtime-row" key={s.id}><span className={'dot '+(s.observedState==='READY'?'ready':'')}></span><strong>{s.label}</strong><small>{String(s.observedState||s.phase||'OBSERVED')}</small></div>):<p>Aucun service natif observé pour cette structure.</p>}</section>
      <section className="u-mini-panel"><header><h3>Décisions observées</h3><b>{decisions.length}</b></header>{decisions.slice(0,4).map(d=><div className="u-compact-row" key={d.id}><strong>{d.label}</strong><small>{String(d.gate||d.status||'OBSERVED')}</small></div>)}{!decisions.length&&<p>Aucun record local correspondant au domaine.</p>}</section>
     </section>
 
     <section className="u-dashboard-center">
-     <header><div><small>CAPACITÉS DÉCLARÉES</small><h2>État de la structure</h2></div><span>{provenCount}/{profile.capabilities.length}</span></header>
-     <div className="u-cap-list">{profile.capabilities.map(c=><button key={c.id} className={selectedId==='cap:'+c.id?'active':''} onClick={()=>setSelectedId('cap:'+c.id)}><span className={'u-status '+statusTone(c.status)}>{c.status}</span><div><strong>{c.label}</strong><small>{c.summary}</small></div><b>›</b></button>)}</div>
-     <section className="u-rich-strip"><div><small>UNKNOWNS</small>{profile.unknowns.map(x=><span key={x}>{x}</span>)}</div><div><small>CONTRADICTIONS</small>{profile.contradictions.length?profile.contradictions.map(x=><span key={x}>{x}</span>):<em>Aucune déclarée</em>}</div><div><small>RISQUES</small>{profile.risks.map(x=><span key={x}>{x}</span>)}</div></section>
-     <section className="u-proof-band"><small>PREUVES / ÉTAT OBSERVABLE</small>{profile.evidence.map(e=><span key={e}>✓ {e}</span>)}</section>
+     <header><div><small>VUE SÉMANTIQUE</small><h2>{dashboardMode==='capabilities'?'Capacités':dashboardMode==='unknowns'?'Unknowns':dashboardMode==='risks'?'Risques':dashboardMode==='evidence'?'Preuves':'Contradictions'}</h2></div><span>{dashboardItems.length}</span></header>
+     <div className="u-cap-list">{dashboardItems.map(item=><button key={item.id} className={selectedDashboardItem?.id===item.id?'active':''} onClick={()=>setSelectedId(item.id)}><span className={'u-status '+statusTone(item.status)}>{item.status}</span><div><strong>{item.title}</strong><small>{item.subtitle}</small></div><b>›</b></button>)}</div>
+     <div className="u-dashboard-switches">
+      <button className={dashboardMode==='capabilities'?'active':''} onClick={()=>{setDashboardMode('capabilities');setSelectedId('')}}>Capacités {profile.capabilities.length}</button>
+      <button className={dashboardMode==='unknowns'?'active':''} onClick={()=>{setDashboardMode('unknowns');setSelectedId('')}}>Unknowns {profile.unknowns.length}</button>
+      <button className={dashboardMode==='contradictions'?'active':''} onClick={()=>{setDashboardMode('contradictions');setSelectedId('')}}>Contradictions {profile.contradictions.length}</button>
+      <button className={dashboardMode==='risks'?'active':''} onClick={()=>{setDashboardMode('risks');setSelectedId('')}}>Risques {profile.risks.length}</button>
+      <button className={dashboardMode==='evidence'?'active':''} onClick={()=>{setDashboardMode('evidence');setSelectedId('')}}>Preuves {profile.evidence.length}</button>
+     </div>
     </section>
 
     <aside className="u-inspector dashboard-inspector">
-     {selectedCapability?<><header><div><small>CAPACITÉ</small><h2>{selectedCapability.label}</h2><p>{selectedCapability.summary}</p></div><span className={'u-badge '+statusTone(selectedCapability.status)}>{selectedCapability.status}</span></header><section className="u-info"><h3>Ce que cette capacité apporte</h3>{selectedCapability.details.map(d=><div className="u-detail-line" key={d}>◆ <span>{d}</span></div>)}</section><section className="u-meta"><h3>Gouvernance</h3><div><small>Autorité</small><strong>KX108_ONLY</strong></div><div><small>Contrat</small><strong>{profile.contract}</strong></div><div><small>Adapter</small><strong>{profile.adapterId}</strong></div><div><small>Source</small><strong>{profile.source}</strong></div></section></>:<div className="u-empty big"><strong>Sélectionne une capacité</strong><p>Le détail apparaîtra ici.</p></div>}
+     {selectedDashboardItem?<><header><div><small>{selectedDashboardItem.kind.toUpperCase()}</small><h2>{selectedDashboardItem.title}</h2><p>{selectedDashboardItem.subtitle}</p></div><span className={'u-badge '+statusTone(selectedDashboardItem.status)}>{selectedDashboardItem.status}</span></header>
+      <section className="u-info"><h3>Comprendre cet objet</h3><dl>
+       <div><dt>But</dt><dd>{selectedDashboardItem.semantic.purpose}</dd></div>
+       <div><dt>Contexte</dt><dd>{selectedDashboardItem.semantic.context}</dd></div>
+       <div><dt>Observe / contient</dt><dd>{selectedDashboardItem.semantic.observes}</dd></div>
+       <div><dt>Alimente</dt><dd>{selectedDashboardItem.semantic.feeds}</dd></div>
+       <div><dt>Impact possible</dt><dd>{selectedDashboardItem.semantic.impact}</dd></div>
+       <div className="limit"><dt>Limite</dt><dd>{selectedDashboardItem.semantic.limits}</dd></div>
+      </dl></section>
+      {selectedDashboardItem.id.startsWith('cap:')&&selectedCapability&&<section className="u-info"><h3>Preuves / détails de capacité</h3>{selectedCapability.details.map(d=><div className="u-detail-line" key={d}>◆ <span>{d}</span></div>)}</section>}
+      <section className="u-meta"><h3>Provenance / gouvernance</h3><div><small>Autorité</small><strong>KX108_ONLY</strong></div><div><small>Contrat</small><strong>{profile.contract}</strong></div><div><small>Adapter</small><strong>{profile.adapterId}</strong></div><div><small>Source</small><a href={profile.sourceUrl} target="_blank" rel="noreferrer">{profile.source} ↗</a></div>{selectedDashboardItem.meta&&Object.entries(selectedDashboardItem.meta).map(([k,v])=><div key={k}><small>{k}</small><strong>{v}</strong></div>)}</section>
+     </>:<div className="u-empty big"><strong>Aucun objet dans cette vue</strong><p>Rien n’est inventé.</p></div>}
     </aside>
    </div>:<div className="u-workspace">
     <section className="u-list-pane">
@@ -268,8 +358,8 @@ export default function CSSAPage(){
       <div className="u-tabs"><button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}>Vue d’ensemble</button><button className={tab==='history'?'active':''} onClick={()=>setTab('history')}>Historique</button><button className={tab==='relations'?'active':''} onClick={()=>setTab('relations')}>Relations ({relations.length})</button></div>
       {tab==='overview'&&<>
        <section className="u-info"><h3>Informations générales</h3><dl><div><dt>But</dt><dd>{selected.semantic.purpose}</dd></div><div><dt>Contexte</dt><dd>{selected.semantic.context}</dd></div><div><dt>Ce qu’on observe</dt><dd>{selected.semantic.observes}</dd></div><div><dt>Alimente</dt><dd>{selected.semantic.feeds}</dd></div><div><dt>Impact possible</dt><dd>{selected.semantic.impact}</dd></div><div className="limit"><dt>Limite</dt><dd>{selected.semantic.limits}</dd></div></dl></section>
-       {selected.meta&&<section className="u-meta"><h3>Métadonnées</h3>{Object.entries(selected.meta).map(([k,v])=><div key={k}><small>{k}</small><strong>{v}</strong></div>)}</section>}
-       {selected.raw?<section className="u-observation"><h3>Dernière observation</h3><div className="u-observation-head"><span className="obs-ok">✓</span><div><small>STATUT</small><strong>{String(selected.raw.verification||selected.raw.status||selected.raw.gate||'OBSERVED')}</strong></div><div><small>OBSERVÉ</small><strong>{String(selected.raw.observed_at||selected.raw.observedAt||'persisté')}</strong></div></div><div className="u-meta compact">{Object.entries(selected.raw).filter(([k])=>!['label'].includes(k)).slice(0,12).map(([k,v])=><div key={k}><small>{k}</small><strong>{String(v??'—')}</strong></div>)}</div></section>:structureId==='cssa'&&selected.kind==='source'&&<section className="u-notice"><strong>CATALOGUE · PAS ENCORE OBSERVÉ</strong><p>Le contexte est documenté, mais aucune capture native correspondante n’est encore persistée.</p></section>}
+       {selected.meta&&<section className="u-meta"><h3>Métadonnées</h3>{Object.entries(selected.meta).map(([k,v])=><div key={k}><small>{k}</small>{k==='URL'?<a href={v} target="_blank" rel="noreferrer">{v} ↗</a>:<strong>{v}</strong>}</div>)}</section>}
+       {selected.kind==='source'&&selected.meta?.URL&&<div className="u-real-link-row"><a href={selected.meta.URL} target="_blank" rel="noreferrer">Ouvrir la source réelle ↗</a></div>}{selected.raw?<section className="u-observation"><h3>Dernière observation</h3><div className="u-observation-head"><span className="obs-ok">✓</span><div><small>STATUT</small><strong>{String(selected.raw.verification||selected.raw.status||selected.raw.gate||'OBSERVED')}</strong></div><div><small>OBSERVÉ</small><strong>{String(selected.raw.observed_at||selected.raw.observedAt||'persisté')}</strong></div></div><div className="u-meta compact">{Object.entries(selected.raw).filter(([k])=>!['label'].includes(k)).slice(0,12).map(([k,v])=><div key={k}><small>{k}</small><strong>{String(v??'—')}</strong></div>)}</div></section>:structureId==='cssa'&&selected.kind==='source'&&<section className="u-notice"><strong>CATALOGUE · PAS ENCORE OBSERVÉ</strong><p>Le contexte est documenté, mais aucune capture native correspondante n’est encore persistée.</p></section>}
       </>}
       {tab==='history'&&<section className="u-info"><h3>Historique observable</h3>{historyRows.length?historyRows.map(([k,v])=><div className="u-history-row" key={k}><small>{k}</small><strong>{String(v??'—')}</strong></div>):<p>Aucun historique persistant exposé par le read model pour cet objet.</p>}</section>}
       {tab==='relations'&&<section className="u-info"><h3>Relations natives</h3>{relations.length?relations.map((r,i)=><div className="u-history-row" key={i}><small>{r.type}</small><strong>{r.from} → {r.to}</strong></div>):<p>Aucune relation persistée exposée pour cet objet.</p>}</section>}
