@@ -3,10 +3,13 @@ import './CSSAPage.css'
 
 type Semantic={purpose:string;context:string;observes:string;feeds:string;impact:string;limits:string}
 type SourceItem={id:string;title:string;url:string;truthClass:string;cadence:string;criticality:string;semantic:Semantic}
-type NativeEntity={id:string;kind:string;label:string;status?:string|null;priority?:string|null;verification?:string;gate?:string|null;domainId?:string;agentId?:string;nativeService?:boolean;observedState?:string;phase?:string;decisionAuthority?:string;[key:string]:unknown}
+type NativeEntity={id:string;kind:string;label:string;status?:string|null;priority?:string|null;verification?:string;gate?:string|null;domainId?:string;agentId?:string;nativeService?:boolean;observedState?:string;phase?:string;decisionAuthority?:string;observed_at?:string;[key:string]:unknown}
 type NativeReadModel={available?:boolean;reason?:string;entities?:NativeEntity[];relations?:{from:string;type:string;to:string}[];projection_hash?:string;availability?:Record<string,string>}
 type WorldState={entities?:NativeEntity[];decisionAuthority?:string;observedAt?:string}
 type ViewItem={id:string;title:string;subtitle:string;kind:string;status:string;semantic:Semantic;meta?:Record<string,string>;raw?:NativeEntity}
+type Project={id:string;title:string;status:string}
+type CapabilityInfo={id:string;label:string;status:string;summary:string;details:string[]}
+type Profile={domainId:string;adapterId:string;contract:string;source:string;capabilities:CapabilityInfo[];unknowns:string[];contradictions:string[];risks:string[];evidence:string[]}
 
 type StructureId='cssa'|'trading'|'gps'
 type ModuleDef={id:string;label:string;icon:string;kindFilter?:string[]}
@@ -31,56 +34,91 @@ const cssaSources:SourceItem[]=[
 
 const structures:StructureDef[]=[
 {id:'cssa',name:'CSSA',subtitle:'Club Sportif Sedan Ardennes',badge:'KX108_ONLY',modules:[
-{id:'dashboard',label:'Dashboard',icon:'⌂'},{id:'sources',label:'Sources',icon:'◔'},{id:'crm',label:'CRM',icon:'♙',kindFilter:['case','interaction','followup','relationship']},{id:'tasks',label:'Tâches',icon:'☑',kindFilter:['task']},{id:'admin',label:'Administration',icon:'⚙'},{id:'mail',label:'Mail',icon:'✉'},{id:'reporting',label:'Reporting',icon:'▤'},{id:'matchday',label:'Matchday',icon:'◈'},{id:'finance',label:'Finance',icon:'◉'},{id:'governance',label:'Gouvernance',icon:'◫',kindFilter:['decision','receipt']},{id:'field',label:'Réalité terrain',icon:'◇'}]},
+{id:'dashboard',label:'Dashboard',icon:'⌂'},{id:'sources',label:'Sources',icon:'◔'},{id:'crm',label:'CRM',icon:'♙',kindFilter:['case','interaction','followup','relationship']},{id:'tasks',label:'Tâches',icon:'☑',kindFilter:['task']},{id:'admin',label:'Administration',icon:'⚙'},{id:'mail',label:'Mail',icon:'✉'},{id:'reporting',label:'Reporting',icon:'▤'},{id:'matchday',label:'Matchday',icon:'◈'},{id:'finance',label:'Finance',icon:'◉'},{id:'governance',label:'Gouvernance',icon:'◫',kindFilter:['decision','receipt']},{id:'projects',label:'Projets',icon:'▱'},{id:'field',label:'Réalité terrain',icon:'◇'}]},
 {id:'trading',name:'Trading',subtitle:'Domaine trading gouverné',badge:'PAPER ONLY',modules:[
-{id:'dashboard',label:'Dashboard',icon:'⌂'},{id:'market',label:'Market data',icon:'◉'},{id:'signals',label:'Signaux',icon:'⌁'},{id:'strategies',label:'Stratégies',icon:'◇'},{id:'risk',label:'Risk',icon:'△'},{id:'paper',label:'Paper execution',icon:'↗'},{id:'reporting',label:'Reporting',icon:'▤'},{id:'governance',label:'Gouvernance',icon:'◫'},{id:'proof',label:'Proof / receipts',icon:'▣'}]},
+{id:'dashboard',label:'Dashboard',icon:'⌂'},{id:'market',label:'Market data',icon:'◉'},{id:'signals',label:'Signaux',icon:'⌁'},{id:'strategies',label:'Stratégies',icon:'◇'},{id:'risk',label:'Risk',icon:'△'},{id:'paper',label:'Paper execution',icon:'↗'},{id:'reporting',label:'Reporting',icon:'▤'},{id:'governance',label:'Gouvernance',icon:'◫'},{id:'proof',label:'Proof / receipts',icon:'▣'},{id:'projects',label:'Projets',icon:'▱'}]},
 {id:'gps',name:'GPS / Défense',subtitle:'GNSS · RF · aviation',badge:'RECORDED REAL',modules:[
-{id:'dashboard',label:'Dashboard',icon:'⌂'},{id:'sensors',label:'Sources capteurs',icon:'⌁'},{id:'gnss',label:'GNSS',icon:'⌖'},{id:'rf',label:'RF',icon:'⌁'},{id:'incidents',label:'Incidents',icon:'!'},{id:'classification',label:'Classification',icon:'◈'},{id:'evidence',label:'Evidence',icon:'▣'},{id:'governance',label:'Gouvernance',icon:'◫'},{id:'receipts',label:'Receipts',icon:'▤'},{id:'field',label:'Réalité terrain',icon:'◇'}]},
+{id:'dashboard',label:'Dashboard',icon:'⌂'},{id:'sensors',label:'Sources capteurs',icon:'⌁'},{id:'gnss',label:'GNSS',icon:'⌖'},{id:'rf',label:'RF',icon:'⌁'},{id:'incidents',label:'Incidents',icon:'!'},{id:'classification',label:'Classification',icon:'◈'},{id:'evidence',label:'Evidence',icon:'▣'},{id:'governance',label:'Gouvernance',icon:'◫'},{id:'receipts',label:'Receipts',icon:'▤'},{id:'projects',label:'Projets',icon:'▱'},{id:'field',label:'Réalité terrain',icon:'◇'}]},
 ]
 
-const semantics:Record<string,Semantic>={
-crm:{purpose:'Conserver les dossiers et relations métier structurés.',context:'Mémoire opérationnelle native, sans autorité.',observes:'CASE, interactions, follow-ups et relations.',feeds:'TASKS, reporting et revues.',impact:'Structure le suivi d’un dossier.',limits:'Un objet CRM n’autorise aucune action externe.'},
-tasks:{purpose:'Transformer un besoin validé en travail suivi.',context:'Travail canonique avec état et échéance.',observes:'Tâches, priorité, responsable et dépendances.',feeds:'Suivi opérationnel et CRM.',impact:'Rend visible ce qui doit être fait.',limits:'TASK ≠ décision ≠ exécution.'},
-governance:{purpose:'Préserver la frontière d’autorité.',context:'Le domaine décrit et propose ; KX108 tranche.',observes:'Unknowns, contradictions, risques, preuves et décisions.',feeds:'Gates et receipts.',impact:'Empêche une auto-autorisation.',limits:'KX108_ONLY affiché ne signifie pas qu’une action est autorisée.'},
-reporting:{purpose:'Rendre l’état compréhensible.',context:'Projection structurée des faits disponibles.',observes:'Indicateurs, changements, risques et preuves.',feeds:'Pilotage humain.',impact:'Aide à décider quoi regarder ensuite.',limits:'Un rapport ne crée pas de vérité nouvelle.'},
-field:{purpose:'Identifier ce qui manque pour connaître la réalité terrain.',context:'Zone volontairement ouverte tant qu’elle n’est pas auditée.',observes:'Droits, pratiques, accès, handoffs et validations.',feeds:'Correction du modèle métier.',impact:'Empêche de confondre modèle et réel.',limits:'Aucun fait terrain absent ne doit être inventé.'},
+const profiles:Record<StructureId,Profile>={
+ cssa:{domainId:'cssa',adapterId:'cssa_public_admin/native_ops',contract:'PORTABLE_DOMAIN_REGISTRATION_V0',source:'cssa-v01 · feat/cssa-native-ops-bridge-v0',capabilities:[
+  {id:'crm',label:'CRM',status:'PROVEN',summary:'Cas CSSA → CRM CASE',details:['intake interaction créé','follow-up lié à task_ref','source de vérité CRM = Obsidia upstream']},
+  {id:'tasks',label:'TASKS',status:'PROVEN',summary:'Cas CSSA → tâche native',details:['4 mutations natives exactes','HOLD/BLOCK → 0 mutation','pré-état revérifié avant commit']},
+  {id:'admin',label:'ADMINISTRATION',status:'PROVEN',summary:'Contrats, conformité, procédures',details:['cycle contrat prouvé','compliance générique prouvée','canaux officiels gouvernés']},
+  {id:'mail',label:'MAIL',status:'HOLD',summary:'Preflight gouverné prouvé',details:['plan d’envoi exact','approbation humaine liée','envoi réel bloqué par upstream world actuation']},
+  {id:'reporting',label:'REPORTING',status:'PROVEN',summary:'Rapports routés par persona',details:['cadences weekly / biweekly / monthly','aucune livraison externe','privacy policy appliquée']},
+  {id:'watch',label:'PUBLIC WATCH',status:'PROVEN',summary:'14 sources publiques readonly',details:['GET only','hash brut + texte visible','changement ≠ vérité sémantique']},
+  {id:'matchday',label:'MATCHDAY',status:'PROVEN',summary:'Buvette, shifts, fournisseurs',details:['stock','supplier workflow','cash reconciliation','readiness']},
+  {id:'finance',label:'FINANCE',status:'PROVEN',summary:'Modèle saison + tarifs publics',details:['licences CSSA publiques','tarifs LGEF','budget réel 26/27 reste inconnu']},
+  {id:'governance',label:'GOVERNANCE',status:'PROVEN',summary:'KX108_ONLY',details:['external_action=false','memory_write=false','emits_act=false','kernel_mutation=false']},
+  {id:'field',label:'FIELD REALITY',status:'OPEN',summary:'Validation terrain interne manquante',details:['boîtes mail réelles','droits réels','handoffs','checklists','pratiques non écrites']}
+ ],unknowns:['REAL_INTERNAL_FIELD_EVIDENCE','REAL_ACCESS_RIGHTS','REAL_VALIDATION_CHAINS','2026_27_CERTIFIED_BUDGET'],contradictions:['Organigramme Manager Général potentiellement périmé','Réserve R3 sur une source vs R2 saison actuelle','12+ matchs domicile vs 13 championnat'],risks:['SOURCE_FRESHNESS','EXTERNAL_WORLD_ACTUATION_NOT_ACTIVATED'],evidence:['181 tests PASS · F3H-D','14 sources publiques surveillées','19 structures sportives publiques','800 abonnés snapshot officiel','50+ partenaires publics']},
+ trading:{domainId:'trading',adapterId:'canonical_trading_adapter',contract:'PORTABLE_DOMAIN_REGISTRATION_V0',source:'OBSIDIA_TRADING · master',capabilities:[
+  {id:'market',label:'MARKET DATA',status:'PROVEN',summary:'État marché canonique',details:['adapters marché','état canonique','provenance conservée']},
+  {id:'agents',label:'AGENTS',status:'PROVEN',summary:'17 agents natifs',details:['native reference implementation','adapter stack externe','convergence canonique avant autorité']},
+  {id:'risk',label:'RISK',status:'PROVEN',summary:'Risque + calibration',details:['simulation','portfolio risk','signal structurel non souverain']},
+  {id:'paper',label:'PAPER EXECUTION',status:'PAPER',summary:'Exécution broker PAPER uniquement',details:['LIVE trading interdit structurellement','Binder vérifie le verdict','receipt après exécution']},
+  {id:'proof',label:'PROOF / REPLAY',status:'PROVEN',summary:'Receipts chaînés + replay',details:['receipt ≠ decision','replay ≠ execution','preuve vérifiable']},
+  {id:'kx',label:'KX108',status:'OPEN',summary:'Vrai kernel non branché dans ce repo',details:['FixtureKX108Client = test only','UnavailableKX108Client fail-closed','jamais ACT par défaut']}
+ ],unknowns:['REAL_KX108_CONNECTION','MARKOV_REAL_CALIBRATION'],contradictions:[],risks:['PROOF_BEST_EFFORT','LIVE_TRADING_FORBIDDEN'],evidence:['283 passed','1 skipped','PAPER ONLY','Canonical convergence point']},
+ gps:{domainId:'gps_defense_aviation',adapterId:'gps_evidence_adapter',contract:'PORTABLE_DOMAIN_REGISTRATION_V0',source:'obsidia-gps-defense- · main',capabilities:[
+  {id:'gnss',label:'GNSS',status:'RECORDED_REAL',summary:'Chemin RINEX/GNSS réel documenté',details:['recorded real GNSS','observation envelope','Physical Reality Gate']},
+  {id:'rf',label:'RF I/Q',status:'RECORDED_REAL',summary:'Chemin RF nominal réel documenté',details:['public nominal I/Q','provenance conservée','raw datasets exclus du repo public']},
+  {id:'hostile',label:'HOSTILE RF',status:'PARTIAL',summary:'FGI hostile corpus partiel NAV/PVT',details:['FGI-GSRx / Octave','chaîne temporelle partielle','pas de claim attaque RF enregistrée']},
+  {id:'classification',label:'CLASSIFICATION',status:'OPEN',summary:'Classification RF formelle à fermer',details:['attribution causale ouverte','matrice TP/TN/FP/FN à consolider','baseline à renforcer']},
+  {id:'sensors',label:'SENSORS',status:'OPEN',summary:'IMU / radar non encore raccordés',details:['source IMU/radar manquante','fusion multi-capteurs ouverte']},
+  {id:'governance',label:'GOVERNANCE',status:'PROVEN',summary:'Périphérie non souveraine',details:['domaine traduit','kernel privé non exporté','receipts / claim matrix']}
+ ],unknowns:['REAL_IMU_RADAR_SOURCE','FORMAL_RF_CLASSIFICATION','CAUSAL_ATTRIBUTION'],contradictions:[],risks:['PRODUCTION_ANTI_SPOOFING_NOT_CLAIMED','AVIATION_CERTIFICATION_NOT_CLAIMED'],evidence:['RECORDED_REAL_GNSS','RECORDED_REAL_RF','FGI hostile chain PARTIAL']}
 }
 
-const catalogueItems:Record<StructureId,Record<string,ViewItem[]>>={
-cssa:{
-admin:[mk('cssa-admin','Administration CSSA','Contrats, conformité, procédures','admin','PROVEN','Structurer les obligations et procédures publiques.')],
-mail:[mk('cssa-mail','Mail gouverné','Preflight prouvé · envoi externe HOLD','mail','HOLD','Préparer une communication sans donner d’autorité d’envoi.')],
-reporting:[mk('cssa-reporting','Reporting CSSA','Cadences weekly / biweekly / monthly','reporting','PROVEN','Projeter l’état selon le destinataire.')],
-matchday:[mk('cssa-matchday','Matchday','Buvette, shifts, fournisseurs','matchday','PROVEN','Structurer la préparation des jours de match.')],
-finance:[mk('cssa-finance','Finance publique','Tarifs et modèle saison public','finance','PROVEN','Projeter les informations financières publiques disponibles.')],
-field:[mk('cssa-field','Réalité terrain','Droits, handoffs, checklists encore ouverts','field','OPEN','Identifier les informations internes encore non prouvées.')],
-},
-trading:{
-market:[mk('tr-market','Market data','État marché canonique','market','PROVEN','Observer les données marché structurées sans autorité.')],
-signals:[mk('tr-signals','Signaux','17 agents convergent avant autorité','signals','PROVEN','Consolider les propositions de signal avant gouvernance.')],
-strategies:[mk('tr-strategy','Stratégies','Simulation et propositions','strategies','PROVEN','Comparer des stratégies sans les transformer en ordre réel.')],
-risk:[mk('tr-risk','Risk','Risque portefeuille / calibration','risk','PROVEN','Qualifier les risques avant toute décision.')],
-paper:[mk('tr-paper','Paper execution','Exécution broker PAPER uniquement','paper','PAPER','Tester la chaîne d’exécution sans trading live.')],
-reporting:[mk('tr-report','Reporting','Performance et preuves','reporting','PROVEN','Rendre lisibles résultats et limites.')],
-governance:[mk('tr-gov','Gouvernance','KX108 attendu · fail-closed','governance','OPEN','Conserver l’autorité hors du domaine trading.')],
-proof:[mk('tr-proof','Proof / receipts','Receipts chaînés + replay','proof','PROVEN','Prouver ce qui a été appliqué en PAPER.')],
-},
-gps:{
-sensors:[mk('gps-sensors','Sources capteurs','GNSS/RINEX et RF I/Q enregistrés','sensors','RECORDED_REAL','Conserver des observations physiques enregistrées.')],
-gnss:[mk('gps-gnss','GNSS','Chemin RINEX/GNSS réel','gnss','RECORDED_REAL','Observer et qualifier les données GNSS enregistrées.')],
-rf:[mk('gps-rf','RF I/Q','Chemin RF nominal réel','rf','RECORDED_REAL','Observer le signal RF enregistré et sa provenance.')],
-incidents:[mk('gps-inc','Incidents','Anomalies physiques à qualifier','incidents','OPEN','Regrouper des anomalies sans attribution causale prématurée.')],
-classification:[mk('gps-class','Classification','Hostile RF partiel','classification','PARTIAL','Qualifier les observations RF avec incertitude conservée.')],
-evidence:[mk('gps-ev','Evidence','Recorded real GNSS / RF','evidence','RECORDED_REAL','Relier observations, fichiers et preuves vérifiables.')],
-governance:[mk('gps-gov','Gouvernance','Périphérie non souveraine','governance','PROVEN','Empêcher le domaine physique de s’auto-autoriser.')],
-receipts:[mk('gps-rec','Receipts','Claim matrix / preuves','receipts','PROVEN','Conserver les traces de preuve et de replay.')],
-field:[mk('gps-field','Réalité terrain','IMU/radar et attribution encore ouverts','field','OPEN','Rendre visibles les trous de réalité physique.')],
-}
+const semantics:Record<string,Semantic>={
+ crm:{purpose:'Conserver les dossiers et relations métier structurés.',context:'Mémoire opérationnelle native, sans autorité.',observes:'CASE, interactions, follow-ups et relations.',feeds:'TASKS, reporting et revues.',impact:'Structure le suivi d’un dossier.',limits:'Un objet CRM n’autorise aucune action externe.'},
+ tasks:{purpose:'Transformer un besoin validé en travail suivi.',context:'Travail canonique avec état et échéance.',observes:'Tâches, priorité, responsable et dépendances.',feeds:'Suivi opérationnel et CRM.',impact:'Rend visible ce qui doit être fait.',limits:'TASK ≠ décision ≠ exécution.'},
+ governance:{purpose:'Préserver la frontière d’autorité.',context:'Le domaine décrit et propose ; KX108 tranche.',observes:'Unknowns, contradictions, risques, preuves et décisions.',feeds:'Gates et receipts.',impact:'Empêche une auto-autorisation.',limits:'KX108_ONLY affiché ne signifie pas qu’une action est autorisée.'},
+ reporting:{purpose:'Rendre l’état compréhensible.',context:'Projection structurée des faits disponibles.',observes:'Indicateurs, changements, risques et preuves.',feeds:'Pilotage humain.',impact:'Aide à décider quoi regarder ensuite.',limits:'Un rapport ne crée pas de vérité nouvelle.'},
+ field:{purpose:'Identifier ce qui manque pour connaître la réalité terrain.',context:'Zone volontairement ouverte tant qu’elle n’est pas auditée.',observes:'Droits, pratiques, accès, handoffs et validations.',feeds:'Correction du modèle métier.',impact:'Empêche de confondre modèle et réel.',limits:'Aucun fait terrain absent ne doit être inventé.'},
+ admin:{purpose:'Structurer contrats, conformité et procédures.',context:'Couche métier administrative fondée sur sources et règles identifiées.',observes:'Obligations, dossiers, canaux et échéances.',feeds:'CASE, TASKS, reporting, gouvernance.',impact:'Permet de détecter manques et risques.',limits:'Les règles publiques ne prouvent pas les pratiques internes.'},
+ mail:{purpose:'Préparer des communications gouvernées.',context:'Preflight avant toute possibilité d’envoi.',observes:'Destinataire prévu, contenu préparé, approbation et contraintes.',feeds:'World action si autorisé.',impact:'Prépare une communication mais ne l’envoie pas seul.',limits:'MAIL HOLD signifie qu’aucun envoi réel ne doit être supposé.'},
+ matchday:{purpose:'Structurer les opérations liées aux jours de match.',context:'Readiness, stocks, shifts et fournisseurs.',observes:'Besoins opérationnels et préparation.',feeds:'TASKS, fournisseurs, reporting.',impact:'Aide à détecter les points bloquants.',limits:'Les données publiques ne prouvent pas l’état terrain réel.'},
+ finance:{purpose:'Projeter les éléments financiers disponibles.',context:'V0 fondée sur informations publiques, pas comptabilité interne.',observes:'Tarifs, hypothèses saison, coûts/revenus publics.',feeds:'Reporting et scénarios.',impact:'Permet des estimations.',limits:'Ne prouve pas budget certifié, trésorerie ou encaissements réels.'}
 }
 
 function mk(id:string,title:string,subtitle:string,kind:string,status:string,purpose:string):ViewItem{
  const base=semantics[kind]??{purpose,context:subtitle,observes:'État et métadonnées disponibles.',feeds:'Inspection et workflows associés.',impact:'Rend la situation compréhensible sans ajouter d’autorité.',limits:'L’interface ne fabrique aucune donnée absente.'}
  return {id,title,subtitle,kind,status,semantic:{...base,purpose}}
+}
+
+const catalogueItems:Record<StructureId,Record<string,ViewItem[]>>={
+ cssa:{
+  admin:[mk('cssa-admin','Administration CSSA','Contrats, conformité, procédures','admin','PROVEN','Structurer les obligations et procédures publiques.')],
+  mail:[mk('cssa-mail','Mail gouverné','Preflight prouvé · envoi externe HOLD','mail','HOLD','Préparer une communication sans donner d’autorité d’envoi.')],
+  reporting:[mk('cssa-reporting','Reporting CSSA','Cadences weekly / biweekly / monthly','reporting','PROVEN','Projeter l’état selon le destinataire.')],
+  matchday:[mk('cssa-matchday','Matchday','Buvette, shifts, fournisseurs','matchday','PROVEN','Structurer la préparation des jours de match.')],
+  finance:[mk('cssa-finance','Finance publique','Tarifs et modèle saison public','finance','PROVEN','Projeter les informations financières publiques disponibles.')],
+  field:[mk('cssa-field','Réalité terrain','Droits, handoffs, checklists encore ouverts','field','OPEN','Identifier les informations internes encore non prouvées.')],
+ },
+ trading:{
+  market:[mk('tr-market','Market data','État marché canonique','market','PROVEN','Observer les données marché structurées sans autorité.')],
+  signals:[mk('tr-signals','Signaux','17 agents convergent avant autorité','signals','PROVEN','Consolider les propositions de signal avant gouvernance.')],
+  strategies:[mk('tr-strategy','Stratégies','Simulation et propositions','strategies','PROVEN','Comparer des stratégies sans les transformer en ordre réel.')],
+  risk:[mk('tr-risk','Risk','Risque portefeuille / calibration','risk','PROVEN','Qualifier les risques avant toute décision.')],
+  paper:[mk('tr-paper','Paper execution','Exécution broker PAPER uniquement','paper','PAPER','Tester la chaîne d’exécution sans trading live.')],
+  reporting:[mk('tr-report','Reporting','Performance et preuves','reporting','PROVEN','Rendre lisibles résultats et limites.')],
+  governance:[mk('tr-gov','Gouvernance','KX108 attendu · fail-closed','governance','OPEN','Conserver l’autorité hors du domaine trading.')],
+  proof:[mk('tr-proof','Proof / receipts','Receipts chaînés + replay','proof','PROVEN','Prouver ce qui a été appliqué en PAPER.')],
+ },
+ gps:{
+  sensors:[mk('gps-sensors','Sources capteurs','GNSS/RINEX et RF I/Q enregistrés','sensors','RECORDED_REAL','Conserver des observations physiques enregistrées.')],
+  gnss:[mk('gps-gnss','GNSS','Chemin RINEX/GNSS réel','gnss','RECORDED_REAL','Observer et qualifier les données GNSS enregistrées.')],
+  rf:[mk('gps-rf','RF I/Q','Chemin RF nominal réel','rf','RECORDED_REAL','Observer le signal RF enregistré et sa provenance.')],
+  incidents:[mk('gps-inc','Incidents','Anomalies physiques à qualifier','incidents','OPEN','Regrouper des anomalies sans attribution causale prématurée.')],
+  classification:[mk('gps-class','Classification','Hostile RF partiel','classification','PARTIAL','Qualifier les observations RF avec incertitude conservée.')],
+  evidence:[mk('gps-ev','Evidence','Recorded real GNSS / RF','evidence','RECORDED_REAL','Relier observations, fichiers et preuves vérifiables.')],
+  governance:[mk('gps-gov','Gouvernance','Périphérie non souveraine','governance','PROVEN','Empêcher le domaine physique de s’auto-autoriser.')],
+  receipts:[mk('gps-rec','Receipts','Claim matrix / preuves','receipts','PROVEN','Conserver les traces de preuve et replay.')],
+  field:[mk('gps-field','Réalité terrain','IMU/radar et attribution encore ouverts','field','OPEN','Rendre visibles les trous de réalité physique.')],
+ }
 }
 
 function semanticForNative(e:NativeEntity):Semantic{
@@ -99,9 +137,13 @@ export default function CSSAPage(){
  const [native,setNative]=useState<NativeReadModel|null>(null)
  const [query,setQuery]=useState('')
  const [selectedId,setSelectedId]=useState('')
+ const [tab,setTab]=useState<'overview'|'history'|'relations'>('overview')
  const [refreshing,setRefreshing]=useState(false)
+ const [projects,setProjects]=useState<Record<StructureId,Project[]>>({cssa:[],trading:[],gps:[]})
+ const [projectName,setProjectName]=useState('')
 
  const structure=structures.find(s=>s.id===structureId)!
+ const profile=profiles[structureId]
  const entities=native?.entities??[]
  const worldEntities=world?.entities??[]
 
@@ -116,7 +158,6 @@ export default function CSSAPage(){
    if(b.status==='fulfilled')setNative(b.value)
   }finally{setRefreshing(false)}
  }
-
  useEffect(()=>{refresh();const t=window.setInterval(refresh,5000);return()=>window.clearInterval(t)},[])
 
  const observedSources=useMemo(()=>entities.filter(e=>e.kind==='source'),[entities])
@@ -126,6 +167,8 @@ export default function CSSAPage(){
   return entities.filter(e=>mod.kindFilter!.includes(String(e.kind||'').toLowerCase()))
  },[entities,moduleId,structure])
 
+ const projectItems=projects[structureId].map(p=>mk(p.id,p.title,p.status,'project',p.status,'Suivre un chantier local dans cette structure.'))
+
  const items=useMemo<ViewItem[]>(()=>{
   let rows:ViewItem[]=[]
   if(structureId==='cssa'&&moduleId==='sources'){
@@ -133,15 +176,17 @@ export default function CSSAPage(){
     const observed=observedSources.find(e=>e.id===s.id||String(e.label||'').includes(s.id))
     return {id:s.id,title:s.title,subtitle:s.semantic.purpose,kind:'source',status:observed?'OBSERVED':'CATALOGUE',semantic:s.semantic,meta:{URL:s.url,Cadence:s.cadence,Criticité:s.criticality,'Classe de vérité':s.truthClass},raw:observed}
    })
+  }else if(moduleId==='projects'){
+   rows=projectItems
   }else if(nativeByModule.length){
    rows=nativeByModule.map(e=>({id:e.id,title:e.label||e.id,subtitle:String(e.status||e.verification||e.gate||'OBSERVED'),kind:String(e.kind),status:String(e.status||e.verification||e.gate||'OBSERVED'),semantic:semanticForNative(e),raw:e}))
   }else if(moduleId==='dashboard'){
-   const observed=entities.slice(0,8).map(e=>({id:e.id,title:e.label||e.id,subtitle:String(e.kind),kind:String(e.kind),status:String(e.status||e.verification||e.gate||'OBSERVED'),semantic:semanticForNative(e),raw:e}))
-   rows=observed.length?observed:Object.values(catalogueItems[structureId]).flat().slice(0,8)
+   const caps=profile.capabilities.map(c=>mk('cap:'+c.id,c.label,c.summary,c.id,c.status,'Comprendre cette capacité dans le contexte de la structure.'))
+   rows=[...entities.slice(0,5).map(e=>({id:e.id,title:e.label||e.id,subtitle:String(e.kind),kind:String(e.kind),status:String(e.status||e.verification||e.gate||'OBSERVED'),semantic:semanticForNative(e),raw:e})),...caps]
   }else rows=catalogueItems[structureId][moduleId]??[]
   const q=query.trim().toLowerCase()
   return q?rows.filter(x=>(x.title+' '+x.subtitle+' '+x.kind+' '+x.status).toLowerCase().includes(q)):rows
- },[structureId,moduleId,entities,observedSources,nativeByModule,query])
+ },[structureId,moduleId,entities,observedSources,nativeByModule,query,projectItems,profile.capabilities])
 
  useEffect(()=>{
   if(!items.length){setSelectedId('');return}
@@ -149,81 +194,90 @@ export default function CSSAPage(){
  },[items,selectedId])
 
  const selected=items.find(x=>x.id===selectedId)??null
+ const selectedCapability=selected?.id.startsWith('cap:')?profile.capabilities.find(c=>'cap:'+c.id===selected.id):null
  const liveServices=worldEntities.filter(e=>e.kind==='session'&&e.nativeService)
- const decisions=worldEntities.filter(e=>e.kind==='decision_record')
+ const decisions=worldEntities.filter(e=>e.kind==='decision_record'&&(!e.domainId||String(e.domainId)===profile.domainId))
+ const provenCount=profile.capabilities.filter(c=>['PROVEN','RECORDED_REAL','PAPER','PARTIAL'].includes(c.status)).length
+ const openCount=profile.capabilities.filter(c=>['OPEN','HOLD'].includes(c.status)).length
+
  const moduleCount=(id:string)=>{
   if(structureId==='cssa'&&id==='sources')return cssaSources.length
+  if(id==='projects')return projects[structureId].length
   const m=structure.modules.find(x=>x.id===id)
   if(m?.kindFilter)return entities.filter(e=>m.kindFilter!.includes(String(e.kind||'').toLowerCase())).length
   return catalogueItems[structureId][id]?.length??0
  }
 
- const switchStructure=(id:StructureId)=>{setStructureId(id);setModuleId('dashboard');setSelectedId('');setQuery('')}
+ const switchStructure=(id:StructureId)=>{setStructureId(id);setModuleId('dashboard');setSelectedId('');setQuery('');setTab('overview')}
+ const addProject=()=>{const title=projectName.trim();if(!title)return;setProjects(prev=>({...prev,[structureId]:[...prev[structureId],{id:'project:'+Date.now(),title,status:'LOCAL'}]}));setProjectName('')}
+
+ const relations=selected&&native?.relations?native.relations.filter(r=>r.from===selected.id||r.to===selected.id):[]
+ const historyRows=selected?.raw?Object.entries(selected.raw).filter(([k])=>/observ|created|updated|status|gate|phase|verification/i.test(k)):[]
+ const statusTone=(v:string)=>v.toLowerCase().replaceAll(' ','-').replaceAll('/','-')
 
  return <main className="u-shell">
   <aside className="u-sidebar">
    <div className="u-brand"><span>◆</span><div><strong>OBSIDIA</strong><small>Écosystème IA universel</small></div></div>
    <div className="u-context-card"><small>STRUCTURE ACTUELLE</small><strong>{structure.name}</strong><span>{structure.subtitle}</span><em>{native?.available?'● connecté':'○ readonly'}</em></div>
-   <nav className="u-nav">
-    {structure.modules.map(m=><button key={m.id} className={moduleId===m.id?'active':''} onClick={()=>{setModuleId(m.id);setSelectedId('')}}>
-     <span>{m.icon}</span><strong>{m.label}</strong>{moduleCount(m.id)>0&&<b>{moduleCount(m.id)}</b>}
-    </button>)}
-   </nav>
-   <div className="u-switch"><small>CHANGER DE STRUCTURE</small>
-    {structures.map(s=><button key={s.id} className={structureId===s.id?'active':''} onClick={()=>switchStructure(s.id)}><span>◆</span>{s.name}</button>)}
-   </div>
+   <nav className="u-nav">{structure.modules.map(m=><button key={m.id} className={moduleId===m.id?'active':''} onClick={()=>{setModuleId(m.id);setSelectedId('');setTab('overview')}}><span>{m.icon}</span><strong>{m.label}</strong>{moduleCount(m.id)>0&&<b>{moduleCount(m.id)}</b>}</button>)}</nav>
+   <div className="u-switch"><small>CHANGER DE STRUCTURE</small>{structures.map(s=><button key={s.id} className={structureId===s.id?'active':''} onClick={()=>switchStructure(s.id)}><span>◆</span>{s.name}</button>)}</div>
   </aside>
 
   <section className="u-main">
    <header className="u-top">
-    <div><h1>{moduleId==='dashboard'?'Dashboard ':''}{structure.name}</h1><p>{structure.subtitle} · shell universel readonly</p></div>
+    <div><h1>{moduleId==='dashboard'?'Dashboard ':''}{structure.name}</h1><p>{structure.subtitle}</p></div>
     <div className="u-top-actions"><span className="u-badge">{structure.badge}</span><button onClick={refresh} disabled={refreshing}>{refreshing?'Lecture…':'Rafraîchir'}</button></div>
    </header>
 
-   <div className="u-runtime-strip">
-    <span className={world?'ok':'off'}>WORLD {world?'CONNECTED':'UNAVAILABLE'}</span>
-    <span className={native?.available?'ok':'off'}>STORE {native?.available?'CONNECTED':'UNAVAILABLE'}</span>
-    <span>{entities.length} objets natifs</span><span>{liveServices.length} services</span><span>{decisions.length} décisions</span>
-   </div>
+   <div className="u-contract-line"><span>domain_id <b>{profile.domainId}</b></span><span>adapter <b>{profile.adapterId}</b></span><span>contract <b>{profile.contract}</b></span><span>source <b>{profile.source}</b></span></div>
 
-   <div className="u-workspace">
-    <section className="u-list-pane">
-     <header>
-      <div><small>{structure.name.toUpperCase()} · {moduleId.toUpperCase()}</small><h2>{structure.modules.find(m=>m.id===moduleId)?.label}</h2></div>
-      <span>{items.length}</span>
-     </header>
-     <div className="u-search"><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher dans cette vue…"/></div>
-     <div className="u-list">
-      {items.map(item=><button key={item.id} className={selectedId===item.id?'active':''} onClick={()=>setSelectedId(item.id)}>
-       <span className="u-item-icon">{item.kind==='source'?'◔':item.kind==='task'?'☑':item.kind==='case'?'♙':'◆'}</span>
-       <span className="u-item-copy"><strong>{item.title}</strong><small>{item.subtitle}</small></span>
-       <span className={'u-status '+item.status.toLowerCase().replaceAll(' ','-')}>{item.status}</span>
-      </button>)}
-      {!items.length&&<div className="u-empty"><strong>Aucun objet observé</strong><p>La vue reste vide plutôt que d’inventer des données.</p></div>}
+   <div className="u-runtime-strip"><span className={world?'ok':'off'}>WORLD {world?'CONNECTED':'UNAVAILABLE'}</span><span className={native?.available?'ok':'off'}>STORE {native?.available?'CONNECTED':'UNAVAILABLE'}</span><span>{entities.length} objets natifs</span><span>{liveServices.length} services</span><span>{decisions.length} décisions</span>{native?.projection_hash&&<span>projection {native.projection_hash.slice(0,12)}…</span>}</div>
+
+   {moduleId==='dashboard'?<div className="u-dashboard-grid">
+    <section className="u-dashboard-summary">
+     <div className="u-summary-cards">
+      <article><small>CAPACITÉS</small><strong>{profile.capabilities.length}</strong><span>{provenCount} établies</span></article>
+      <article><small>OUVERT / HOLD</small><strong>{openCount}</strong><span>à fermer</span></article>
+      <article><small>UNKNOWNS</small><strong>{profile.unknowns.length}</strong><span>conservés</span></article>
+      <article><small>RISQUES</small><strong>{profile.risks.length}</strong><span>visibles</span></article>
      </div>
+     <section className="u-mini-panel"><header><h3>Runtime réel</h3><b>{liveServices.length}</b></header>{liveServices.length?liveServices.map(s=><div className="u-runtime-row" key={s.id}><span className={'dot '+(s.observedState==='READY'?'ready':'')}></span><strong>{s.label}</strong><small>{String(s.observedState||s.phase||'OBSERVED')}</small></div>):<p>Aucun service natif observé pour cette structure.</p>}</section>
+     <section className="u-mini-panel"><header><h3>Décisions observées</h3><b>{decisions.length}</b></header>{decisions.slice(0,4).map(d=><div className="u-compact-row" key={d.id}><strong>{d.label}</strong><small>{String(d.gate||d.status||'OBSERVED')}</small></div>)}{!decisions.length&&<p>Aucun record local correspondant au domaine.</p>}</section>
+    </section>
+
+    <section className="u-dashboard-center">
+     <header><div><small>CAPACITÉS DÉCLARÉES</small><h2>État de la structure</h2></div><span>{provenCount}/{profile.capabilities.length}</span></header>
+     <div className="u-cap-list">{profile.capabilities.map(c=><button key={c.id} className={selectedId==='cap:'+c.id?'active':''} onClick={()=>setSelectedId('cap:'+c.id)}><span className={'u-status '+statusTone(c.status)}>{c.status}</span><div><strong>{c.label}</strong><small>{c.summary}</small></div><b>›</b></button>)}</div>
+     <section className="u-rich-strip"><div><small>UNKNOWNS</small>{profile.unknowns.map(x=><span key={x}>{x}</span>)}</div><div><small>CONTRADICTIONS</small>{profile.contradictions.length?profile.contradictions.map(x=><span key={x}>{x}</span>):<em>Aucune déclarée</em>}</div><div><small>RISQUES</small>{profile.risks.map(x=><span key={x}>{x}</span>)}</div></section>
+     <section className="u-proof-band"><small>PREUVES / ÉTAT OBSERVABLE</small>{profile.evidence.map(e=><span key={e}>✓ {e}</span>)}</section>
+    </section>
+
+    <aside className="u-inspector dashboard-inspector">
+     {selectedCapability?<><header><div><small>CAPACITÉ</small><h2>{selectedCapability.label}</h2><p>{selectedCapability.summary}</p></div><span className={'u-badge '+statusTone(selectedCapability.status)}>{selectedCapability.status}</span></header><section className="u-info"><h3>Ce que cette capacité apporte</h3>{selectedCapability.details.map(d=><div className="u-detail-line" key={d}>◆ <span>{d}</span></div>)}</section><section className="u-meta"><h3>Gouvernance</h3><div><small>Autorité</small><strong>KX108_ONLY</strong></div><div><small>Contrat</small><strong>{profile.contract}</strong></div><div><small>Adapter</small><strong>{profile.adapterId}</strong></div><div><small>Source</small><strong>{profile.source}</strong></div></section></>:<div className="u-empty big"><strong>Sélectionne une capacité</strong><p>Le détail apparaîtra ici.</p></div>}
+    </aside>
+   </div>:<div className="u-workspace">
+    <section className="u-list-pane">
+     <header><div><small>{structure.name.toUpperCase()} · {moduleId.toUpperCase()}</small><h2>{structure.modules.find(m=>m.id===moduleId)?.label}</h2></div><span>{items.length}</span></header>
+     {moduleId==='projects'?<div className="u-project-create"><input value={projectName} onChange={e=>setProjectName(e.target.value)} placeholder="Nom du projet local"/><button onClick={addProject}>+ Ajouter</button></div>:<div className="u-search"><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher dans cette vue…"/></div>}
+     <div className="u-list">{items.map(item=><button key={item.id} className={selectedId===item.id?'active':''} onClick={()=>{setSelectedId(item.id);setTab('overview')}}><span className="u-item-icon">{item.kind==='source'?'◔':item.kind==='task'?'☑':item.kind==='case'?'♙':'◆'}</span><span className="u-item-copy"><strong>{item.title}</strong><small>{item.subtitle}</small></span><span className={'u-status '+statusTone(item.status)}>{item.status}</span></button>)}{!items.length&&<div className="u-empty"><strong>Aucun objet observé</strong><p>La vue reste vide plutôt que d’inventer des données.</p></div>}</div>
     </section>
 
     <aside className="u-inspector">
      {selected?<>
-      <header><div><small>{selected.kind.toUpperCase()}</small><h2>{selected.title}</h2><p>{selected.subtitle}</p></div><span className="u-badge">{selected.status}</span></header>
-      <div className="u-tabs"><button className="active">Vue d’ensemble</button><button>Historique</button><button>Relations</button></div>
-      <section className="u-info">
-       <h3>Informations générales</h3>
-       <dl>
-        <div><dt>But</dt><dd>{selected.semantic.purpose}</dd></div>
-        <div><dt>Contexte</dt><dd>{selected.semantic.context}</dd></div>
-        <div><dt>Ce qu’on observe</dt><dd>{selected.semantic.observes}</dd></div>
-        <div><dt>Alimente</dt><dd>{selected.semantic.feeds}</dd></div>
-        <div><dt>Impact possible</dt><dd>{selected.semantic.impact}</dd></div>
-        <div className="limit"><dt>Limite</dt><dd>{selected.semantic.limits}</dd></div>
-       </dl>
-      </section>
-      {selected.meta&&<section className="u-meta"><h3>Métadonnées</h3>{Object.entries(selected.meta).map(([k,v])=><div key={k}><small>{k}</small><strong>{v}</strong></div>)}</section>}
-      {selected.raw&&<section className="u-meta"><h3>État observé</h3>{Object.entries(selected.raw).filter(([k])=>!['label'].includes(k)).slice(0,14).map(([k,v])=><div key={k}><small>{k}</small><strong>{String(v??'—')}</strong></div>)}</section>}
-      {structureId==='cssa'&&selected.kind==='source'&&!selected.raw&&<section className="u-notice"><strong>CATALOGUE · PAS ENCORE OBSERVÉ</strong><p>Le contexte est documenté, mais aucune capture native correspondante n’est encore persistée.</p></section>}
+      <header><div><small>{selected.kind.toUpperCase()}</small><h2>{selected.title}</h2><p>{selected.subtitle}</p></div><span className={'u-badge '+statusTone(selected.status)}>{selected.status}</span></header>
+      <div className="u-tabs"><button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}>Vue d’ensemble</button><button className={tab==='history'?'active':''} onClick={()=>setTab('history')}>Historique</button><button className={tab==='relations'?'active':''} onClick={()=>setTab('relations')}>Relations ({relations.length})</button></div>
+      {tab==='overview'&&<>
+       <section className="u-info"><h3>Informations générales</h3><dl><div><dt>But</dt><dd>{selected.semantic.purpose}</dd></div><div><dt>Contexte</dt><dd>{selected.semantic.context}</dd></div><div><dt>Ce qu’on observe</dt><dd>{selected.semantic.observes}</dd></div><div><dt>Alimente</dt><dd>{selected.semantic.feeds}</dd></div><div><dt>Impact possible</dt><dd>{selected.semantic.impact}</dd></div><div className="limit"><dt>Limite</dt><dd>{selected.semantic.limits}</dd></div></dl></section>
+       {selected.meta&&<section className="u-meta"><h3>Métadonnées</h3>{Object.entries(selected.meta).map(([k,v])=><div key={k}><small>{k}</small><strong>{v}</strong></div>)}</section>}
+       {selected.raw?<section className="u-observation"><h3>Dernière observation</h3><div className="u-observation-head"><span className="obs-ok">✓</span><div><small>STATUT</small><strong>{String(selected.raw.verification||selected.raw.status||selected.raw.gate||'OBSERVED')}</strong></div><div><small>OBSERVÉ</small><strong>{String(selected.raw.observed_at||selected.raw.observedAt||'persisté')}</strong></div></div><div className="u-meta compact">{Object.entries(selected.raw).filter(([k])=>!['label'].includes(k)).slice(0,12).map(([k,v])=><div key={k}><small>{k}</small><strong>{String(v??'—')}</strong></div>)}</div></section>:structureId==='cssa'&&selected.kind==='source'&&<section className="u-notice"><strong>CATALOGUE · PAS ENCORE OBSERVÉ</strong><p>Le contexte est documenté, mais aucune capture native correspondante n’est encore persistée.</p></section>}
+      </>}
+      {tab==='history'&&<section className="u-info"><h3>Historique observable</h3>{historyRows.length?historyRows.map(([k,v])=><div className="u-history-row" key={k}><small>{k}</small><strong>{String(v??'—')}</strong></div>):<p>Aucun historique persistant exposé par le read model pour cet objet.</p>}</section>}
+      {tab==='relations'&&<section className="u-info"><h3>Relations natives</h3>{relations.length?relations.map((r,i)=><div className="u-history-row" key={i}><small>{r.type}</small><strong>{r.from} → {r.to}</strong></div>):<p>Aucune relation persistée exposée pour cet objet.</p>}</section>}
      </>:<div className="u-empty big"><strong>Sélectionne un objet</strong><p>Le détail apparaîtra ici.</p></div>}
     </aside>
-   </div>
+   </div>}
+
+   <footer className="u-governance-footer"><span>Domain state</span><b>→</b><span>Governance payload</span><b>→</b><span>KX108</span><b>→</b><span>Decision</span><b>→</b><span>Execution gate</span><b>→</b><span>Receipt</span></footer>
   </section>
  </main>
 }
