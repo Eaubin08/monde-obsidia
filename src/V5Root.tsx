@@ -707,6 +707,10 @@ export default function V5Root(){
      {worldItems.map(item=><button className="v5-object" key={item.id} onClick={()=>{if(item.id.startsWith('layer:')){const lid=item.id.slice(6);const l=layers.find(x=>x.id===lid);if(l){setSelectedFile(l.path);setFileContent(l.content)}}else openWorldObject(item.id)}}><small>{item.kind}</small><strong>{item.label}</strong><span>{item.meta}</span></button>)}
      {!worldItems.length&&<p className="v5-empty">Aucun objet observé dans cette zone.</p>}
     </section>}
+    {worldZone==='governance'&&<section className="v5-panel" aria-label="Universal C5 — Organisations">
+     <header><div><small>UNIVERSAL C5 · READ-ONLY</small><h2>Organisation et capacités gouvernées</h2></div><span>KX108_ONLY · aucune exécution</span></header>
+     <p>Source locale explicitement configurée. Une seule organisation autorisée par le serveur. Données absentes : aucune autorité inférée.</p>
+    </section>}
     {contextEntity&&<aside className="v5-focus"><small>OBJET SÉLECTIONNÉ</small><h2>{contextEntity.label}</h2><p>{contextEntity.kind} · {contextEntity.id}</p><div><button onClick={backToTerritories}>← Territoires</button>{zoneForEntity(contextEntity)&&zoneForEntity(contextEntity)!==worldZone&&<button onClick={()=>setWorldZone(zoneForEntity(contextEntity)!)}>Son territoire</button>}<button onClick={openContextWorkspace}>Workspace</button><button onClick={()=>go('agents')}>Pokémon</button></div><details><summary>Relations · {shared?.relations.filter(r=>r.from===contextEntity.id||r.to===contextEntity.id).length||0}</summary>{shared?.relations.filter(r=>r.from===contextEntity.id||r.to===contextEntity.id).map((r,i)=><p key={i}><code>{r.from}</code> → {r.type} → <code>{r.to}</code></p>)}</details></aside>}
     {worldZone==='layers'&&selectedFile&&<section className="v5-layer-reader"><header><strong>{selectedFile}</strong><button onClick={()=>{setSelectedFile('');setFileContent('')}}>Fermer</button></header><pre>{fileContent}</pre></section>}
    </section>}

@@ -45,48 +45,6 @@ function UiIcon({name}:{name:string}){
 
 
 
-type SportFixture={id:string;competition:string;date:string;time:string|null;home:string;away:string;score?:string;stage:string;truth:string;source:string;sourceUrl:string;note?:string}
-type SportWatch={observedAt?:string;refresh_interval_seconds?:number;summary?:{ok:number;changed:number;unreachable:number};sources?:{id:string;label:string;url:string;scope:string;status:string;observedAt:string;changed:boolean|null;httpStatus?:number;visibleTextSha256?:string}[];liveMatches?:{competition:string;date:string;time:string|null;home:string;away:string;homeScore:string|null;awayScore:string|null;status:string}[]}
-
-const r1Static:SportFixture[]=[
-{id:'r1-j1',competition:'RÉGIONAL 1',date:'2026-08-23',time:'16:00',home:'Marnaval SC',away:'CS Sedan Ardennes',score:'1–4',stage:'J1',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j2',competition:'RÉGIONAL 1',date:'2026-08-29',time:'18:30',home:'CS Sedan Ardennes',away:'FC Hettange',score:'2–0',stage:'J2',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j3',competition:'RÉGIONAL 1',date:'2026-09-05',time:'15:00',home:'CS Sedan Ardennes',away:'Cormontreuil FC',score:'5–0',stage:'J3',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j4',competition:'RÉGIONAL 1',date:'2026-09-09',time:'20:00',home:'CS Sedan Ardennes',away:'ES Villerupt-Thil',score:'3–1',stage:'J4',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j5',competition:'RÉGIONAL 1',date:'2026-09-19',time:'18:00',home:'US Thionville Lusitanos 2',away:'CS Sedan Ardennes',score:'1–4',stage:'J5',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j6',competition:'RÉGIONAL 1',date:'2026-10-03',time:'18:30',home:'CS Sedan Ardennes',away:'USAG Uckange',score:'2–1',stage:'J6',truth:'SECONDARY_CORROBORATED',source:'SportCorico + LeBallonRond',sourceUrl:'https://www.leballonrond.fr/edicao_calendario.php?equipa=129&fase_in=245883&id_edicao=221885'},
-{id:'r1-j7',competition:'RÉGIONAL 1',date:'2026-10-17',time:'16:00',home:'Bogny FC',away:'CS Sedan Ardennes',stage:'J7',truth:'PUBLIC_CONFLICT_REVIEW',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027',note:'Le snapshot antérieur et LeBallonRond publient d’autres date/heure : conflit conservé, revue requise.'},
-{id:'r1-j8',competition:'RÉGIONAL 1',date:'2026-10-24',time:'20:00',home:'FCF La Neuvillette Jamin',away:'CS Sedan Ardennes',stage:'J8',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j9',competition:'RÉGIONAL 1',date:'2026-10-31',time:'18:30',home:'CS Sedan Ardennes',away:'CSO Amnéville',stage:'J9',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j10',competition:'RÉGIONAL 1',date:'2026-11-08',time:'14:30',home:'FC Saint-Méziéry',away:'CS Sedan Ardennes',stage:'J10',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j11',competition:'RÉGIONAL 1',date:'2026-11-14',time:'18:30',home:'CS Sedan Ardennes',away:'RC Épernay',stage:'J11',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j12',competition:'RÉGIONAL 1',date:'2026-11-21',time:'18:00',home:'Charleville/Prix OAM 2',away:'CS Sedan Ardennes',stage:'J12',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j13',competition:'RÉGIONAL 1',date:'2026-12-05',time:'18:30',home:'CS Sedan Ardennes',away:'Stade de Reims 2',stage:'J13',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j14',competition:'RÉGIONAL 1',date:'2027-01-24',time:'14:30',home:'FC Hettange',away:'CS Sedan Ardennes',stage:'J14',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j15',competition:'RÉGIONAL 1',date:'2027-01-31',time:'14:30',home:'Cormontreuil FC',away:'CS Sedan Ardennes',stage:'J15',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j16',competition:'RÉGIONAL 1',date:'2027-02-07',time:'14:30',home:'CS Sedan Ardennes',away:'ES Villerupt-Thil',stage:'J16',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j17',competition:'RÉGIONAL 1',date:'2027-02-20',time:'18:30',home:'CS Sedan Ardennes',away:'US Thionville Lusitanos 2',stage:'J17',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j18',competition:'RÉGIONAL 1',date:'2027-02-28',time:'14:30',home:'USAG Uckange',away:'CS Sedan Ardennes',stage:'J18',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j19',competition:'RÉGIONAL 1',date:'2027-03-13',time:'18:30',home:'CS Sedan Ardennes',away:'Bogny FC',stage:'J19',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j20',competition:'RÉGIONAL 1',date:'2027-03-20',time:'18:30',home:'CS Sedan Ardennes',away:'FCF La Neuvillette Jamin',stage:'J20',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j21',competition:'RÉGIONAL 1',date:'2027-04-03',time:'18:30',home:'CSO Amnéville',away:'CS Sedan Ardennes',stage:'J21',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j22',competition:'RÉGIONAL 1',date:'2027-04-10',time:'18:30',home:'CS Sedan Ardennes',away:'FC Saint-Méziéry',stage:'J22',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j23',competition:'RÉGIONAL 1',date:'2027-04-17',time:'18:30',home:'RC Épernay',away:'CS Sedan Ardennes',stage:'J23',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j24',competition:'RÉGIONAL 1',date:'2027-05-01',time:'18:30',home:'CS Sedan Ardennes',away:'Charleville/Prix OAM 2',stage:'J24',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j25',competition:'RÉGIONAL 1',date:'2027-05-09',time:'15:00',home:'Stade de Reims 2',away:'CS Sedan Ardennes',stage:'J25',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'r1-j26',competition:'RÉGIONAL 1',date:'2027-05-23',time:'15:00',home:'CS Sedan Ardennes',away:'Marnaval SC',stage:'J26',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'}
-]
-
-const coupeFrance:SportFixture[]=[
-{id:'cdf-1',competition:'COUPE DE FRANCE',date:'2026-09-13',time:null,home:'FC de Haybes',away:'CS Sedan Ardennes',score:'1–3',stage:'Tour non renseigné',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'cdf-2',competition:'COUPE DE FRANCE',date:'2026-09-26',time:null,home:'CS Sedan Ardennes',away:'Reims Christo FC',score:'5–0',stage:'Tour non renseigné',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'},
-{id:'cdf-3',competition:'COUPE DE FRANCE',date:'2026-10-11',time:null,home:'Hagondange FC',away:'CS Sedan Ardennes',score:'0–2',stage:'Dernier match observé',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'}
-]
-
-const ardennesCups:SportFixture[]=[
-{id:'ard-senior-2026',competition:'COUPE ROGER MARCHE · ARDENNES',date:'2026-04-26',time:'15:00',home:'CS Sedan Ardennes',away:'Nord Ardennes',score:'FORFAIT CSSA',stage:'Archive 2025–2026',truth:'PUBLIC_CONFIRMED',source:'District des Ardennes · PV Comité Directeur',sourceUrl:'https://district-foot08.fff.fr/',note:'Le District indique que le CSSA a acté son forfait après impossibilité de reporter la rencontre.'},
-{id:'ard-u18-2026',competition:'COUPE DES ARDENNES U18',date:'2026-05-30',time:'16:00',home:'OCPAM',away:'CS Sedan Ardennes',stage:'Archive 2025–2026',truth:'PUBLIC_CORROBORATED',source:'OCPAM · programme public',sourceUrl:'https://www.ocpam.fr/',note:'Rencontre publique identifiée ; résultat non injecté faute de source fiable dans le dataset actuel.'}
-]
 
 const cssaSources:SourceItem[]=[
 {id:'CSSA_HOME',title:'CSSA – Site officiel',url:'https://cs-sedan.fr/',truthClass:'PUBLIC_CONFIRMED',cadence:'WEEKLY',criticality:'MEDIUM',semantic:{purpose:'Point d’entrée public général du club.',context:'Source officielle utilisée pour suivre annonces et informations institutionnelles publiques.',observes:'Actualités, annonces et informations institutionnelles.',feeds:'Veille publique, reporting, revue administrative.',impact:'Peut déclencher une revue si un changement public important est détecté.',limits:'Ne prouve pas le fonctionnement interne réel du club.'}},
@@ -538,74 +496,6 @@ function semanticMetaItem(kind:'unknown'|'risk'|'contradiction'|'evidence',value
  }
 }
 
-
-function CssaSportPage({selectedId,onSelect}:{selectedId:string;onSelect:(id:string)=>void}){
- const [view,setView]=useState<'r1'|'cdf'|'ardennes'|'sources'>('r1')
- const [watch,setWatch]=useState<SportWatch|null>(null)
- const [watchLoading,setWatchLoading]=useState(false)
- const [auto,setAuto]=useState(true)
-
- const loadWatch=async(force=false)=>{
-  setWatchLoading(true)
-  try{const r=await fetch('/obsidia-local/cssa-sport-watch'+(force?'?force=1':''),{cache:'no-store'});if(r.ok)setWatch(await r.json())}finally{setWatchLoading(false)}
- }
- useEffect(()=>{loadWatch();if(!auto)return;const t=window.setInterval(()=>loadWatch(),300000);return()=>window.clearInterval(t)},[auto])
-
- const liveR1=watch?.liveMatches?.filter(m=>m.competition.includes('RÉGIONAL 1')).map((m,i):SportFixture=>({
-  id:'live-r1-'+i,competition:'RÉGIONAL 1',date:m.date.split('/').reverse().join('-'),time:m.time,home:m.home.replace(/\s+1$/,''),away:m.away.replace(/\s+1$/,''),score:m.homeScore!==null?m.homeScore+'–'+m.awayScore:undefined,stage:'LIVE SOURCE',truth:'LIVE_PUBLIC_SOURCE',source:'SportCorico · capture automatique',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'
- }))||[]
- const fixtures=view==='r1'?(liveR1.length>=10?liveR1:r1Static):view==='cdf'?coupeFrance:view==='ardennes'?ardennesCups:[]
- const picked=fixtures.find(x=>x.id===selectedId)||fixtures[0]||null
- useEffect(()=>{if(fixtures.length&&!fixtures.some(x=>x.id===selectedId))onSelect(fixtures[0].id)},[view,watch])
-
- return <div className="sport-page">
-  <section className="sport-hero">
-   <div><small>CSSA · ÉQUIPE PREMIÈRE</small><h2>Seniors R1</h2><p>Régional 1 · Poule A · Saison 2026–2027</p></div>
-   <div className="sport-stats"><span><b>14</b><small>clubs</small></span><span><b>26</b><small>journées</small></span><span><b>13</b><small>déplacements</small></span><span><b>6/6</b><small>victoires R1 observées</small></span></div>
-  </section>
-
-  <div className="sport-toolbar">
-   <div className="sport-tabs">
-    <button className={view==='r1'?'active':''} onClick={()=>setView('r1')}>Championnat R1</button>
-    <button className={view==='cdf'?'active':''} onClick={()=>setView('cdf')}>Coupe de France</button>
-    <button className={view==='ardennes'?'active':''} onClick={()=>setView('ardennes')}>Coupes des Ardennes</button>
-    <button className={view==='sources'?'active':''} onClick={()=>setView('sources')}>Sources & veille</button>
-   </div>
-   <div className="sport-auto">
-    <label><input type="checkbox" checked={auto} onChange={e=>setAuto(e.target.checked)}/> mise à jour auto 5 min</label>
-    <button onClick={()=>loadWatch(true)} disabled={watchLoading}><UiIcon name="refresh"/>{watchLoading?'Actualisation…':'Actualiser maintenant'}</button>
-   </div>
-  </div>
-
-  {view==='sources'?<div className="sport-source-grid">
-   {(watch?.sources||[]).map(s=><article key={s.id}><header><strong>{s.label}</strong><span className={s.status==='OK'?'ok':'bad'}>{s.status}</span></header><p>{s.scope}</p><dl><div><dt>Observé</dt><dd>{s.observedAt}</dd></div><div><dt>Changement</dt><dd>{s.changed===null?'BASELINE':s.changed?'CHANGÉ · REVUE':'INCHANGÉ'}</dd></div><div><dt>HTTP</dt><dd>{s.httpStatus??'—'}</dd></div></dl><a href={s.url} target="_blank" rel="noreferrer">Ouvrir la source réelle ↗</a></article>)}
-   {!watch&&<div className="u-empty">Veille locale non encore disponible.</div>}
-  </div>:<div className="sport-layout">
-   <section className="sport-calendar">
-    <header><div><small>{view==='r1'?'CALENDRIER COMPLET':view==='cdf'?'PARCOURS COUPE DE FRANCE':'COUPES DÉPARTEMENTALES / ARCHIVES'}</small><h3>{view==='r1'?'26 journées R1':view==='cdf'?'Coupe de France 2026–2027':'Coupe Roger Marche & Coupe des Ardennes'}</h3></div><span>{fixtures.length}</span></header>
-    {view==='ardennes'&&<div className="sport-warning">Saison 2026–2027 : aucune rencontre de Coupe Roger Marche/Coupe des Ardennes confirmée dans les sources actuellement raccordées. Les lignes ci-dessous sont les dernières archives publiques retrouvées.</div>}
-    <div className="sport-match-list">
-     {fixtures.map(f=><button key={f.id} className={picked?.id===f.id?'active':''} onClick={()=>onSelect(f.id)}>
-      <span className="sport-date"><b>{new Date(f.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})}</b><small>{f.time||'—'}</small></span>
-      <span className="sport-fixture"><small>{f.stage}</small><strong>{f.home}</strong><em>vs</em><strong>{f.away}</strong></span>
-      <span className="sport-score">{f.score||'À venir'}</span>
-     </button>)}
-    </div>
-   </section>
-
-   <aside className="sport-detail">
-    {picked&&<>
-     <header><span className="u-detail-icon"><UiIcon name="sportif"/></span><div><small>{picked.competition}</small><h3>{picked.home} — {picked.away}</h3><p>{picked.stage}</p></div><span className={'u-badge '+(picked.score?'proven':'open')}>{picked.score?'RÉSULTAT':'À VENIR'}</span></header>
-     <div className="sport-detail-grid"><div><small>Date</small><strong>{new Date(picked.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</strong></div><div><small>Heure</small><strong>{picked.time||'Non renseignée'}</strong></div><div><small>Domicile</small><strong>{picked.home}</strong></div><div><small>Extérieur</small><strong>{picked.away}</strong></div><div><small>Score</small><strong>{picked.score||'—'}</strong></div><div><small>Classe de vérité</small><strong>{picked.truth}</strong></div></div>
-     {picked.note&&<section className="sport-alert"><strong>Point à revoir</strong><p>{picked.note}</p></section>}
-     <section className="sport-purpose"><h4>Ce que ce match alimente</h4><div><span>Calendrier</span><span>Matchday</span><span>Transport</span><span>Reporting</span><span>Planning</span></div><p>Une donnée publique de calendrier ne prouve ni la logistique interne, ni les disponibilités, ni une homologation finale si les sources se contredisent.</p></section>
-     <section className="sport-provenance"><h4>Provenance</h4><strong>{picked.source}</strong><a href={picked.sourceUrl} target="_blank" rel="noreferrer">Ouvrir la source ↗</a></section>
-     {watch&&<section className="sport-live-state"><h4>Veille automatique</h4><div><span>Dernier passage</span><strong>{watch.observedAt||'—'}</strong></div><div><span>Sources OK</span><strong>{watch.summary?.ok??0}/{watch.sources?.length??0}</strong></div><div><span>Sources modifiées</span><strong>{watch.summary?.changed??0}</strong></div><p>Un changement de page est détecté automatiquement, mais n’est pas promu silencieusement en fait métier.</p></section>}
-    </>}
-   </aside>
-  </div>}
- </div>
-}
 
 export default function CSSAPage(){
  const [structureId,setStructureId]=useState<StructureId>('cssa')
