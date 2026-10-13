@@ -24,6 +24,23 @@ function visibleText(html){
   .trim()
 }
 
+
+function parseSportCoricoMatches(text){
+ const boundary=/(MATCHS AMICAUX|RÉGIONAL 1 HOMIRIS|U20 RÉGIONAL 1|COUPE DE FRANCE CRÉDIT AGRICOLE(?: GRAND EST)?|COUPE ROGER MARCHE|COUPE DU GRAND EST)/g
+ const parts=String(text).split(boundary)
+ const rows=[]
+ for(let i=1;i<parts.length;i+=2){
+  const competition=parts[i]
+  const body=(parts[i+1]||'').replace(/^\s+|\s+$/g,'')
+  const m=body.match(/^(.*?)\s+(\d{2}\/\d{2}\/\d{4})\s+(?:(\d{1,2}:\d{2})\s+)?(?:(\d+)\s*-\s*(\d+)\s+)?(.*)$/)
+  if(!m)continue
+  const home=m[1].trim(),date=m[2],time=m[3]||null,homeScore=m[4]??null,awayScore=m[5]??null,away=m[6].trim()
+  if(!/Sedan Ardennes CS 1/i.test(home)&&!/Sedan Ardennes CS 1/i.test(away))continue
+  rows.push({competition,date,time,home,away,homeScore,awayScore,status:homeScore!==null?'FINISHED':'SCHEDULED'})
+ }
+ return rows
+}
+
 async function capture(source){
  const observedAt=new Date().toISOString()
  try{
@@ -33,7 +50,7 @@ async function capture(source){
   const hash=createHash('sha256').update(text).digest('hex')
   const before=previousHashes.get(source.id)
   previousHashes.set(source.id,hash)
-  return {...source,observedAt,httpStatus:response.status,status:response.ok?'OK':'HTTP_ERROR',visibleTextSha256:hash,visibleChars:text.length,changed:before?before!==hash:null,preview:text.slice(0,700)}
+  return {...source,observedAt,httpStatus:response.status,status:response.ok?'OK':'HTTP_ERROR',visibleTextSha256:hash,visibleChars:text.length,changed:before?before!==hash:null,preview:text.slice(0,700),previewFull:text.slice(0,60000)}
  }catch(error){
   return {...source,observedAt,status:'UNREACHABLE',errorType:error?.name||'Error',error:String(error?.message||error),changed:null}
  }
@@ -43,6 +60,8 @@ export async function readCssaSportWatch({force=false}={}){
  const now=Date.now()
  if(!force&&cache.value&&now-cache.at<5*60*1000)return cache.value
  const sources=await Promise.all(SOURCES.map(capture))
+ const sportCorico=sources.find(x=>x.id==='SPORTCORICO_SENIORS1')
+ const liveMatches=sportCorico?.status==='OK'?parseSportCoricoMatches(sportCorico.previewFull||sportCorico.preview||''):[]
  const value={
   schema:'CSSA_SPORT_PUBLIC_WATCH_V0',
   readonly:true,
@@ -50,7 +69,8 @@ export async function readCssaSportWatch({force=false}={}){
   semantic_auto_promotion:false,
   refresh_interval_seconds:300,
   observedAt:new Date().toISOString(),
-  sources,
+  sources:sources.map(({previewFull,...row})=>row),
+  liveMatches,
   summary:{
    ok:sources.filter(x=>x.status==='OK').length,
    changed:sources.filter(x=>x.changed===true).length,
