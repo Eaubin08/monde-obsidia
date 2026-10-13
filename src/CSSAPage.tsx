@@ -70,7 +70,13 @@ const structures:StructureDef[]=[
 {id:'trading',name:'Trading',subtitle:'Domaine trading gouverné',badge:'PAPER ONLY',modules:[
 {id:'dashboard',label:'Dashboard',icon:'dashboard'},{id:'market',label:'Market data',icon:'◉'},{id:'signals',label:'Signaux',icon:'⌁'},{id:'strategies',label:'Stratégies',icon:'◇'},{id:'risk',label:'Risk',icon:'△'},{id:'paper',label:'Paper execution',icon:'↗'},{id:'reporting',label:'Reporting',icon:'reporting'},{id:'governance',label:'Gouvernance',icon:'governance'},{id:'proof',label:'Proof / receipts',icon:'▣'},{id:'projects',label:'Projets',icon:'projects'}]},
 {id:'gps',name:'GPS / Défense',subtitle:'GNSS · RF · aviation',badge:'RECORDED REAL',modules:[
-{id:'dashboard',label:'Dashboard',icon:'dashboard'},{id:'sensors',label:'Sources capteurs',icon:'⌁'},{id:'gnss',label:'GNSS',icon:'⌖'},{id:'rf',label:'RF',icon:'⌁'},{id:'incidents',label:'Incidents',icon:'!'},{id:'classification',label:'Classification',icon:'◈'},{id:'evidence',label:'Evidence',icon:'▣'},{id:'governance',label:'Gouvernance',icon:'governance'},{id:'receipts',label:'Receipts',icon:'▤'},{id:'projects',label:'Projets',icon:'projects'},{id:'field',label:'Réalité terrain',icon:'field'}]},
+{id:'dashboard',label:'Dashboard',icon:'dashboard'},{id:'sensors',label:'Sources capteurs',icon:'⌁'},{id:'gnss',label:'GNSS',icon:'⌖'},{id:'rf',label:'RF',icon:'⌁'},{id:'incidents',label:'Incidents',icon:'!'},{id:'classification',label:'Classification',icon:'◈'},{id:'evidence',label:'Evidence',icon:'▣'},{id:'governance',label:'Gouvernance',icon:'governance'},{id:'receipts',label:'Receipts',icon:'▤'},{id:'projects',label:'Projets',icon:'projects'},{id:'field',label:'Réalité terrain',icon:'field'}]}]
+
+const cssaNavSections: {title: string; moduleIds: string[]}[] = [
+  {title: 'SPORTIF & TERRAIN', moduleIds: ['sportif', 'matchday']},
+  {title: 'GESTION & OPÉRATIONS', moduleIds: ['admin', 'tasks', 'crm']},
+  {title: 'LE CLUB & VIE DU CLUB', moduleIds: ['organisation', 'academy', 'commercial', 'finance']},
+  {title: 'TRANSPARENCE & VEILLE', moduleIds: ['dashboard', 'sources', 'tests', 'field', 'governance', 'projects', 'reporting']}
 ]
 
 const profiles:Record<StructureId,Profile>={
@@ -513,6 +519,7 @@ export default function CSSAPage(){
  const [projects,setProjects]=useState<Record<StructureId,Project[]>>({cssa:[],trading:[],gps:[]})
  const [projectName,setProjectName]=useState('')
  const [dashboardMode,setDashboardMode]=useState<'capabilities'|'unknowns'|'contradictions'|'risks'|'evidence'>('capabilities')
+ const [showTechDetails,setShowTechDetails]=useState(false)
 
  const structure=structures.find(s=>s.id===structureId)!
  const profile=profiles[structureId]
@@ -621,19 +628,65 @@ export default function CSSAPage(){
   <aside className="u-sidebar">
    <div className="u-brand"><span>◆</span><div><strong>OBSIDIA</strong><small>Écosystème IA universel</small></div></div>
    <div className="u-context-card"><small>STRUCTURE ACTUELLE</small><strong>{structure.name}</strong><span>{structure.subtitle}</span><em>{native?.available?'● connecté':'○ readonly'}</em></div>
-   <nav className="u-nav">{structure.modules.map(m=><a key={m.id} href={'#cssa/'+m.id} className={moduleId===m.id?'active':''} onClick={()=>openModule(m.id)}><span><UiIcon name={m.icon}/></span><strong>{m.label}</strong>{moduleCount(m.id)>0&&<b>{moduleCount(m.id)}</b>}</a>)}</nav>
+   <nav className="u-nav">
+    {structureId === 'cssa' ? (
+      cssaNavSections.map(sec => {
+        const secModules = structure.modules.filter(m => sec.moduleIds.includes(m.id))
+        if (!secModules.length) return null
+        return (
+          <div key={sec.title} className="u-nav-group">
+            <div className="u-nav-group-title">{sec.title}</div>
+            {secModules.map(m => (
+              <a
+                key={m.id}
+                href={'#cssa/' + m.id}
+                className={moduleId === m.id ? 'active' : ''}
+                onClick={() => openModule(m.id)}
+              >
+                <span><UiIcon name={m.icon} /></span>
+                <strong>{m.label}</strong>
+                {moduleCount(m.id) > 0 && <b>{moduleCount(m.id)}</b>}
+              </a>
+            ))}
+          </div>
+        )
+      })
+    ) : (
+      structure.modules.map(m => (
+        <a
+          key={m.id}
+          href={'#cssa/' + m.id}
+          className={moduleId === m.id ? 'active' : ''}
+          onClick={() => openModule(m.id)}
+        >
+          <span><UiIcon name={m.icon} /></span>
+          <strong>{m.label}</strong>
+          {moduleCount(m.id) > 0 && <b>{moduleCount(m.id)}</b>}
+        </a>
+      ))
+    )}
+   </nav>
    <div className="u-switch"><small>CHANGER DE STRUCTURE</small>{structures.map(s=><button key={s.id} className={structureId===s.id?'active':''} onClick={()=>switchStructure(s.id)}><span><UiIcon name={s.id==='trading'?'reporting':s.id==='gps'?'field':'organisation'}/></span>{s.name}</button>)}</div>
   </aside>
 
   <section className="u-main">
    <header className="u-top">
     <div><div className="u-breadcrumb"><a href="#cssa/dashboard">CSSA</a><span>›</span><strong>{structure.modules.find(m=>m.id===moduleId)?.label}</strong></div><h1>{moduleId==='dashboard'?'Dashboard ':''}{structure.name}</h1><p>{structure.subtitle}</p></div>
-    <div className="u-top-actions"><span className="u-badge">{structure.badge}</span><button onClick={refresh} disabled={refreshing}><UiIcon name="refresh"/>{refreshing?'Lecture…':'Rafraîchir'}</button></div>
+    <div className="u-top-actions">
+      <span className="u-badge">{structure.badge}</span>
+      <button type="button" className="u-btn-tech-toggle" onClick={()=>setShowTechDetails(prev=>!prev)} title="Afficher/masquer les métriques techniques">
+        {showTechDetails ? '⚙️ Masquer technique ▴' : '⚙️ Détails techniques ▾'}
+      </button>
+      <button onClick={refresh} disabled={refreshing}><UiIcon name="refresh"/>{refreshing?'Lecture…':'Rafraîchir'}</button>
+    </div>
    </header>
 
-   <div className="u-contract-line"><span>domain_id <b>{profile.domainId}</b></span><span>adapter <b>{profile.adapterId}</b></span><span>contract <b>{profile.contract}</b></span><span>source <a href={profile.sourceUrl} target="_blank" rel="noreferrer">{profile.source} ↗</a></span></div>
-
-   <div className="u-runtime-strip"><span className={world?'ok':'off'}>WORLD {world?'CONNECTED':'UNAVAILABLE'}</span><span className={native?.available?'ok':'off'}>STORE {native?.available?'CONNECTED':'UNAVAILABLE'}</span><span>{entities.length} objets natifs</span><span>{liveServices.length} services</span><span>{decisions.length} décisions</span>{native?.projection_hash&&<span>projection {native.projection_hash.slice(0,12)}…</span>}</div>
+   {showTechDetails && (
+     <div className="u-tech-details-container">
+       <div className="u-contract-line"><span>domain_id <b>{profile.domainId}</b></span><span>adapter <b>{profile.adapterId}</b></span><span>contract <b>{profile.contract}</b></span><span>source <a href={profile.sourceUrl} target="_blank" rel="noreferrer">{profile.source} ↗</a></span></div>
+       <div className="u-runtime-strip"><span className={world?'ok':'off'}>WORLD {world?'CONNECTED':'UNAVAILABLE'}</span><span className={native?.available?'ok':'off'}>STORE {native?.available?'CONNECTED':'UNAVAILABLE'}</span><span>{entities.length} objets natifs</span><span>{liveServices.length} services</span><span>{decisions.length} décisions</span>{native?.projection_hash&&<span>projection {native.projection_hash.slice(0,12)}…</span>}</div>
+     </div>
+   )}
 
    {moduleId==='sportif'&&structureId==='cssa'?(
     <CSSASportWorkspace/>

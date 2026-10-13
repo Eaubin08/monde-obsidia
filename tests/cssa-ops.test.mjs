@@ -1,16 +1,13 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync} from 'node:fs'
+import {mkdtempSync, rmSync, readFileSync, writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {
   readCssaOpsState,
   writeCssaOpsState,
   syncOpsToSportState,
-  syncSportTasksToOps,
-  INITIAL_TASKS,
-  INITIAL_CASES,
-  INITIAL_INTENDANCE
+  syncSportTasksToOps
 } from '../server/cssa-ops-store.mjs'
 
 test('cssa-ops-store : returns default canonical state with initial tasks, cases, intendance when file is missing', () => {

@@ -367,7 +367,47 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
   const isIntendanceView = activeModule === 'matchday' || activeModule === 'intendance'
 
   return (
-    <div className="ops-workbox">
+    <div className="ops-wrapper">
+      {/* Barre de navigation supérieure Ops */}
+      <nav className="ops-subnav-bar">
+        <div className="ops-subnav-tabs">
+          <button
+            type="button"
+            className={`ops-subnav-btn ${activeModule === 'tasks' ? 'active' : ''}`}
+            onClick={() => onSelect('tasks', '')}
+          >
+            📋 Tâches & Suivi ({state?.tasks.length || 0})
+          </button>
+          <button
+            type="button"
+            className={`ops-subnav-btn ${activeModule === 'admin' || activeModule === 'administration' ? 'active' : ''}`}
+            onClick={() => onSelect('admin', '')}
+          >
+            🏛️ Administration Club
+          </button>
+          <button
+            type="button"
+            className={`ops-subnav-btn ${activeModule === 'crm' ? 'active' : ''}`}
+            onClick={() => onSelect('crm', '')}
+          >
+            📁 Dossiers CRM ({state?.cases.length || 0})
+          </button>
+          <button
+            type="button"
+            className={`ops-subnav-btn ${activeModule === 'matchday' || activeModule === 'intendance' ? 'active' : ''}`}
+            onClick={() => onSelect('matchday', '')}
+          >
+            🚚 Intendance Matchday ({state?.intendanceItems.length || 0})
+          </button>
+        </div>
+        <div className="ops-subnav-meta">
+          <span className="ops-subnav-badge">
+            {isTaskOrAdminView ? 'SUIVI OPÉRATIONNEL' : isCrmView ? 'LITIGES & RÈGLEMENTS' : 'LOGISTIQUE MATCHDAY'}
+          </span>
+        </div>
+      </nav>
+
+      <div className="ops-workbox">
       {/* ========================================================
           COLONNE 1 : Catégories & Filtres (Boîte de travail)
           ======================================================== */}
@@ -793,6 +833,16 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
                       {Object.keys(selectedTask.checklist).length} validés
                     </span>
                   </div>
+                  {(() => {
+                    const total = Object.keys(selectedTask.checklist).length
+                    const done = Object.values(selectedTask.checklist).filter(Boolean).length
+                    const pct = total > 0 ? Math.round((done / total) * 100) : 0
+                    return (
+                      <div className="ops-progress-track" title={`${done}/${total} (${pct}%)`}>
+                        <div className="ops-progress-fill" style={{width: `${pct}%`}} />
+                      </div>
+                    )
+                  })()}
                   <div className="ops-checklist">
                     {Object.entries(selectedTask.checklist).map(([key, val]) => (
                       <label key={key} className={`ops-check-row ${val ? 'done' : ''}`}>
@@ -830,6 +880,50 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
                   </button>
                 </div>
               </div>
+
+              {/* Relations & Liens transversaux */}
+              {((selectedTask.relations && selectedTask.relations.length > 0) || selectedTask.matchRef || selectedTask.caseRef) && (
+                <div className="ops-panel-box">
+                  <div className="ops-panel-box-head">
+                    <h4>Liaisons Métier & Relations</h4>
+                    <span>{(selectedTask.relations?.length || 0) + (selectedTask.matchRef ? 1 : 0) + (selectedTask.caseRef ? 1 : 0)} liens</span>
+                  </div>
+                  <div className="ops-relations-list">
+                    {selectedTask.matchRef && (
+                      <button
+                        type="button"
+                        className="ops-relation-callout"
+                        onClick={() => {
+                          const teamKey = selectedTask.team || 'SENIORS_R1'
+                          location.hash = `#cssa/sportif/${teamKey}/${selectedTask.matchRef}`
+                        }}
+                      >
+                        <span className="ops-rel-type">SPORTIF</span>
+                        <strong>Dossier de match {selectedTask.matchRef}</strong>
+                        <em>Ouvrir la fiche de match ↗</em>
+                      </button>
+                    )}
+                    {selectedTask.caseRef && (
+                      <button
+                        type="button"
+                        className="ops-relation-callout"
+                        onClick={() => onSelect('crm', selectedTask.caseRef!)}
+                      >
+                        <span className="ops-rel-type">CRM / LITIGE</span>
+                        <strong>Dossier de réclamation {selectedTask.caseRef}</strong>
+                        <em>Inspecter le dossier CRM ↗</em>
+                      </button>
+                    )}
+                    {(selectedTask.relations || []).map((rel, idx) => (
+                      <div key={idx} className="ops-relation-callout generic">
+                        <span className="ops-rel-type">{rel.type}</span>
+                        <strong>{rel.label}</strong>
+                        <em>Cible : {rel.targetId}</em>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Historique horodaté */}
               <div className="ops-panel-box">
@@ -1131,5 +1225,6 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
         )}
       </main>
     </div>
+  </div>
   )
 }

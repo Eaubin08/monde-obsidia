@@ -51,3 +51,13 @@
 
 .u-object-actions{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid #1d3044;background:#091522}.u-object-actions:empty{display:none}.u-object-actions button{border:1px solid #294b69;background:#0d2134;color:#b8d2ea;border-radius:7px;padding:6px 9px;font-size:8.5px}.u-object-actions button:hover{border-color:#3f78a8;background:#12304c}
 .u-relation-link{width:100%;display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:10px;align-items:center;text-align:left;border:1px solid #1c3348;background:#0b1927;color:#c6d4e2;border-radius:8px;padding:9px;margin-top:7px}.u-relation-link:hover{border-color:#315f9f;background:#10243a}.u-relation-link span{font:8px ui-monospace,monospace;color:#6fb8f4}.u-relation-link strong{font-size:9px}.u-relation-link b{font-size:8px;color:#7f95aa}
+
+/* Passe UX: Grouped Navigation & Technical Toggle */
+.u-nav-group{margin-bottom:12px}
+.u-nav-group:last-child{margin-bottom:0}
+.u-nav-group-title{font-size:8.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#5c7591;padding:6px 10px 4px}
+.u-btn-tech-toggle{border:1px solid #1f364d!important;background:#091624!important;color:#7d96b0!important;font-size:10px!important;padding:6px 10px!important;transition:all .15s ease}
+.u-btn-tech-toggle:hover{background:#0e2236!important;color:#a4c0dc!important;border-color:#2b4969!important}
+.u-tech-details-container{margin-bottom:12px;padding:10px 12px;background:#060e17;border:1px dashed #1a2f44;border-radius:9px}
+.u-tech-details-container .u-contract-line,.u-tech-details-container .u-runtime-strip{margin-bottom:6px}
+.u-tech-details-container .u-runtime-strip:last-child{margin-bottom:0}

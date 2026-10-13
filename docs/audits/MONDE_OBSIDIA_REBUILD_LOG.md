@@ -203,5 +203,73 @@ Conformément à la directive du club (ne pas créer 19 copies plates de tableau
 2. L'accès Footclubs reste en procédure assistée manuelle (aucune API FFF publique n'existe à ce jour).
 3. Les effectifs nominatifs de joueurs et arbitres demeurent non inventés et marqués `UNKNOWN` jusqu'au raccordement d'une source officielle certifiée.
 
+---
+
+## TRANCHE UX — CSSA Public Ready (Harmonisation, Clarté & Ergonomie)
+
+- **Date d'exécution** : 13 octobre 2026
+- **Responsable** : Antigravity Agent
+- **Cible locale** : `C:\Users\Aubin\Desktop\OBSIDIA_WORLDS\monde-obsidia-git`
+- **Branche** : `main`
+
+---
+
+### 1. Objectifs de la tranche
+
+1. **Élimination du jargon technique brut de premier plan** :
+   - Masquage par défaut des bandeaux techniques développeur (`domain_id`, `adapter`, `contract`, et le bandeau d'état runtime `WORLD / STORE`).
+   - Intégration d'un bouton de bascule élégant `[⚙️ Détails techniques ▾]` / `[⚙️ Masquer technique ▴]` dans l'en-tête pour les auditeurs et développeurs, fermé par défaut.
+2. **Structuration de la navigation latérale en 4 sections fonctionnelles** :
+   - Regroupement des 14+ modules du CSSA sous des en-têtes explicites :
+     - `SPORTIF & TERRAIN` : Sportif, Matchday.
+     - `GESTION & OPÉRATIONS` : Administration, Tâches, CRM.
+     - `LE CLUB & VIE DU CLUB` : Organisation, Académie, Commercial, Finance.
+     - `TRANSPARENCE & VEILLE` : Dashboard, Sources, Tests / Simulation, Réalité terrain, Gouvernance, Projets, Reporting.
+3. **Barre de sous-navigation intégrée dans `CSSAOpsWorkspace`** :
+   - Ajout d'une barre d'onglets supérieure permettant de basculer instantanément entre :
+     - `📋 Tâches & Suivi` (`#cssa/tasks`)
+     - `🏛️ Administration Club` (`#cssa/admin`)
+     - `📁 Dossiers CRM` (`#cssa/crm`)
+     - `🚚 Intendance Matchday` (`#cssa/matchday`)
+   - Présentation claire des compteurs en temps réel et du contexte opérationnel actif.
+4. **Enrichissement des fiches de tâches et relations croisées** :
+   - Barre de progression visuelle (`ops-progress-track`, `ops-progress-fill`) calculant le pourcentage d'achèvement des checklists opérationnelles.
+   - Panneau dédié aux liaisons métier transversales (`Liaisons Métier & Relations`) avec boutons d'accès direct (`ops-relation-callout`) pour ouvrir la fiche de match correspondante (`#cssa/sportif/...`) ou inspecter le dossier CRM lié.
+5. **Maintien strict de l'intégrité fonctionnelle et épistémique** :
+   - Préservation intégrale des 87 tests existants (100% PASS).
+   - Zéro invention de données, respect des règles LGEF et séparation claire des fixtures.
+
+---
+
+### 2. Fichiers créés et modifiés
+
+#### Fichiers modifiés
+- `src/CSSAPage.tsx` : En-tête avec bascule technique rétractable `showTechDetails`, navigation groupée en 4 sections claires.
+- `src/CSSAPage.css` : Styles des groupes de navigation `.u-nav-group`, `.u-nav-group-title` et du conteneur technique rétractable.
+- `src/CSSAOpsWorkspace.tsx` : Intégration du bandeau d'onglets supérieur `ops-subnav-bar`, barre de progression des checklists, et panneau de liaisons transversales.
+- `src/CSSAOps.css` : Styles de la barre supérieure, boutons de sous-navigation, indicateur de progression et boutons de liaison métier.
+- `tests/cssa-ops.test.mjs` : Nettoyage des imports inutilisés.
+
+---
+
+### 3. Résultats des tests et vérifications
+
+| Commande | Résultat | Détail |
+|---|---|---|
+| `npm.cmd run build` | **PASS** | `tsc -b` (0 erreur TS) + Vite build (30 modules compilés en 188ms) |
+| `npm.cmd test` | **PASS** | 87 passés / 0 échoué |
+| `node --test tests/cssa-ops.test.mjs` | **PASS** | 6 passés / 0 échoué |
+| `node --test tests/cssa-sport.test.mjs` | **PASS** | 11 passés / 0 échoué |
+| `npm.cmd run lint` | **PASS** | 0 erreur oxlint |
+
+---
+
+### 4. Limites restantes pour les tranches futures
+
+1. Les interactions de mailing restent en mode gouverné `KX108_HOLD` (sécurité anti-émission accidentelle).
+2. L'accès Footclubs s'effectue sous protocole de double vérification manuelle sans API automatisée FFF.
+3. Les effectifs nominatifs de joueurs et arbitres demeurent non inventés et marqués `UNKNOWN` jusqu'au raccordement d'une source officielle certifiée.
+
+
 
 
