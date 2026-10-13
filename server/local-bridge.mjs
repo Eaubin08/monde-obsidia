@@ -6,6 +6,7 @@ import {projectC55LocalDiagnostic} from './universal-c55-diagnostic.mjs'
 import {terminalCommand,launchTerminal,focusTerminal,stopTerminal,terminalAlive} from './native-terminal.mjs'
 import {liveSnapshot,liveDirectory} from './live-events.mjs'
 import {buildObsidiaState} from './obsidia-state.mjs'
+import {readNativeEnterpriseView} from './native-enterprise-read.mjs'
 import {randomUUID} from 'node:crypto'
 import {execFileSync,spawn} from 'node:child_process'
 import {existsSync,realpathSync,readFileSync,readdirSync,statSync,appendFileSync,mkdirSync} from 'node:fs'
@@ -563,6 +564,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
    observedAt:new Date().toISOString()
   }));return
  }
+ if(req.method==='GET'&&url.pathname==='/native-enterprise'){res.end(JSON.stringify(readNativeEnterpriseView({repoRoot:repository()})));return}
  if(req.method==='GET'&&url.pathname==='/state'){
  const snap=snapshot(),live=liveSnapshot()
  live.sessions=(live.sessions||[]).map(s=>{
