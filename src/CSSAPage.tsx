@@ -3,6 +3,8 @@ import './CSSAPage.css'
 import './CSSASport.css'
 import CSSASportWorkspace from './CSSASportPage'
 import CSSAOpsWorkspace from './CSSAOpsWorkspace'
+import CSSAHomePage from './CSSAHomePage'
+import CSSAOrganisationPage from './CSSAOrganisationPage'
 
 type Semantic={purpose:string;context:string;observes:string;feeds:string;impact:string;limits:string}
 type SourceItem={id:string;title:string;url:string;truthClass:string;cadence:string;criticality:string;semantic:Semantic}
@@ -73,10 +75,11 @@ const structures:StructureDef[]=[
 {id:'dashboard',label:'Dashboard',icon:'dashboard'},{id:'sensors',label:'Sources capteurs',icon:'⌁'},{id:'gnss',label:'GNSS',icon:'⌖'},{id:'rf',label:'RF',icon:'⌁'},{id:'incidents',label:'Incidents',icon:'!'},{id:'classification',label:'Classification',icon:'◈'},{id:'evidence',label:'Evidence',icon:'▣'},{id:'governance',label:'Gouvernance',icon:'governance'},{id:'receipts',label:'Receipts',icon:'▤'},{id:'projects',label:'Projets',icon:'projects'},{id:'field',label:'Réalité terrain',icon:'field'}]}]
 
 const cssaNavSections: {title: string; moduleIds: string[]}[] = [
+  {title: 'ACCUEIL', moduleIds: ['dashboard']},
   {title: 'SPORTIF & TERRAIN', moduleIds: ['sportif', 'matchday']},
-  {title: 'GESTION & OPÉRATIONS', moduleIds: ['admin', 'tasks', 'crm']},
-  {title: 'LE CLUB & VIE DU CLUB', moduleIds: ['organisation', 'academy', 'commercial', 'finance']},
-  {title: 'TRANSPARENCE & VEILLE', moduleIds: ['dashboard', 'sources', 'tests', 'field', 'governance', 'projects', 'reporting']}
+  {title: 'OPÉRATIONS & RELATIONS', moduleIds: ['tasks', 'admin', 'crm', 'mail']},
+  {title: 'LE CLUB', moduleIds: ['organisation', 'academy', 'commercial', 'finance']},
+  {title: 'AUDIT & SOURCES', moduleIds: ['sources', 'field', 'governance', 'tests', 'projects', 'reporting']}
 ]
 
 const profiles:Record<StructureId,Profile>={
@@ -623,6 +626,14 @@ export default function CSSAPage(){
   ...(selected.kind==='source'?[{label:'Tests veille publique',module:'tests',id:'test:F3G-D',type:'SURVEILLÉ_PAR'}]:[]),
  ]:[]
  const statusTone=(v:string)=>v.toLowerCase().replaceAll(' ','-').replaceAll('/','-')
+ const moduleLabel=structure.modules.find(m=>m.id===moduleId)?.label||humanizeCode(moduleId)
+ const deepCrumbs=location.hash.startsWith('#cssa/'+moduleId+'/')
+  ? location.hash.slice(('#cssa/'+moduleId+'/').length).split('/').filter(Boolean).map(x=>decodeURIComponent(x))
+  : []
+ const crumbLabel=(value:string)=>{
+  if(/^r\d?-?j\d+/i.test(value)||/^u\d+/i.test(value))return humanizeCode(value.replaceAll('-','_'))
+  return humanizeCode(value)
+ }
 
  return <main className="u-shell">
   <aside className="u-sidebar">
@@ -671,7 +682,7 @@ export default function CSSAPage(){
 
   <section className="u-main">
    <header className="u-top">
-    <div><div className="u-breadcrumb"><a href="#cssa/dashboard">CSSA</a><span>›</span><strong>{structure.modules.find(m=>m.id===moduleId)?.label}</strong></div><h1>{moduleId==='dashboard'?'Dashboard ':''}{structure.name}</h1><p>{structure.subtitle}</p></div>
+    <div><div className="u-breadcrumb"><a href="#cssa/dashboard">CSSA</a><span>›</span>{deepCrumbs.length?<a href={'#cssa/'+moduleId}>{moduleLabel}</a>:<strong>{moduleLabel}</strong>}{deepCrumbs.map((part,index)=><span className="u-breadcrumb-deep" key={part+index}><span>›</span>{index===deepCrumbs.length-1?<strong>{crumbLabel(part)}</strong>:<a href={'#cssa/'+moduleId+'/'+deepCrumbs.slice(0,index+1).map(encodeURIComponent).join('/')}>{crumbLabel(part)}</a>}</span>)}</div><h1>{moduleId==='dashboard'&&structureId!=='cssa'?'Dashboard ':''}{structure.name}</h1><p>{structure.subtitle}</p></div>
     <div className="u-top-actions">
       <span className="u-badge">{structure.badge}</span>
       <button type="button" className="u-btn-tech-toggle" onClick={()=>setShowTechDetails(prev=>!prev)} title="Afficher/masquer les métriques techniques">
@@ -688,8 +699,12 @@ export default function CSSAPage(){
      </div>
    )}
 
-   {moduleId==='sportif'&&structureId==='cssa'?(
+   {moduleId==='dashboard'&&structureId==='cssa'?(
+    <CSSAHomePage contradictions={profile.contradictions} onOpen={(mod,id)=>openModule(mod,id||'')}/>
+   ):moduleId==='sportif'&&structureId==='cssa'?(
     <CSSASportWorkspace/>
+   ):moduleId==='organisation'&&structureId==='cssa'?(
+    <CSSAOrganisationPage items={items} selectedId={selectedId} onOpen={openItem} onClear={()=>openModule('organisation')}/>
    ):['admin','crm','tasks','matchday'].includes(moduleId)&&structureId==='cssa'?(
     <CSSAOpsWorkspace
       activeModule={moduleId as any}
