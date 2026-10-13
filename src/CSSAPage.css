@@ -61,3 +61,29 @@
 .u-tech-details-container{margin-bottom:12px;padding:10px 12px;background:#060e17;border:1px dashed #1a2f44;border-radius:9px}
 .u-tech-details-container .u-contract-line,.u-tech-details-container .u-runtime-strip{margin-bottom:6px}
 .u-tech-details-container .u-runtime-strip:last-child{margin-bottom:0}
+
+/* UX2: navigation publique, breadcrumb profond et densité responsive */
+.u-breadcrumb-deep{display:inline-flex;align-items:center;gap:7px}
+.u-breadcrumb-deep a{color:#64aef8;text-decoration:none}
+@media(max-width:1366px){
+  .u-shell{grid-template-columns:220px minmax(0,1fr)}
+  .u-main{padding:14px 15px 22px}
+  .u-nav a,.u-switch button{padding:8px}
+  .u-workspace{grid-template-columns:minmax(300px,380px) minmax(0,1fr);height:auto;min-height:0}
+}
+@media(max-width:1024px){
+  .u-shell{grid-template-columns:190px minmax(0,1fr)}
+  .u-sidebar{top:60px;max-height:calc(100vh - 60px)}
+  .u-main{padding:12px}
+  .u-workspace{grid-template-columns:1fr;height:auto;min-height:0}
+  .u-list-pane,.u-inspector{min-height:0}
+  .u-top{gap:10px;flex-wrap:wrap}
+}
+@media(max-width:760px){
+  .u-shell{display:block}
+  .u-sidebar{position:static;max-height:none;min-height:0}
+  .u-nav{display:block}
+  .u-nav-group{margin-bottom:8px}
+  .u-top-actions{flex-wrap:wrap}
+  .u-breadcrumb{flex-wrap:wrap}
+}
