@@ -15,6 +15,33 @@ type StructureId='cssa'|'trading'|'gps'
 type ModuleDef={id:string;label:string;icon:string;kindFilter?:string[]}
 type StructureDef={id:StructureId;name:string;subtitle:string;badge:string;modules:ModuleDef[]}
 
+function UiIcon({name}:{name:string}){
+ const p:Record<string,string>={
+  dashboard:'M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z',
+  organisation:'M4 21v-8h6v8M14 21V9h6v12M7 9V5h10v4',
+  sportif:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 0 3 5-3 4-3-4 3-5Zm-9 9 6-1 3 4-2 6M21 12l-6-1-3 4 2 6',
+  academy:'M4 10 12 5l8 5-8 5-8-5Zm3 3v4c3 2 7 2 10 0v-4',
+  commercial:'M4 7h16v12H4zM8 7V5h8v2M8 12h8',
+  source:'M5 5h14v14H5zM8 9h8M8 13h8',
+  crm:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0',
+  task:'M5 6h14v15H5zM8 3h8v4H8zM8 12l2 2 5-5',
+  admin:'M4 21V8l8-5 8 5v13M9 21v-7h6v7',
+  mail:'M3 6h18v12H3zM3 7l9 7 9-7',
+  reporting:'M5 20V10M12 20V4M19 20v-7',
+  matchday:'M12 3v18M3 12h18M5 5l14 14M19 5 5 19',
+  finance:'M12 3v18M16 7h-6a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H8',
+  governance:'M12 3l8 4v5c0 5-3.4 8-8 9-4.6-1-8-4-8-9V7l8-4Z',
+  projects:'M4 7h6l2 2h8v10H4z',
+  field:'M12 21s7-5 7-11a7 7 0 1 0-14 0c0 6 7 11 7 11Zm0-8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
+  search:'M11 19a8 8 0 1 1 5.7-2.3L22 22',
+  refresh:'M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7',
+  link:'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2',
+  chevron:'m9 18 6-6-6-6'
+ }
+ return <svg className="u-svg" viewBox="0 0 24 24" aria-hidden="true"><path d={p[name]||p.chevron}/></svg>
+}
+
+
 const cssaSources:SourceItem[]=[
 {id:'CSSA_HOME',title:'CSSA – Site officiel',url:'https://cs-sedan.fr/',truthClass:'PUBLIC_CONFIRMED',cadence:'WEEKLY',criticality:'MEDIUM',semantic:{purpose:'Point d’entrée public général du club.',context:'Source officielle utilisée pour suivre annonces et informations institutionnelles publiques.',observes:'Actualités, annonces et informations institutionnelles.',feeds:'Veille publique, reporting, revue administrative.',impact:'Peut déclencher une revue si un changement public important est détecté.',limits:'Ne prouve pas le fonctionnement interne réel du club.'}},
 {id:'CSSA_ORGANIGRAMME_ASSOCIATION',title:'Organigramme association',url:'https://cs-sedan.fr/organigramme-association',truthClass:'PUBLIC_CONFIRMED',cadence:'WEEKLY',criticality:'HIGH',semantic:{purpose:'Suivre la structure dirigeante et administrative publiée.',context:'Référence publique pour les rôles affichés par le club.',observes:'Dirigeants, fonctions et changements d’organigramme.',feeds:'Administration, CRM organisation, revue des responsables.',impact:'Peut modifier les interlocuteurs ou responsabilités supposées.',limits:'Ne prouve ni droits réels, ni délégations informelles, ni accès outils.'}},
@@ -34,11 +61,11 @@ const cssaSources:SourceItem[]=[
 
 const structures:StructureDef[]=[
 {id:'cssa',name:'CSSA',subtitle:'Club Sportif Sedan Ardennes',badge:'KX108_ONLY',modules:[
-{id:'dashboard',label:'Dashboard',icon:'⌂'},{id:'organisation',label:'Organisation',icon:'◫'},{id:'sportif',label:'Sportif',icon:'◉'},{id:'academy',label:'Académie',icon:'◇'},{id:'commercial',label:'Commercial',icon:'◆'},{id:'sources',label:'Sources',icon:'◔'},{id:'crm',label:'CRM',icon:'♙',kindFilter:['case','interaction','followup','relationship']},{id:'tasks',label:'Tâches',icon:'☑',kindFilter:['task']},{id:'admin',label:'Administration',icon:'⚙'},{id:'mail',label:'Mail',icon:'✉'},{id:'reporting',label:'Reporting',icon:'▤'},{id:'matchday',label:'Matchday',icon:'◈'},{id:'finance',label:'Finance',icon:'◉'},{id:'governance',label:'Gouvernance',icon:'◫',kindFilter:['decision','receipt']},{id:'projects',label:'Projets',icon:'▱'},{id:'field',label:'Réalité terrain',icon:'◇'}]},
+{id:'dashboard',label:'Dashboard',icon:'dashboard'},{id:'organisation',label:'Organisation',icon:'organisation'},{id:'sportif',label:'Sportif',icon:'sportif'},{id:'academy',label:'Académie',icon:'academy'},{id:'commercial',label:'Commercial',icon:'commercial'},{id:'sources',label:'Sources',icon:'source'},{id:'crm',label:'CRM',icon:'crm',kindFilter:['case','interaction','followup','relationship']},{id:'tasks',label:'Tâches',icon:'task',kindFilter:['task']},{id:'admin',label:'Administration',icon:'admin'},{id:'mail',label:'Mail',icon:'mail'},{id:'reporting',label:'Reporting',icon:'reporting'},{id:'matchday',label:'Matchday',icon:'matchday'},{id:'finance',label:'Finance',icon:'finance'},{id:'governance',label:'Gouvernance',icon:'governance',kindFilter:['decision','receipt']},{id:'projects',label:'Projets',icon:'projects'},{id:'field',label:'Réalité terrain',icon:'field'}]},
 {id:'trading',name:'Trading',subtitle:'Domaine trading gouverné',badge:'PAPER ONLY',modules:[
-{id:'dashboard',label:'Dashboard',icon:'⌂'},{id:'market',label:'Market data',icon:'◉'},{id:'signals',label:'Signaux',icon:'⌁'},{id:'strategies',label:'Stratégies',icon:'◇'},{id:'risk',label:'Risk',icon:'△'},{id:'paper',label:'Paper execution',icon:'↗'},{id:'reporting',label:'Reporting',icon:'▤'},{id:'governance',label:'Gouvernance',icon:'◫'},{id:'proof',label:'Proof / receipts',icon:'▣'},{id:'projects',label:'Projets',icon:'▱'}]},
+{id:'dashboard',label:'Dashboard',icon:'dashboard'},{id:'market',label:'Market data',icon:'◉'},{id:'signals',label:'Signaux',icon:'⌁'},{id:'strategies',label:'Stratégies',icon:'◇'},{id:'risk',label:'Risk',icon:'△'},{id:'paper',label:'Paper execution',icon:'↗'},{id:'reporting',label:'Reporting',icon:'reporting'},{id:'governance',label:'Gouvernance',icon:'governance'},{id:'proof',label:'Proof / receipts',icon:'▣'},{id:'projects',label:'Projets',icon:'projects'}]},
 {id:'gps',name:'GPS / Défense',subtitle:'GNSS · RF · aviation',badge:'RECORDED REAL',modules:[
-{id:'dashboard',label:'Dashboard',icon:'⌂'},{id:'sensors',label:'Sources capteurs',icon:'⌁'},{id:'gnss',label:'GNSS',icon:'⌖'},{id:'rf',label:'RF',icon:'⌁'},{id:'incidents',label:'Incidents',icon:'!'},{id:'classification',label:'Classification',icon:'◈'},{id:'evidence',label:'Evidence',icon:'▣'},{id:'governance',label:'Gouvernance',icon:'◫'},{id:'receipts',label:'Receipts',icon:'▤'},{id:'projects',label:'Projets',icon:'▱'},{id:'field',label:'Réalité terrain',icon:'◇'}]},
+{id:'dashboard',label:'Dashboard',icon:'dashboard'},{id:'sensors',label:'Sources capteurs',icon:'⌁'},{id:'gnss',label:'GNSS',icon:'⌖'},{id:'rf',label:'RF',icon:'⌁'},{id:'incidents',label:'Incidents',icon:'!'},{id:'classification',label:'Classification',icon:'◈'},{id:'evidence',label:'Evidence',icon:'▣'},{id:'governance',label:'Gouvernance',icon:'governance'},{id:'receipts',label:'Receipts',icon:'▤'},{id:'projects',label:'Projets',icon:'projects'},{id:'field',label:'Réalité terrain',icon:'field'}]},
 ]
 
 const profiles:Record<StructureId,Profile>={
@@ -355,7 +382,8 @@ function semanticMetaItem(kind:'unknown'|'risk'|'contradiction'|'evidence',value
 
 export default function CSSAPage(){
  const [structureId,setStructureId]=useState<StructureId>('cssa')
- const [moduleId,setModuleId]=useState('dashboard')
+ const initialSection=location.hash.startsWith('#cssa/')?location.hash.split('/')[1]||'dashboard':'dashboard'
+ const [moduleId,setModuleId]=useState(initialSection)
  const [world,setWorld]=useState<WorldState|null>(null)
  const [native,setNative]=useState<NativeReadModel|null>(null)
  const [query,setQuery]=useState('')
@@ -383,6 +411,7 @@ export default function CSSAPage(){
   }finally{setRefreshing(false)}
  }
  useEffect(()=>{refresh();const t=window.setInterval(refresh,5000);return()=>window.clearInterval(t)},[])
+ useEffect(()=>{const onHash=()=>{if(!location.hash.startsWith('#cssa'))return;const next=location.hash.split('/')[1]||'dashboard';if(structure.modules.some(m=>m.id===next))setModuleId(next)};window.addEventListener('hashchange',onHash);return()=>window.removeEventListener('hashchange',onHash)},[structure])
 
  const observedSources=useMemo(()=>entities.filter(e=>e.kind==='source'),[entities])
  const nativeByModule=useMemo(()=>{
@@ -443,7 +472,7 @@ export default function CSSAPage(){
   return catalogueItems[structureId][id]?.length??0
  }
 
- const switchStructure=(id:StructureId)=>{setStructureId(id);setModuleId('dashboard');setSelectedId('');setQuery('');setTab('overview');setDashboardMode('capabilities')}
+ const switchStructure=(id:StructureId)=>{setStructureId(id);setModuleId('dashboard');setSelectedId('');setQuery('');setTab('overview');setDashboardMode('capabilities');location.hash='cssa/dashboard'}
  const addProject=()=>{const title=projectName.trim();if(!title)return;setProjects(prev=>({...prev,[structureId]:[...prev[structureId],{id:'project:'+Date.now(),title,status:'LOCAL'}]}));setProjectName('')}
 
  const relations=selected&&native?.relations?native.relations.filter(r=>r.from===selected.id||r.to===selected.id):[]
@@ -454,14 +483,14 @@ export default function CSSAPage(){
   <aside className="u-sidebar">
    <div className="u-brand"><span>◆</span><div><strong>OBSIDIA</strong><small>Écosystème IA universel</small></div></div>
    <div className="u-context-card"><small>STRUCTURE ACTUELLE</small><strong>{structure.name}</strong><span>{structure.subtitle}</span><em>{native?.available?'● connecté':'○ readonly'}</em></div>
-   <nav className="u-nav">{structure.modules.map(m=><button key={m.id} className={moduleId===m.id?'active':''} onClick={()=>{setModuleId(m.id);setSelectedId('');setTab('overview')}}><span>{m.icon}</span><strong>{m.label}</strong>{moduleCount(m.id)>0&&<b>{moduleCount(m.id)}</b>}</button>)}</nav>
-   <div className="u-switch"><small>CHANGER DE STRUCTURE</small>{structures.map(s=><button key={s.id} className={structureId===s.id?'active':''} onClick={()=>switchStructure(s.id)}><span>◆</span>{s.name}</button>)}</div>
+   <nav className="u-nav">{structure.modules.map(m=><a key={m.id} href={'#cssa/'+m.id} className={moduleId===m.id?'active':''} onClick={()=>{setModuleId(m.id);setSelectedId('');setTab('overview')}}><span><UiIcon name={m.icon}/></span><strong>{m.label}</strong>{moduleCount(m.id)>0&&<b>{moduleCount(m.id)}</b>}</a>)}</nav>
+   <div className="u-switch"><small>CHANGER DE STRUCTURE</small>{structures.map(s=><button key={s.id} className={structureId===s.id?'active':''} onClick={()=>switchStructure(s.id)}><span><UiIcon name={s.id==='trading'?'reporting':s.id==='gps'?'field':'organisation'}/></span>{s.name}</button>)}</div>
   </aside>
 
   <section className="u-main">
    <header className="u-top">
-    <div><h1>{moduleId==='dashboard'?'Dashboard ':''}{structure.name}</h1><p>{structure.subtitle}</p></div>
-    <div className="u-top-actions"><span className="u-badge">{structure.badge}</span><button onClick={refresh} disabled={refreshing}>{refreshing?'Lecture…':'Rafraîchir'}</button></div>
+    <div><div className="u-breadcrumb"><a href="#cssa/dashboard">CSSA</a><span>›</span><strong>{structure.modules.find(m=>m.id===moduleId)?.label}</strong></div><h1>{moduleId==='dashboard'?'Dashboard ':''}{structure.name}</h1><p>{structure.subtitle}</p></div>
+    <div className="u-top-actions"><span className="u-badge">{structure.badge}</span><button onClick={refresh} disabled={refreshing}><UiIcon name="refresh"/>{refreshing?'Lecture…':'Rafraîchir'}</button></div>
    </header>
 
    <div className="u-contract-line"><span>domain_id <b>{profile.domainId}</b></span><span>adapter <b>{profile.adapterId}</b></span><span>contract <b>{profile.contract}</b></span><span>source <a href={profile.sourceUrl} target="_blank" rel="noreferrer">{profile.source} ↗</a></span></div>
@@ -478,7 +507,7 @@ export default function CSSAPage(){
      </div>
      {structureId==='cssa'&&<section className="u-mini-panel u-club-snapshot"><header><h3>Club public 2026–2027</h3><b>19</b></header>
       <div className="u-club-metrics"><span><strong>R1</strong><small>Équipe première</small></span><span><strong>R2</strong><small>Réserve</small></span><span><strong>800</strong><small>Abonnés officiel</small></span><span><strong>50+</strong><small>Partenaires</small></span></div>
-      <button onClick={()=>{setModuleId('organisation');setSelectedId('org-overview')}}>Explorer l’organisation →</button>
+      <button onClick={()=>{location.hash='cssa/organisation';setModuleId('organisation');setSelectedId('org-overview')}}>Explorer l’organisation →</button>
      </section>}
      <section className="u-mini-panel"><header><h3>Runtime réel</h3><b>{liveServices.length}</b></header>{liveServices.length?liveServices.map(s=><div className="u-runtime-row" key={s.id}><span className={'dot '+(s.observedState==='READY'?'ready':'')}></span><strong>{s.label}</strong><small>{String(s.observedState||s.phase||'OBSERVED')}</small></div>):<p>Aucun service natif observé pour cette structure.</p>}</section>
      <section className="u-mini-panel"><header><h3>Décisions observées</h3><b>{decisions.length}</b></header>{decisions.slice(0,4).map(d=><div className="u-compact-row" key={d.id}><strong>{d.label}</strong><small>{String(d.gate||d.status||'OBSERVED')}</small></div>)}{!decisions.length&&<p>Aucun record local correspondant au domaine.</p>}</section>
@@ -513,17 +542,17 @@ export default function CSSAPage(){
    </div>:<div className="u-workspace">
     <section className="u-list-pane">
      <header><div><small>{structure.name.toUpperCase()} · {moduleId.toUpperCase()}</small><h2>{structure.modules.find(m=>m.id===moduleId)?.label}</h2></div><span>{items.length}</span></header>
-     {moduleId==='projects'?<div className="u-project-create"><input value={projectName} onChange={e=>setProjectName(e.target.value)} placeholder="Nom du projet local"/><button onClick={addProject}>+ Ajouter</button></div>:<div className="u-search"><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher dans cette vue…"/></div>}
-     <div className="u-list">{items.map(item=><button key={item.id} className={selectedId===item.id?'active':''} onClick={()=>{setSelectedId(item.id);setTab('overview')}}><span className="u-item-icon">{item.kind==='source'?'◔':item.kind==='task'?'☑':item.kind==='case'?'♙':'◆'}</span><span className="u-item-copy"><strong>{item.title}</strong><small>{item.subtitle}</small></span><span className={'u-status '+statusTone(item.status)}>{item.status}</span></button>)}{!items.length&&<div className="u-empty"><strong>Aucun objet observé</strong><p>La vue reste vide plutôt que d’inventer des données.</p></div>}</div>
+     {moduleId==='projects'?<div className="u-project-create"><input value={projectName} onChange={e=>setProjectName(e.target.value)} placeholder="Nom du projet local"/><button onClick={addProject}>+ Ajouter</button></div>:<div className="u-search"><span><UiIcon name="search"/></span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher dans cette vue…"/></div>}
+     <div className="u-list">{items.map(item=><button key={item.id} className={selectedId===item.id?'active':''} onClick={()=>{setSelectedId(item.id);setTab('overview')}}><span className="u-item-icon"><UiIcon name={item.kind==='source'?'source':item.kind==='task'?'task':item.kind==='case'?'crm':item.kind==='team'?'sportif':item.kind==='role'?'organisation':item.kind==='commercial'?'commercial':item.kind==='finance'?'finance':'organisation'}/></span><span className="u-item-copy"><strong>{item.title}</strong><small>{item.subtitle}</small></span><span className={'u-status '+statusTone(item.status)}>{item.status}</span></button>)}{!items.length&&<div className="u-empty"><strong>Aucun objet observé</strong><p>La vue reste vide plutôt que d’inventer des données.</p></div>}</div>
     </section>
 
     <aside className="u-inspector">
      {selected?<>
-      <header><div><small>{selected.kind.toUpperCase()}</small><h2>{selected.title}</h2><p>{selected.subtitle}</p></div><span className={'u-badge '+statusTone(selected.status)}>{selected.status}</span></header>
-      <div className="u-tabs"><button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}>Vue d’ensemble</button><button className={tab==='history'?'active':''} onClick={()=>setTab('history')}>Historique</button><button className={tab==='relations'?'active':''} onClick={()=>setTab('relations')}>Relations ({relations.length})</button></div>
+      <header className="u-detail-hero"><span className="u-detail-icon"><UiIcon name={selected.kind==='source'?'source':selected.kind==='team'?'sportif':selected.kind==='role'?'organisation':selected.kind==='commercial'?'commercial':selected.kind==='finance'?'finance':selected.kind==='task'?'task':selected.kind==='case'?'crm':'organisation'}/></span><div><small>{selected.kind.toUpperCase()}</small><h2>{selected.title}</h2><p>{selected.subtitle}</p></div><span className={'u-badge '+statusTone(selected.status)}>{selected.status}</span></header>
+      <div className="u-tabs"><button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}>Vue d’ensemble</button><button className={tab==='history'?'active':''} onClick={()=>setTab('history')}>Historique</button><button className={tab==='relations'?'active':''} onClick={()=>setTab('relations')}>Liens & relations ({relations.length})</button></div>
       {tab==='overview'&&<>
-       <section className="u-info"><h3>Informations générales</h3><dl><div><dt>But</dt><dd>{selected.semantic.purpose}</dd></div><div><dt>Contexte</dt><dd>{selected.semantic.context}</dd></div><div><dt>Ce qu’on observe</dt><dd>{selected.semantic.observes}</dd></div><div><dt>Alimente</dt><dd>{selected.semantic.feeds}</dd></div><div><dt>Impact possible</dt><dd>{selected.semantic.impact}</dd></div><div className="limit"><dt>Limite</dt><dd>{selected.semantic.limits}</dd></div></dl></section>
-       {selected.meta&&<section className="u-meta"><h3>Métadonnées</h3>{Object.entries(selected.meta).map(([k,v])=><div key={k}><small>{k}</small>{k==='URL'?<a href={v} target="_blank" rel="noreferrer">{v} ↗</a>:<strong>{v}</strong>}</div>)}</section>}
+       <div className="u-overview-grid"><section className="u-info"><h3>Informations générales</h3><dl><div><dt>But</dt><dd>{selected.semantic.purpose}</dd></div><div><dt>Contexte</dt><dd>{selected.semantic.context}</dd></div><div><dt>Ce qu’on observe</dt><dd>{selected.semantic.observes}</dd></div><div><dt>Alimente</dt><dd>{selected.semantic.feeds}</dd></div><div><dt>Impact possible</dt><dd>{selected.semantic.impact}</dd></div><div className="limit"><dt>Limite</dt><dd>{selected.semantic.limits}</dd></div></dl></section>
+       {selected.meta&&<section className="u-meta u-meta-side"><h3>Fiche objet</h3>{Object.entries(selected.meta).map(([k,v])=><div key={k}><small>{k}</small>{k==='URL'?<a href={v} target="_blank" rel="noreferrer">{v} ↗</a>:<strong>{v}</strong>}</div>)}</section>}</div>
        {selected.kind==='source'&&selected.meta?.URL&&<div className="u-real-link-row"><a href={selected.meta.URL} target="_blank" rel="noreferrer">Ouvrir la source réelle ↗</a></div>}{selected.raw?<section className="u-observation"><h3>Dernière observation</h3><div className="u-observation-head"><span className="obs-ok">✓</span><div><small>STATUT</small><strong>{String(selected.raw.verification||selected.raw.status||selected.raw.gate||'OBSERVED')}</strong></div><div><small>OBSERVÉ</small><strong>{String(selected.raw.observed_at||selected.raw.observedAt||'persisté')}</strong></div></div><div className="u-meta compact">{Object.entries(selected.raw).filter(([k])=>!['label'].includes(k)).slice(0,12).map(([k,v])=><div key={k}><small>{k}</small><strong>{String(v??'—')}</strong></div>)}</div></section>:structureId==='cssa'&&selected.kind==='source'&&<section className="u-notice"><strong>CATALOGUE · PAS ENCORE OBSERVÉ</strong><p>Le contexte est documenté, mais aucune capture native correspondante n’est encore persistée.</p></section>}
       </>}
       {tab==='history'&&<section className="u-info"><h3>Historique observable</h3>{historyRows.length?historyRows.map(([k,v])=><div className="u-history-row" key={k}><small>{k}</small><strong>{String(v??'—')}</strong></div>):<p>Aucun historique persistant exposé par le read model pour cet objet.</p>}</section>}
