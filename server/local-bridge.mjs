@@ -7,6 +7,7 @@ import {terminalCommand,launchTerminal,focusTerminal,stopTerminal,terminalAlive}
 import {liveSnapshot,liveDirectory} from './live-events.mjs'
 import {buildObsidiaState} from './obsidia-state.mjs'
 import {readNativeEnterpriseView} from './native-enterprise-read.mjs'
+import {readCssaSportWatch} from './cssa-sport-watch.mjs'
 import {randomUUID} from 'node:crypto'
 import {execFileSync,spawn} from 'node:child_process'
 import {existsSync,realpathSync,readFileSync,readdirSync,statSync,appendFileSync,mkdirSync} from 'node:fs'
@@ -565,6 +566,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   }));return
  }
  if(req.method==='GET'&&url.pathname==='/native-enterprise'){res.end(JSON.stringify(readNativeEnterpriseView({repoRoot:repository()})));return}
+ if(req.method==='GET'&&url.pathname==='/cssa-sport-watch'){res.end(JSON.stringify(await readCssaSportWatch({force:url.searchParams.get('force')==='1'})));return}
  if(req.method==='GET'&&url.pathname==='/state'){
  const snap=snapshot(),live=liveSnapshot()
  live.sessions=(live.sessions||[]).map(s=>{
