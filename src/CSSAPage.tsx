@@ -34,7 +34,7 @@ const cssaSources:SourceItem[]=[
 
 const structures:StructureDef[]=[
 {id:'cssa',name:'CSSA',subtitle:'Club Sportif Sedan Ardennes',badge:'KX108_ONLY',modules:[
-{id:'dashboard',label:'Dashboard',icon:'⌂'},{id:'sources',label:'Sources',icon:'◔'},{id:'crm',label:'CRM',icon:'♙',kindFilter:['case','interaction','followup','relationship']},{id:'tasks',label:'Tâches',icon:'☑',kindFilter:['task']},{id:'admin',label:'Administration',icon:'⚙'},{id:'mail',label:'Mail',icon:'✉'},{id:'reporting',label:'Reporting',icon:'▤'},{id:'matchday',label:'Matchday',icon:'◈'},{id:'finance',label:'Finance',icon:'◉'},{id:'governance',label:'Gouvernance',icon:'◫',kindFilter:['decision','receipt']},{id:'projects',label:'Projets',icon:'▱'},{id:'field',label:'Réalité terrain',icon:'◇'}]},
+{id:'dashboard',label:'Dashboard',icon:'⌂'},{id:'organisation',label:'Organisation',icon:'◫'},{id:'sportif',label:'Sportif',icon:'◉'},{id:'academy',label:'Académie',icon:'◇'},{id:'commercial',label:'Commercial',icon:'◆'},{id:'sources',label:'Sources',icon:'◔'},{id:'crm',label:'CRM',icon:'♙',kindFilter:['case','interaction','followup','relationship']},{id:'tasks',label:'Tâches',icon:'☑',kindFilter:['task']},{id:'admin',label:'Administration',icon:'⚙'},{id:'mail',label:'Mail',icon:'✉'},{id:'reporting',label:'Reporting',icon:'▤'},{id:'matchday',label:'Matchday',icon:'◈'},{id:'finance',label:'Finance',icon:'◉'},{id:'governance',label:'Gouvernance',icon:'◫',kindFilter:['decision','receipt']},{id:'projects',label:'Projets',icon:'▱'},{id:'field',label:'Réalité terrain',icon:'◇'}]},
 {id:'trading',name:'Trading',subtitle:'Domaine trading gouverné',badge:'PAPER ONLY',modules:[
 {id:'dashboard',label:'Dashboard',icon:'⌂'},{id:'market',label:'Market data',icon:'◉'},{id:'signals',label:'Signaux',icon:'⌁'},{id:'strategies',label:'Stratégies',icon:'◇'},{id:'risk',label:'Risk',icon:'△'},{id:'paper',label:'Paper execution',icon:'↗'},{id:'reporting',label:'Reporting',icon:'▤'},{id:'governance',label:'Gouvernance',icon:'◫'},{id:'proof',label:'Proof / receipts',icon:'▣'},{id:'projects',label:'Projets',icon:'▱'}]},
 {id:'gps',name:'GPS / Défense',subtitle:'GNSS · RF · aviation',badge:'RECORDED REAL',modules:[
@@ -89,13 +89,174 @@ function mk(id:string,title:string,subtitle:string,kind:string,status:string,pur
  return {id,title,subtitle,kind,status,semantic:{...base,purpose}}
 }
 
+
+const cssaOrganisationItems:ViewItem[]=[
+ mkRich('org-overview','Organisation publique CSSA','19 structures d’équipes · saison 2026–2027','organisation','PUBLIC_CONFIRMED',
+  'Donner une vue structurée du club tel qu’il est publiquement documenté.',
+  'Le modèle public CSSA couvre 19 structures d’équipes et plusieurs pôles administratifs. Il ne constitue pas un audit interne.',
+  'Équipes, pôles, rôles publics, niveaux de compétition et liens métier.',
+  'Sportif, académie, matchday, administration, finance, reporting.',
+  'Permet de naviguer dans le club comme une organisation multi-pôles.',
+  'Les responsables réels, accès, handoffs et pratiques internes restent non audités.',
+  {'Saison':'2026–2027','Structures équipes':'19','Statut':'PUBLIC_ONLY_NOT_FIELD_VALIDATED'}),
+ ...[
+  ['SENIORS_R1','Seniors R1','SENIORS_POST_FORMATION','REGIONAL_1_A'],
+  ['SENIORS_R2','Seniors R2','SENIORS_POST_FORMATION','REGIONAL_2_A'],
+  ['U20_R1','U20 R1','SENIORS_POST_FORMATION','U20_R1'],
+  ['U17_R1','U17 R1','FORMATION','U17_R1'],
+  ['U16_R1','U16 R1','FORMATION','U16_R1'],
+  ['U15_R1','U15 R1','FORMATION','U15_R1'],
+  ['U15_D1','U15 D1','FORMATION_PREFORMATION','DISTRICT_D1'],
+  ['SENIORS_F','Seniors féminines','FEMININES','R2_F_CENTRE_OUEST'],
+  ['U18F_R2','U18 F R2','FEMININES','U18_R2_F'],
+  ['U13_FANION','U13 Fanion','FOOT_8','U13_D1'],
+  ['U13_U12_ESPOIR','U13/U12 Espoir','FOOT_8','U13_D2'],
+  ['U12_AVENIR','U12 Avenir','FOOT_8','DISTRICT_PHASES'],
+  ['U11_FANION','U11 Fanion','FOOT_8','PLATEAUX'],
+  ['U11_U10_ESPOIR','U11/U10 Espoir','FOOT_8','PLATEAUX'],
+  ['U10_AVENIR','U10 Avenir','FOOT_8','PLATEAUX'],
+  ['U9','U9','FOOT_5','PLATEAUX'],
+  ['U8','U8','FOOT_5','PLATEAUX'],
+  ['U7','U7','FOOT_5','PLATEAUX'],
+  ['U6','U6','FOOT_5','PLATEAUX'],
+ ].map(([id,label,tier,competition])=>mkRich(
+   'team:'+id,label,competition,'team','PUBLIC_CONFIRMED',
+   'Représenter une structure sportive publique du club.',
+   'Équipe identifiée dans le modèle public CSSA 2026–2027.',
+   'Catégorie, niveau sportif et compétition publique associée.',
+   'Calendrier, matchday, transport, licences, reporting.',
+   'Permet de rattacher les opérations du club à une équipe précise.',
+   'Ne prouve pas le staff réel, le budget, les disponibilités ou la logistique interne.',
+   {'Team ID':id,'Tier':tier,'Compétition':competition,'Saison':'2026–2027'}
+ )),
+ ...[
+  'PRESIDENT','GENERAL_MANAGER','TECHNICAL_DIRECTOR','ADMINISTRATIVE_MANAGER','TREASURY_ADMINISTRATION','CLUB_SECRETARIAT','PARTNERSHIPS','MERCHANDISING','COMMUNICATION','MATCHDAY_ORGANIZATION_EVENTS','MATCHDAY_SECURITY'
+ ].map(role=>mkRich(
+  'role:'+role,humanizeCode(role),'Rôle public / slot organisationnel','role','PUBLIC_CONFIRMED',
+  'Décrire un rôle stable de l’organisation sans figer une personne comme vérité durable.',
+  'Le profil public modélise les fonctions comme des slots organisationnels ; les occupants publics peuvent changer.',
+  'Fonction attendue et place dans l’organisation.',
+  'Administration, CRM, validation, reporting et opérations selon le rôle.',
+  'Aide à comprendre qui devrait porter quel type de responsabilité.',
+  'Ne prouve pas qui occupe réellement le rôle aujourd’hui ni quels droits lui sont effectivement délégués.',
+  {'Role slot':role,'Identité figée':'false'}
+ ))
+]
+
+const cssaSportItems:ViewItem[]=[
+ mkRich('sport-r1','Groupe Seniors R1','REGIONAL_1_A · 14 clubs','sport','SECONDARY_CORROBORATED',
+  'Suivre le contexte de compétition de l’équipe première.',
+  'Groupe R1 A corroboré par des sources sportives secondaires.',
+  'Clubs du groupe, nombre de matchs et déplacements.',
+  'Matchday, calendrier, transport et reporting.',
+  'Structure la saison sportive publique de l’équipe première.',
+  'Une source secondaire ne constitue pas l’autorité officielle de compétition.',
+  {'Championnat':'REGIONAL_1_A','Clubs':'14','Matchs championnat':'26','Matchs extérieurs':'13'}),
+ mkRich('sport-r2','Groupe Seniors R2','REGIONAL_2_A · 12 clubs','sport','SECONDARY_CORROBORATED',
+  'Suivre le contexte de compétition de la réserve.',
+  'Groupe R2 A corroboré par les sources publiques actuelles.',
+  'Clubs du groupe, nombre de matchs et déplacements.',
+  'Matchday, calendrier, transport et reporting.',
+  'Permet de distinguer la réserve actuelle des anciennes étiquettes publiques.',
+  'La contradiction R3/R2 doit rester visible tant que les sources ne sont pas réconciliées.',
+  {'Championnat':'REGIONAL_2_A','Clubs':'12','Matchs championnat':'22','Matchs extérieurs':'11'}),
+ mkRich('sport-distance','Déplacements saison','22 000–36 250 km-équipe','sport','ESTIMATED',
+  'Donner un ordre de grandeur des déplacements sportifs de la saison.',
+  'Estimation explicite de kilomètres aller-retour équipe, non multipliée par le nombre de véhicules.',
+  'Fourchettes de distance par équipe.',
+  'Transport, budget scénario et planification.',
+  'Aide à dimensionner les contraintes logistiques.',
+  'Ce n’est ni du kilométrage véhicule réel ni de la comptabilité CSSA.',
+  {'Total scénario':'22 000–36 250 km','Nature':'ESTIMATED'})
+]
+
+const cssaAcademyItems:ViewItem[]=cssaOrganisationItems.filter(x=>x.id.startsWith('team:')&&['FORMATION','FORMATION_PREFORMATION','FOOT_8','FOOT_5','FEMININES'].includes(String(x.meta?.Tier||'')))
+
+const cssaCommercialItems:ViewItem[]=[
+ mkRich('commercial-partners','Partenaires actifs','50+ partenaires publics','commercial','PUBLIC_CONFIRMED',
+  'Suivre l’écosystème partenaire publiquement revendiqué.',
+  'Le club communique sur plus de 50 partenaires actifs.',
+  'Volume public de partenaires et présence commerciale.',
+  'Partenariats, hospitalité, reporting et communication.',
+  'Donne une idée de la surface commerciale publique du club.',
+  'Le nombre de partenaires ne permet pas d’inférer le revenu partenaire.',
+  {'Partenaires':'50+','Revenu partenaires':'UNKNOWN_PRIVATE'}),
+ mkRich('commercial-subscribers','Abonnés 2026–2027','800 officiels · 855 secondaire','commercial','PUBLIC_CONFIRMED',
+  'Suivre les snapshots publics d’abonnés.',
+  'Snapshot officiel à 800 incluant les partenaires ; une source secondaire plus tardive mentionne 855.',
+  'Nombre public d’abonnés à un instant donné.',
+  'Billetterie, communication, modèle saison.',
+  'Permet de suivre la dynamique publique des abonnements.',
+  'Aucun de ces nombres ne prouve le compte final de saison.',
+  {'Snapshot officiel':'800','Snapshot secondaire':'855','Compte final':'UNKNOWN_PRIVATE'}),
+ mkRich('commercial-audience','Audience publique','100k+ / 110k+ followers revendiqués','commercial','PUBLIC_CONFIRMED',
+  'Documenter les claims publics de visibilité du club.',
+  'Différentes pages commerciales utilisent des seuils de followers différents.',
+  'Followers revendiqués, spectateurs annuels et exposition match.',
+  'Partenariats, communication et valorisation commerciale.',
+  'Permet de comprendre la proposition de valeur publique faite aux partenaires.',
+  'Ce sont des claims marketing publics, pas un audit d’audience indépendant.',
+  {'Followers club':'100 000+','Claim commercial':'110 000+','Spectateurs annuels':'30 000+','Exposition match':'2 500+'}),
+ mkRich('commercial-home','Exposition domicile','13 matchs abonnement / +12 claim partenaire','commercial','PUBLIC_CONFIRMED',
+  'Conserver la différence entre deux formulations publiques sur les matchs à domicile.',
+  'La page abonnement annonce 13 matchs R1 à domicile ; une page partenaires parle de +12.',
+  'Nombre de matchs domicile utilisé dans les offres publiques.',
+  'Partenaires, abonnements, matchday.',
+  'Évite de masquer une divergence commerciale réelle.',
+  'La différence est une mismatch sémantique, pas automatiquement une erreur.',
+  {'Abonnement':'13','Partenaires':'+12','Classification':'SEMANTIC_MISMATCH'})
+]
+
+const cssaFinanceItems:ViewItem[]=[
+ mkRich('finance-license-pack','Pack licences CSSA','180€ / 240€ / 300€','finance','PUBLIC_CONFIRMED',
+  'Exposer les tarifs publics de licence par catégorie.',
+  'Tarifs publiés pour la saison 2026–2027.',
+  'U6–U9, U10–U18, U20–Seniors et éléments inclus.',
+  'Administration, académie, finance publique.',
+  'Permet de calculer des scénarios publics par catégorie.',
+  'Ne prouve ni encaissements réels ni mix de licenciés.',
+  {'U6–U9':'180 €','U10–U18':'240 €','U20–Seniors':'300 €','Inclus':'Licence FFF + pack Kappa + abonnement R1'}),
+ mkRich('finance-discounts','Réductions publiques','Famille / féminine / Pass Sport','finance','PUBLIC_CONFIRMED',
+  'Documenter les réductions publiées.',
+  'Réductions CSSA connues publiquement pour la saison.',
+  'Montants et conditions à vérifier au cas par cas.',
+  'Licences, administration, finance publique.',
+  'Permet d’expliquer le prix public potentiel d’un dossier.',
+  'Éligibilité et non-cumul doivent être vérifiés par cas.',
+  {'2e enfant':'25 €','Féminine':'25 €','Pass Sport':'70 €'}),
+ mkRich('finance-lgef','Tarifs LGEF sélectionnés','Cotisation, discipline, procédures','finance','PUBLIC_CONFIRMED',
+  'Conserver des tarifs réglementaires publics utiles au club.',
+  'Tarifs LGEF 2026–2027 sélectionnés dans le modèle.',
+  'Cotisation R1/R2, discipline, réserve, appel.',
+  'Administration, conformité et scénarios financiers.',
+  'Donne des coûts réglementaires publics de référence.',
+  'Ne représente pas la comptabilité réelle du CSSA.',
+  {'Cotisation club R1/R2':'367,34 €','Réserve/réclamation':'106,47 €','Appel':'159,71 €'})
+]
+
+const cssaLegalItems:ViewItem[]=[
+ mkRich('legal-association','Association CSSA','SIREN 780287843','legal','PUBLIC_CONFIRMED','Identifier l’entité association publique.','Écosystème juridique public du club.','Statut et identifiant public.','Administration et conformité.','Évite de confondre les entités juridiques.','Ne prouve pas la relation opérationnelle interne Association/SAS.',{'Statut':'ACTIVE','SIREN':'780287843'}),
+ mkRich('legal-sas','SAS CSSA','SIREN 798016796','legal','PUBLIC_CONFIRMED','Identifier la SAS publique.','Écosystème juridique public du club.','Statut et procédure collective rapportée.','Administration et conformité.','Rend visible la pluralité d’entités.','La relation opérationnelle exacte 2026 reste UNKNOWN_PRIVATE.',{'Statut':'ACTIVE_PROCEDURE_COLLECTIVE_REPORTED','SIREN':'798016796'})
+]
+
+function mkRich(id:string,title:string,subtitle:string,kind:string,status:string,purpose:string,context:string,observes:string,feeds:string,impact:string,limits:string,meta:Record<string,string>):ViewItem{
+ return {id,title,subtitle,kind,status,semantic:{purpose,context,observes,feeds,impact,limits},meta}
+}
+
 const catalogueItems:Record<StructureId,Record<string,ViewItem[]>>={
  cssa:{
-  admin:[mk('cssa-admin','Administration CSSA','Contrats, conformité, procédures','admin','PROVEN','Structurer les obligations et procédures publiques.')],
+  organisation:cssaOrganisationItems,
+  sportif:cssaSportItems,
+  academy:cssaAcademyItems,
+  commercial:cssaCommercialItems,
+  admin:[
+   mk('cssa-admin','Administration CSSA','Contrats, conformité, procédures','admin','PROVEN','Structurer les obligations et procédures publiques.'),
+   ...cssaLegalItems
+  ],
   mail:[mk('cssa-mail','Mail gouverné','Preflight prouvé · envoi externe HOLD','mail','HOLD','Préparer une communication sans donner d’autorité d’envoi.')],
   reporting:[mk('cssa-reporting','Reporting CSSA','Cadences weekly / biweekly / monthly','reporting','PROVEN','Projeter l’état selon le destinataire.')],
   matchday:[mk('cssa-matchday','Matchday','Buvette, shifts, fournisseurs','matchday','PROVEN','Structurer la préparation des jours de match.')],
-  finance:[mk('cssa-finance','Finance publique','Tarifs et modèle saison public','finance','PROVEN','Projeter les informations financières publiques disponibles.')],
+  finance:cssaFinanceItems,
   field:[mk('cssa-field','Réalité terrain','Droits, handoffs, checklists encore ouverts','field','OPEN','Identifier les informations internes encore non prouvées.')],
  },
  trading:{
@@ -315,6 +476,10 @@ export default function CSSAPage(){
       <button className={dashboardMode==='unknowns'?'active':''} onClick={()=>{setDashboardMode('unknowns');setSelectedId('')}}><small>UNKNOWNS</small><strong>{profile.unknowns.length}</strong><span>conservés</span></button>
       <button className={dashboardMode==='risks'?'active':''} onClick={()=>{setDashboardMode('risks');setSelectedId('')}}><small>RISQUES</small><strong>{profile.risks.length}</strong><span>{openCount} ouverts / HOLD</span></button>
      </div>
+     {structureId==='cssa'&&<section className="u-mini-panel u-club-snapshot"><header><h3>Club public 2026–2027</h3><b>19</b></header>
+      <div className="u-club-metrics"><span><strong>R1</strong><small>Équipe première</small></span><span><strong>R2</strong><small>Réserve</small></span><span><strong>800</strong><small>Abonnés officiel</small></span><span><strong>50+</strong><small>Partenaires</small></span></div>
+      <button onClick={()=>{setModuleId('organisation');setSelectedId('org-overview')}}>Explorer l’organisation →</button>
+     </section>}
      <section className="u-mini-panel"><header><h3>Runtime réel</h3><b>{liveServices.length}</b></header>{liveServices.length?liveServices.map(s=><div className="u-runtime-row" key={s.id}><span className={'dot '+(s.observedState==='READY'?'ready':'')}></span><strong>{s.label}</strong><small>{String(s.observedState||s.phase||'OBSERVED')}</small></div>):<p>Aucun service natif observé pour cette structure.</p>}</section>
      <section className="u-mini-panel"><header><h3>Décisions observées</h3><b>{decisions.length}</b></header>{decisions.slice(0,4).map(d=><div className="u-compact-row" key={d.id}><strong>{d.label}</strong><small>{String(d.gate||d.status||'OBSERVED')}</small></div>)}{!decisions.length&&<p>Aucun record local correspondant au domaine.</p>}</section>
     </section>
