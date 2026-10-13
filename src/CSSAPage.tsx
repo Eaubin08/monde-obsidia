@@ -138,6 +138,92 @@ function evidenceFor(item:ViewItem|null,moduleId:string){
  return cssaTestEvidence.filter(e=>e.tags.some(t=>tags.has(t)))
 }
 
+
+const cssaNativeFixtureCases=[
+ {id:'fixture-contract-001',type:'CONTRACT_COMPLIANCE',title:'Contrat prestataire à revoir',summary:"Revue simulée d'un contrat prestataire avant échéance.",owner:'role:manager_general',priority:'HIGH',occurred:'2026-10-07T10:00:00+00:00',due:'2026-10-10T17:00:00+00:00',tag:'ADMINISTRATION'},
+ {id:'fixture-institution-001',type:'INSTITUTIONAL_RELATION',title:'Réponse collectivité à préparer',summary:"Cas simulé de suivi d'une demande institutionnelle.",owner:'role:manager_general',priority:'NORMAL',occurred:'2026-10-07T10:05:00+00:00',due:'2026-10-11T12:00:00+00:00',tag:'INSTITUTION'},
+ {id:'fixture-matchday-001',type:'MATCHDAY_OPERATIONS',title:'Préparation buvette matchday',summary:'Cas simulé de suivi opérationnel buvette et shifts.',owner:'role:matchday_organizer',priority:'HIGH',occurred:'2026-10-07T10:10:00+00:00',due:'2026-10-09T18:00:00+00:00',tag:'MATCHDAY'},
+ {id:'fixture-incident-001',type:'INCIDENT_ROOT_CAUSE',title:'Incident opérationnel à analyser',summary:'Cas simulé pour RCA, action corrective et suivi.',owner:'role:manager_general',priority:'CRITICAL',occurred:'2026-10-07T10:15:00+00:00',due:'2026-10-08T17:00:00+00:00',tag:'RCA'},
+ {id:'fixture-supplier-001',type:'SUPPLIER_FOLLOWUP',title:'Livraison fournisseur à confirmer',summary:"Cas simulé de suivi d'une livraison fournisseur matchday.",owner:'role:matchday_organizer',priority:'NORMAL',occurred:'2026-10-07T10:20:00+00:00',due:'2026-10-09T09:00:00+00:00',tag:'SUPPLIER'},
+]
+
+const cssaStressScenarios=[
+ ['F3F_S01_VEHICLE_COLLISION','Three away teams need a two-equivalent vehicle pool','BLOCK'],
+ ['F3F_S02_ADMIN_ABSENCE_LGEF_URGENT','Admin owner absent while official league cases are due','HOLD'],
+ ['F3F_S03_TRAVEL_BUDGET_PRESSURE','Projected monthly travel exceeds synthetic envelope','HOLD'],
+ ['F3F_S04_LATE_MATCH_CHANGE_CASCADE','Late official match change conflicts with transport and public ticketing state','BLOCK'],
+ ['F3F_S05_HOSPITALITY_DOUBLE_COMMITMENT','Two partner commitments target one hospitality slot','BLOCK'],
+ ['F3F_S06_FMI_BACKLOG_DEADLINE_CASCADE','Previous FMI exception remains open while next official deadline arrives','HOLD'],
+ ['F3F_S07_STALE_SOURCE_CONFLICT','Current official communication conflicts with stale public organization source','BLOCK'],
+ ['F3F_S08_NO_DELEGATION_FOR_ABSENCE','Role holder absence has no validated substitution chain','HOLD'],
+ ['F3F_S09_TWENTY_VALID_CASES','Twenty valid cases compete for limited administrative attention','ALLOW'],
+ ['F3F_S10_NORMAL_MULTI_CASE_DAY','Several independent cases fit available capacity','ALLOW'],
+ ['F3F_S11_SAFETY_VS_PARTNER_PRIORITY','Safety-critical matchday case outranks partner activation','HOLD'],
+ ['F3F_S12_VENUE_DOUBLE_BOOKING','Two organizational uses claim the same stadium slot','BLOCK'],
+] as const
+
+const cssaMatchdayCases=[
+ ['BUV_STOCK_READY','Stock prêt pour ouverture','ALLOW'],
+ ['BUV_STOCK_LOW_BUFFER','Stock faible mais encore exploitable','ALLOW'],
+ ['BUV_STOCK_SHORTAGE','Stock insuffisant pour ouverture','BLOCK'],
+ ['BUV_PERISHABLE_NO_EXPIRY_CHECK','Périssables sans contrôle expiration','HOLD'],
+ ['BUV_SUPPLIER_CONFIRMED','Livraison fournisseur confirmée','ALLOW'],
+ ['BUV_SUPPLIER_CANCELLED','Livraison fournisseur requise annulée','BLOCK'],
+ ['BUV_SUPPLIER_STATUS_UNKNOWN','Statut livraison fournisseur inconnu','HOLD'],
+ ['BUV_SHIFT_COMPLETE','Plan de shift complet','ALLOW'],
+ ['BUV_SHIFT_UNDERSTAFFED','Shift sous-dimensionné','BLOCK'],
+ ['BUV_SHIFT_AUTHORITY_UNKNOWN','Autorité affectation bénévoles inconnue','HOLD'],
+ ['BUV_READY_COMPLETE_CHECKLIST','Checklist readiness complète','ALLOW'],
+ ['BUV_READY_INCOMPLETE_CHECKLIST','Ready déclaré avec contrôles incomplets','BLOCK'],
+ ['BUV_CASH_RECONCILED','Caisse rapprochée dans tolérance','ALLOW'],
+ ['BUV_CASH_VARIANCE_OVER_TOLERANCE','Écart caisse hors tolérance','BLOCK'],
+ ['BUV_CASH_FINAL_NO_EVIDENCE','Caisse finale sans preuve de rapprochement','HOLD'],
+ ['BUV_VENUE_CONFIG_CONFLICT','Conflit configuration lieu / buvette','BLOCK'],
+] as const
+
+function cssaFixtureCaseItem(row:(typeof cssaNativeFixtureCases)[number]):ViewItem{
+ return mkRich('case:'+row.id,row.title,row.type,'case','SIMULATED_NOT_OBSERVED',
+  'Tester un dossier CSSA traversant le bridge natif CRM/TASKS.',
+  row.summary,
+  'CASE, interaction, TASK et FOLLOWUP générés dans le scénario de test.',
+  'CRM natif, TASKS natif, follow-up et receipts de test.',
+  'Permet de vérifier qu’un dossier métier peut être transformé en objets natifs gouvernés.',
+  'Ce dossier est une fixture de test et ne correspond pas à un dossier réellement observé du CSSA.',
+  {'Case ID':row.id,'Type':row.type,'Owner':row.owner,'Priorité':row.priority,'Occurred':row.occurred,'Due':row.due,'Truth':'SIMULATED_NOT_OBSERVED','Test':'F3H-D'})
+}
+function cssaFixtureTaskItem(row:(typeof cssaNativeFixtureCases)[number]):ViewItem{
+ return mkRich('task:'+row.id,row.title,row.priority,'task','SIMULATED_NOT_OBSERVED',
+  'Tester la création d’une tâche native liée à un CASE CSSA.',
+  row.summary,
+  'Titre, priorité, assignee_ref, due_at et lien vers le CASE.',
+  'TASKS natif puis CRM FOLLOWUP.',
+  'Vérifie que le travail à faire reste traçable après intake.',
+  'La tâche existe dans la fixture de test, pas dans le store natif réel actuellement connecté.',
+  {'Fixture':row.id,'Owner':row.owner,'Priorité':row.priority,'Due':row.due,'CASE':'case:'+row.id,'Test':'F3H-D'})
+}
+function cssaStressItem(row:(typeof cssaStressScenarios)[number]):ViewItem{
+ const [id,title,gate]=row
+ return mkRich('stress:'+id,title,id,'decision',gate,
+  'Tester la réponse de gouvernance face à une contrainte organisationnelle.',
+  'Scénario de stress F3F exécuté sur le modèle CSSA synthétique.',
+  'Ressources, unknowns, contradictions, priorité et gate attendu.',
+  'Reporting, calibration et gouvernance.',
+  'Montre si le système doit ALLOW, HOLD ou BLOCK dans ce scénario.',
+  'Le gate concerne un scénario simulé et ne constitue pas une décision réelle du club.',
+  {'Scenario':id,'Gate attendu':gate,'Truth':'SIMULATED_NOT_OBSERVED','Test':'F3F'})
+}
+function cssaMatchdayItem(row:(typeof cssaMatchdayCases)[number]):ViewItem{
+ const [id,title,gate]=row
+ return mkRich('matchday:'+id,title,id,'matchday',gate,
+  'Tester une situation opérationnelle buvette/restauration matchday.',
+  'Cas F3G-J simulé pour exercer stock, fournisseur, shift, readiness ou caisse.',
+  'État du cas, inconnues, contradictions, risques et gate attendu.',
+  'Cockpit matchday, reporting et gouvernance.',
+  'Vérifie que les situations incohérentes ne passent pas silencieusement.',
+  'Aucun stock, contrat fournisseur ou état caisse réel du CSSA n’est affirmé.',
+  {'Case':id,'Gate attendu':gate,'Truth':'SIMULATED_NOT_OBSERVED','Test':'F3G-J'})
+}
+
 const cssaOrganisationItems:ViewItem[]=[
  mkRich('org-overview','Organisation publique CSSA','19 structures d’équipes · saison 2026–2027','organisation','PUBLIC_CONFIRMED',
   'Donner une vue structurée du club tel qu’il est publiquement documenté.',
@@ -297,6 +383,10 @@ const catalogueItems:Record<StructureId,Record<string,ViewItem[]>>={
   sportif:cssaSportItems,
   academy:cssaAcademyItems,
   commercial:cssaCommercialItems,
+  crm:cssaNativeFixtureCases.map(c=>cssaFixtureCaseItem(c)),
+  tasks:cssaNativeFixtureCases.map(c=>cssaFixtureTaskItem(c)),
+  governance:cssaStressScenarios.map(c=>cssaStressItem(c)),
+  matchday:cssaMatchdayCases.map(c=>cssaMatchdayItem(c)),
   tests:cssaTestEvidence.map(e=>mkRich('test:'+e.id,e.title,e.summary,'test',e.truth,'Documenter une preuve de test CSSA/Sedan.',e.summary,e.proves.join(' · '),'Audit, revue, gouvernance et compréhension du modèle.','Montre ce qui a été exercé dans le repo CSSA.','Une preuve de test ne transforme jamais une simulation en réalité terrain.',{'Phase':e.phase,'Statut':e.status,'Vérité':e.truth,'Fichier test':e.path,'Lien test':e.url,...e.metrics})),
   admin:[
    mk('cssa-admin','Administration CSSA','Contrats, conformité, procédures','admin','PROVEN','Structurer les obligations et procédures publiques.'),
@@ -304,7 +394,7 @@ const catalogueItems:Record<StructureId,Record<string,ViewItem[]>>={
   ],
   mail:[mk('cssa-mail','Mail gouverné','Preflight prouvé · envoi externe HOLD','mail','HOLD','Préparer une communication sans donner d’autorité d’envoi.')],
   reporting:[mk('cssa-reporting','Reporting CSSA','Cadences weekly / biweekly / monthly','reporting','PROVEN','Projeter l’état selon le destinataire.')],
-  matchday:[mk('cssa-matchday','Matchday','Buvette, shifts, fournisseurs','matchday','PROVEN','Structurer la préparation des jours de match.')],
+  
   finance:cssaFinanceItems,
   field:[mk('cssa-field','Réalité terrain','Droits, handoffs, checklists encore ouverts','field','OPEN','Identifier les informations internes encore non prouvées.')],
  },
@@ -404,12 +494,14 @@ function semanticMetaItem(kind:'unknown'|'risk'|'contradiction'|'evidence',value
 
 export default function CSSAPage(){
  const [structureId,setStructureId]=useState<StructureId>('cssa')
- const initialSection=location.hash.startsWith('#cssa/')?location.hash.split('/')[1]||'dashboard':'dashboard'
+ const initialHashParts=location.hash.split('/')
+ const initialSection=location.hash.startsWith('#cssa/')?initialHashParts[1]||'dashboard':'dashboard'
+ const initialSelected=initialHashParts[2]?decodeURIComponent(initialHashParts.slice(2).join('/')):''
  const [moduleId,setModuleId]=useState(initialSection)
  const [world,setWorld]=useState<WorldState|null>(null)
  const [native,setNative]=useState<NativeReadModel|null>(null)
  const [query,setQuery]=useState('')
- const [selectedId,setSelectedId]=useState('')
+ const [selectedId,setSelectedId]=useState(initialSelected)
  const [tab,setTab]=useState<'overview'|'history'|'relations'>('overview')
  const [refreshing,setRefreshing]=useState(false)
  const [projects,setProjects]=useState<Record<StructureId,Project[]>>({cssa:[],trading:[],gps:[]})
@@ -433,7 +525,7 @@ export default function CSSAPage(){
   }finally{setRefreshing(false)}
  }
  useEffect(()=>{refresh();const t=window.setInterval(refresh,5000);return()=>window.clearInterval(t)},[])
- useEffect(()=>{const onHash=()=>{if(!location.hash.startsWith('#cssa'))return;const next=location.hash.split('/')[1]||'dashboard';if(structure.modules.some(m=>m.id===next))setModuleId(next)};window.addEventListener('hashchange',onHash);return()=>window.removeEventListener('hashchange',onHash)},[structure])
+ useEffect(()=>{const onHash=()=>{if(!location.hash.startsWith('#cssa'))return;const parts=location.hash.split('/');const next=parts[1]||'dashboard';const picked=parts[2]?decodeURIComponent(parts.slice(2).join('/')):'';if(structure.modules.some(m=>m.id===next)){setModuleId(next);setSelectedId(picked);setTab('overview')}};window.addEventListener('hashchange',onHash);return()=>window.removeEventListener('hashchange',onHash)},[structure])
 
  const observedSources=useMemo(()=>entities.filter(e=>e.kind==='source'),[entities])
  const nativeByModule=useMemo(()=>{
@@ -495,18 +587,35 @@ export default function CSSAPage(){
   return catalogueItems[structureId][id]?.length??0
  }
 
+ const openItem=(id:string)=>{setSelectedId(id);setTab('overview');location.hash='cssa/'+moduleId+'/'+encodeURIComponent(id)}
+ const openModule=(id:string,picked='')=>{setModuleId(id);setSelectedId(picked);setTab('overview');location.hash='cssa/'+id+(picked?'/'+encodeURIComponent(picked):'')}
  const switchStructure=(id:StructureId)=>{setStructureId(id);setModuleId('dashboard');setSelectedId('');setQuery('');setTab('overview');setDashboardMode('capabilities');location.hash='cssa/dashboard'}
  const addProject=()=>{const title=projectName.trim();if(!title)return;setProjects(prev=>({...prev,[structureId]:[...prev[structureId],{id:'project:'+Date.now(),title,status:'LOCAL'}]}));setProjectName('')}
 
  const relations=selected&&native?.relations?native.relations.filter(r=>r.from===selected.id||r.to===selected.id):[]
  const historyRows=selected?.raw?Object.entries(selected.raw).filter(([k])=>/observ|created|updated|status|gate|phase|verification/i.test(k)):[]
+ const semanticHistoryRows=selected&&!historyRows.length?[
+  ['État',selected.status],
+  ...(selected.meta?.Occurred?[['Occurred',selected.meta.Occurred] as [string,string]]:[]),
+  ...(selected.meta?.Due?[['Due',selected.meta.Due] as [string,string]]:[]),
+  ...(selected.meta?.Cadence?[['Cadence',selected.meta.Cadence] as [string,string]]:[]),
+  ...(selected.meta?.Test?[['Suite de test',selected.meta.Test] as [string,string]]:[]),
+  ['Provenance',selected.raw?'NATIVE_READ_MODEL':selected.kind==='source'?'CATALOGUE_PUBLIC':'CSSA_REPO_MODEL'],
+ ]:[]
+ const semanticLinks=selected?[
+  ...selectedEvidence.map(e=>({label:e.phase+' · '+e.title,module:'tests',id:'test:'+e.id,type:'PROUVÉ_PAR'})),
+  ...(selected.kind==='case'?[{label:'Tâche liée · '+selected.title,module:'tasks',id:selected.id.replace('case:','task:'),type:'ALIMENTE'}]:[]),
+  ...(selected.kind==='task'?[{label:'CASE source · '+selected.title,module:'crm',id:selected.id.replace('task:','case:'),type:'PROVIENT_DE'}]:[]),
+  ...(selected.kind==='team'?[{label:'Sportif',module:'sportif',id:'sport-r1',type:'ALIMENTE'},{label:'Tests saison complète',module:'tests',id:'test:F3E',type:'EXERCÉ_PAR'}]:[]),
+  ...(selected.kind==='source'?[{label:'Tests veille publique',module:'tests',id:'test:F3G-D',type:'SURVEILLÉ_PAR'}]:[]),
+ ]:[]
  const statusTone=(v:string)=>v.toLowerCase().replaceAll(' ','-').replaceAll('/','-')
 
  return <main className="u-shell">
   <aside className="u-sidebar">
    <div className="u-brand"><span>◆</span><div><strong>OBSIDIA</strong><small>Écosystème IA universel</small></div></div>
    <div className="u-context-card"><small>STRUCTURE ACTUELLE</small><strong>{structure.name}</strong><span>{structure.subtitle}</span><em>{native?.available?'● connecté':'○ readonly'}</em></div>
-   <nav className="u-nav">{structure.modules.map(m=><a key={m.id} href={'#cssa/'+m.id} className={moduleId===m.id?'active':''} onClick={()=>{setModuleId(m.id);setSelectedId('');setTab('overview')}}><span><UiIcon name={m.icon}/></span><strong>{m.label}</strong>{moduleCount(m.id)>0&&<b>{moduleCount(m.id)}</b>}</a>)}</nav>
+   <nav className="u-nav">{structure.modules.map(m=><a key={m.id} href={'#cssa/'+m.id} className={moduleId===m.id?'active':''} onClick={()=>openModule(m.id)}><span><UiIcon name={m.icon}/></span><strong>{m.label}</strong>{moduleCount(m.id)>0&&<b>{moduleCount(m.id)}</b>}</a>)}</nav>
    <div className="u-switch"><small>CHANGER DE STRUCTURE</small>{structures.map(s=><button key={s.id} className={structureId===s.id?'active':''} onClick={()=>switchStructure(s.id)}><span><UiIcon name={s.id==='trading'?'reporting':s.id==='gps'?'field':'organisation'}/></span>{s.name}</button>)}</div>
   </aside>
 
@@ -530,11 +639,11 @@ export default function CSSAPage(){
      </div>
      {structureId==='cssa'&&<section className="u-mini-panel u-club-snapshot"><header><h3>Club public 2026–2027</h3><b>19</b></header>
       <div className="u-club-metrics"><span><strong>R1</strong><small>Équipe première</small></span><span><strong>R2</strong><small>Réserve</small></span><span><strong>800</strong><small>Abonnés officiel</small></span><span><strong>50+</strong><small>Partenaires</small></span></div>
-      <button onClick={()=>{location.hash='cssa/organisation';setModuleId('organisation');setSelectedId('org-overview')}}>Explorer l’organisation →</button>
+      <button onClick={()=>openModule('organisation','org-overview')}>Explorer l’organisation →</button>
      </section>}
      {structureId==='cssa'&&<section className="u-mini-panel u-test-summary"><header><h3>Tests Sedan</h3><b>{cssaTestEvidence.length}</b></header>
       <div className="u-test-summary-grid"><span><strong>904</strong><small>événements saison</small></span><span><strong>15 120</strong><small>profils adversariaux</small></span><span><strong>16</strong><small>cas buvette</small></span><span><strong>5</strong><small>fixtures CRM/TASKS</small></span></div>
-      <button onClick={()=>{location.hash='cssa/tests';setModuleId('tests');setSelectedId('test:F3E')}}>Voir les preuves de test →</button>
+      <button onClick={()=>openModule('tests','test:F3E')}>Voir les preuves de test →</button>
      </section>}
      <section className="u-mini-panel"><header><h3>Runtime réel</h3><b>{liveServices.length}</b></header>{liveServices.length?liveServices.map(s=><div className="u-runtime-row" key={s.id}><span className={'dot '+(s.observedState==='READY'?'ready':'')}></span><strong>{s.label}</strong><small>{String(s.observedState||s.phase||'OBSERVED')}</small></div>):<p>Aucun service natif observé pour cette structure.</p>}</section>
      <section className="u-mini-panel"><header><h3>Décisions observées</h3><b>{decisions.length}</b></header>{decisions.slice(0,4).map(d=><div className="u-compact-row" key={d.id}><strong>{d.label}</strong><small>{String(d.gate||d.status||'OBSERVED')}</small></div>)}{!decisions.length&&<p>Aucun record local correspondant au domaine.</p>}</section>
@@ -542,7 +651,7 @@ export default function CSSAPage(){
 
     <section className="u-dashboard-center">
      <header><div><small>VUE SÉMANTIQUE</small><h2>{dashboardMode==='capabilities'?'Capacités':dashboardMode==='unknowns'?'Unknowns':dashboardMode==='risks'?'Risques':dashboardMode==='evidence'?'Preuves':'Contradictions'}</h2></div><span>{dashboardItems.length}</span></header>
-     <div className="u-cap-list">{dashboardItems.map(item=><button key={item.id} className={selectedDashboardItem?.id===item.id?'active':''} onClick={()=>setSelectedId(item.id)}><span className={'u-status '+statusTone(item.status)}>{item.status}</span><div><strong>{item.title}</strong><small>{item.subtitle}</small></div><b>›</b></button>)}</div>
+     <div className="u-cap-list">{dashboardItems.map(item=><button key={item.id} className={selectedDashboardItem?.id===item.id?'active':''} onClick={()=>{setSelectedId(item.id);location.hash='cssa/dashboard/'+encodeURIComponent(item.id)}}><span className={'u-status '+statusTone(item.status)}>{item.status}</span><div><strong>{item.title}</strong><small>{item.subtitle}</small></div><b>›</b></button>)}</div>
      <div className="u-dashboard-switches">
       <button className={dashboardMode==='capabilities'?'active':''} onClick={()=>{setDashboardMode('capabilities');setSelectedId('')}}>Capacités {profile.capabilities.length}</button>
       <button className={dashboardMode==='unknowns'?'active':''} onClick={()=>{setDashboardMode('unknowns');setSelectedId('')}}>Unknowns {profile.unknowns.length}</button>
@@ -570,13 +679,19 @@ export default function CSSAPage(){
     <section className="u-list-pane">
      <header><div><small>{structure.name.toUpperCase()} · {moduleId.toUpperCase()}</small><h2>{structure.modules.find(m=>m.id===moduleId)?.label}</h2></div><span>{items.length}</span></header>
      {moduleId==='projects'?<div className="u-project-create"><input value={projectName} onChange={e=>setProjectName(e.target.value)} placeholder="Nom du projet local"/><button onClick={addProject}>+ Ajouter</button></div>:<div className="u-search"><span><UiIcon name="search"/></span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher dans cette vue…"/></div>}
-     <div className="u-list">{items.map(item=><button key={item.id} className={selectedId===item.id?'active':''} onClick={()=>{setSelectedId(item.id);setTab('overview')}}><span className="u-item-icon"><UiIcon name={item.kind==='source'?'source':item.kind==='task'?'task':item.kind==='case'?'crm':item.kind==='team'?'sportif':item.kind==='role'?'organisation':item.kind==='commercial'?'commercial':item.kind==='finance'?'finance':'organisation'}/></span><span className="u-item-copy"><strong>{item.title}</strong><small>{item.subtitle}</small></span><span className={'u-status '+statusTone(item.status)}>{item.status}</span></button>)}{!items.length&&<div className="u-empty"><strong>Aucun objet observé</strong><p>La vue reste vide plutôt que d’inventer des données.</p></div>}</div>
+     <div className="u-list">{items.map(item=><button key={item.id} className={selectedId===item.id?'active':''} onClick={()=>openItem(item.id)}><span className="u-item-icon"><UiIcon name={item.kind==='source'?'source':item.kind==='task'?'task':item.kind==='case'?'crm':item.kind==='team'?'sportif':item.kind==='role'?'organisation':item.kind==='commercial'?'commercial':item.kind==='finance'?'finance':'organisation'}/></span><span className="u-item-copy"><strong>{item.title}</strong><small>{item.subtitle}</small></span><span className={'u-status '+statusTone(item.status)}>{item.status}</span></button>)}{!items.length&&<div className="u-empty"><strong>Aucun objet observé</strong><p>La vue reste vide plutôt que d’inventer des données.</p></div>}</div>
     </section>
 
     <aside className="u-inspector">
      {selected?<>
       <header className="u-detail-hero"><span className="u-detail-icon"><UiIcon name={selected.kind==='source'?'source':selected.kind==='team'?'sportif':selected.kind==='role'?'organisation':selected.kind==='commercial'?'commercial':selected.kind==='finance'?'finance':selected.kind==='task'?'task':selected.kind==='case'?'crm':'organisation'}/></span><div><small>{selected.kind.toUpperCase()}</small><h2>{selected.title}</h2><p>{selected.subtitle}</p></div><span className={'u-badge '+statusTone(selected.status)}>{selected.status}</span></header>
-      <div className="u-tabs"><button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}>Vue d’ensemble</button><button className={tab==='history'?'active':''} onClick={()=>setTab('history')}>Historique</button><button className={tab==='relations'?'active':''} onClick={()=>setTab('relations')}>Liens & relations ({relations.length})</button></div>
+      <div className="u-tabs"><button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}>Vue d’ensemble</button><button className={tab==='history'?'active':''} onClick={()=>setTab('history')}>Historique</button><button className={tab==='relations'?'active':''} onClick={()=>setTab('relations')}>Liens & relations ({relations.length+semanticLinks.length})</button></div>
+      <div className="u-object-actions">
+       {selected.kind==='case'&&<button onClick={()=>openModule('tasks',selected.id.replace('case:','task:'))}>Voir la tâche liée</button>}
+       {selected.kind==='task'&&<button onClick={()=>openModule('crm',selected.id.replace('task:','case:'))}>Voir le CASE lié</button>}
+       {selectedEvidence.length>0&&<button onClick={()=>openModule('tests','test:'+selectedEvidence[0].id)}>Ouvrir la preuve principale</button>}
+       {selected.kind==='team'&&<button onClick={()=>openModule('tests','test:F3E')}>Voir simulation saison</button>}
+      </div>
       {tab==='overview'&&<>
        <div className="u-overview-grid"><section className="u-info"><h3>Informations générales</h3><dl><div><dt>But</dt><dd>{selected.semantic.purpose}</dd></div><div><dt>Contexte</dt><dd>{selected.semantic.context}</dd></div><div><dt>Ce qu’on observe</dt><dd>{selected.semantic.observes}</dd></div><div><dt>Alimente</dt><dd>{selected.semantic.feeds}</dd></div><div><dt>Impact possible</dt><dd>{selected.semantic.impact}</dd></div><div className="limit"><dt>Limite</dt><dd>{selected.semantic.limits}</dd></div></dl></section>
        {selected.meta&&<section className="u-meta u-meta-side"><h3>Fiche objet</h3>{Object.entries(selected.meta).map(([k,v])=><div key={k}><small>{k}</small>{(k==='URL'||k==='Lien test')?<a href={v} target="_blank" rel="noreferrer">{v} ↗</a>:<strong>{v}</strong>}</div>)}</section>}</div>
@@ -606,8 +721,12 @@ export default function CSSAPage(){
        </section>}
        {selected.kind==='source'&&selected.meta?.URL&&<div className="u-real-link-row"><a href={selected.meta.URL} target="_blank" rel="noreferrer">Ouvrir la source réelle ↗</a></div>}{selected.raw?<section className="u-observation"><h3>Dernière observation</h3><div className="u-observation-head"><span className="obs-ok">✓</span><div><small>STATUT</small><strong>{String(selected.raw.verification||selected.raw.status||selected.raw.gate||'OBSERVED')}</strong></div><div><small>OBSERVÉ</small><strong>{String(selected.raw.observed_at||selected.raw.observedAt||'persisté')}</strong></div></div><div className="u-meta compact">{Object.entries(selected.raw).filter(([k])=>!['label'].includes(k)).slice(0,12).map(([k,v])=><div key={k}><small>{k}</small><strong>{String(v??'—')}</strong></div>)}</div></section>:structureId==='cssa'&&selected.kind==='source'&&<section className="u-notice"><strong>CATALOGUE · PAS ENCORE OBSERVÉ</strong><p>Le contexte est documenté, mais aucune capture native correspondante n’est encore persistée.</p></section>}
       </>}
-      {tab==='history'&&<section className="u-info"><h3>Historique observable</h3>{historyRows.length?historyRows.map(([k,v])=><div className="u-history-row" key={k}><small>{k}</small><strong>{String(v??'—')}</strong></div>):<p>Aucun historique persistant exposé par le read model pour cet objet.</p>}</section>}
-      {tab==='relations'&&<section className="u-info"><h3>Relations natives</h3>{relations.length?relations.map((r,i)=><div className="u-history-row" key={i}><small>{r.type}</small><strong>{r.from} → {r.to}</strong></div>):<p>Aucune relation persistée exposée pour cet objet.</p>}</section>}
+      {tab==='history'&&<section className="u-info"><h3>Historique observable</h3>{(historyRows.length?historyRows:semanticHistoryRows).length?(historyRows.length?historyRows:semanticHistoryRows).map(([k,v])=><div className="u-history-row" key={String(k)}><small>{String(k)}</small><strong>{String(v??'—')}</strong></div>):<p>Aucun historique disponible pour cet objet.</p>}</section>}
+      {tab==='relations'&&<section className="u-info"><h3>Liens & relations</h3>
+       {relations.map((r,i)=><div className="u-history-row" key={'native:'+i}><small>{r.type}</small><strong>{r.from} → {r.to}</strong></div>)}
+       {semanticLinks.map((r,i)=><button className="u-relation-link" key={'semantic:'+i} onClick={()=>openModule(r.module,r.id)}><span>{r.type}</span><strong>{r.label}</strong><b>Ouvrir →</b></button>)}
+       {!relations.length&&!semanticLinks.length&&<p>Aucune relation connue pour cet objet.</p>}
+      </section>}
      </>:<div className="u-empty big"><strong>Sélectionne un objet</strong><p>Le détail apparaîtra ici.</p></div>}
     </aside>
    </div>}
