@@ -1,386 +1,340 @@
 import {useMemo,useState} from 'react'
 import './CSSAPage.css'
 
-type StructureId=string
-type ModuleKey='Administration'|'CRM & relations'|'Communication'|'Événements'|'Finances'|'Opérations'
-type Priority='CRITICAL'|'HIGH'|'NORMAL'
-type Gate='ALLOW'|'HOLD'|'BLOCK'|'OPEN'
-
-type Structure={
-  id:StructureId
+type Status='LIVE'|'PROVEN'|'OPEN'|'HOLD'|'PAPER'|'RECORDED_REAL'|'PARTIAL'
+type Capability={
+  id:string
+  label:string
+  status:Status
+  summary:string
+  details:string[]
+}
+type Organization={
+  id:string
   name:string
   subtitle:string
   kind:string
-  modules:{title:string;description:string}[]
+  domainId:string
+  adapterId:string
+  contractVersion:string
+  source:string
+  capabilities:Capability[]
+  unknowns:string[]
+  contradictions:string[]
+  risks:string[]
+  evidence:string[]
 }
-
 type Project={id:string;title:string;status:string}
 
-const structuresSeed:Structure[]=[
+const universalContract={
+  version:'PORTABLE_DOMAIN_REGISTRATION_V0',
+  authority:'KX108_ONLY',
+  rules:[
+    'DOMAIN ≠ AUTHORITY',
+    'PROPOSAL ≠ DECISION',
+    'DECISION ≠ ACTION',
+    'SOURCE ≠ TRUST',
+    'Un domaine ne peut ni décider ni agir',
+    'Unknowns, contradictions, risques et preuves traversent le contrat',
+  ],
+  fields:['domain_id','adapter_id','capabilities','unknowns','contradictions','risk_flags','evidence_refs','provenance_refs'],
+}
+
+const organizations:Organization[]=[
   {
     id:'cssa',
     name:'CSSA',
     subtitle:'Club Sportif Sedan Ardennes',
     kind:'Club sportif',
-    modules:[
-      {title:'Administration',description:'Contrats, conformité, dossiers officiels et obligations.'},
-      {title:'CRM & relations',description:'Cas, suivis, institutions, partenaires et relations.'},
-      {title:'Communication',description:'Mails, reporting, veille publique et publications.'},
-      {title:'Événements',description:'Matchday, calendrier, billetterie, accueil et logistique.'},
-      {title:'Finances',description:'Tarifs publics, budgets, paiements, rapprochements et preuves.'},
-      {title:'Opérations',description:'Tâches, incidents, fournisseurs, suivi et coordination.'},
-    ]
+    domainId:'cssa',
+    adapterId:'cssa_public_admin/native_ops',
+    contractVersion:'PORTABLE_DOMAIN_REGISTRATION_V0',
+    source:'cssa-v01 · feat/cssa-native-ops-bridge-v0',
+    capabilities:[
+      {id:'crm',label:'CRM',status:'PROVEN',summary:'Cas CSSA → CRM CASE',details:['intake interaction créé','follow-up lié à task_ref','source de vérité CRM = Obsidia upstream']},
+      {id:'tasks',label:'TASKS',status:'PROVEN',summary:'Cas CSSA → tâche native',details:['4 mutations natives exactes','HOLD/BLOCK → 0 mutation','pré-état revérifié avant commit']},
+      {id:'admin',label:'ADMINISTRATION',status:'PROVEN',summary:'Contrats, conformité, procédures',details:['cycle contrat prouvé','compliance générique prouvée','canaux officiels gouvernés']},
+      {id:'mail',label:'MAIL',status:'HOLD',summary:'Preflight gouverné prouvé',details:['plan d’envoi exact','approbation humaine liée','envoi réel bloqué par upstream world actuation']},
+      {id:'reporting',label:'REPORTING',status:'PROVEN',summary:'Rapports routés par persona',details:['cadences weekly / biweekly / monthly','aucune livraison externe','privacy policy appliquée']},
+      {id:'watch',label:'PUBLIC WATCH',status:'PROVEN',summary:'14 sources publiques readonly',details:['GET only','hash brut + texte visible','changement ≠ vérité sémantique']},
+      {id:'matchday',label:'MATCHDAY',status:'PROVEN',summary:'Buvette, shifts, fournisseurs',details:['stock','supplier workflow','cash reconciliation','readiness']},
+      {id:'finance',label:'FINANCE',status:'PROVEN',summary:'Modèle saison + tarifs publics',details:['licences CSSA publiques','tarifs LGEF','budget réel 26/27 reste inconnu']},
+      {id:'governance',label:'GOVERNANCE',status:'PROVEN',summary:'KX108_ONLY',details:['external_action=false','memory_write=false','emits_act=false','kernel_mutation=false']},
+      {id:'field',label:'FIELD REALITY',status:'OPEN',summary:'Validation terrain interne manquante',details:['boîtes mail réelles','droits réels','handoffs','checklists','pratiques non écrites']},
+    ],
+    unknowns:['REAL_INTERNAL_FIELD_EVIDENCE','REAL_ACCESS_RIGHTS','REAL_VALIDATION_CHAINS','2026_27_CERTIFIED_BUDGET'],
+    contradictions:['Organigramme Manager Général potentiellement périmé','Réserve R3 sur une source vs R2 saison actuelle','12+ matchs domicile vs 13 championnat'],
+    risks:['SOURCE_FRESHNESS','EXTERNAL_WORLD_ACTUATION_NOT_ACTIVATED'],
+    evidence:['181 tests PASS · F3H-D','14 sources publiques surveillées','19 structures sportives publiques','800 abonnés snapshot officiel','50+ partenaires publics'],
   },
   {
     id:'trading',
     name:'Trading',
-    subtitle:'Structure de trading gouverné',
-    kind:'Activité financière',
-    modules:[
-      {title:'Stratégies',description:'Règles, scénarios et conditions de déclenchement.'},
-      {title:'Risque',description:'Exposition, limites et garde-fous.'},
-      {title:'Marchés',description:'Actifs, données et contexte de marché.'},
-      {title:'Exécution',description:'Ordres proposés, autorisations et exécution PAPER.'},
-      {title:'Performance',description:'Résultats, attribution et suivi.'},
-      {title:'Opérations',description:'Sessions, tâches, incidents et maintenance.'},
-    ]
+    subtitle:'Domaine Trading gouverné Obsidia',
+    kind:'Domaine métier',
+    domainId:'trading',
+    adapterId:'canonical_trading_adapter',
+    contractVersion:'PORTABLE_DOMAIN_REGISTRATION_V0',
+    source:'OBSIDIA_TRADING · master',
+    capabilities:[
+      {id:'market',label:'MARKET DATA',status:'PROVEN',summary:'État marché canonique',details:['adapters marché','état canonique','provenance conservée']},
+      {id:'agents',label:'AGENTS',status:'PROVEN',summary:'17 agents natifs',details:['native reference implementation','adapter stack externe','convergence canonique avant autorité']},
+      {id:'risk',label:'RISK',status:'PROVEN',summary:'Risque + calibration',details:['simulation','portfolio risk','signal structurel non souverain']},
+      {id:'paper',label:'PAPER EXECUTION',status:'PAPER',summary:'Exécution broker PAPER uniquement',details:['LIVE trading interdit structurellement','Binder vérifie le verdict','receipt après exécution']},
+      {id:'proof',label:'PROOF / REPLAY',status:'PROVEN',summary:'Receipts chaînés + replay',details:['receipt ≠ decision','replay ≠ execution','preuve vérifiable']},
+      {id:'kx',label:'KX108',status:'OPEN',summary:'Vrai kernel non branché dans ce repo',details:['FixtureKX108Client = test only','UnavailableKX108Client fail-closed','jamais ACT par défaut']},
+    ],
+    unknowns:['REAL_KX108_CONNECTION','MARKOV_REAL_CALIBRATION'],
+    contradictions:[],
+    risks:['PROOF_BEST_EFFORT','LIVE_TRADING_FORBIDDEN'],
+    evidence:['283 passed','1 skipped','PAPER ONLY','Canonical convergence point'],
+  },
+  {
+    id:'gps',
+    name:'GPS / Défense',
+    subtitle:'GNSS · RF · aviation · preuve physique',
+    kind:'Domaine physique',
+    domainId:'gps_defense_aviation',
+    adapterId:'gps_evidence_adapter',
+    contractVersion:'PORTABLE_DOMAIN_REGISTRATION_V0',
+    source:'obsidia-gps-defense- · main',
+    capabilities:[
+      {id:'gnss',label:'GNSS',status:'RECORDED_REAL',summary:'Chemin RINEX/GNSS réel documenté',details:['recorded real GNSS','observation envelope','Physical Reality Gate']},
+      {id:'rf',label:'RF I/Q',status:'RECORDED_REAL',summary:'Chemin RF nominal réel documenté',details:['public nominal I/Q','provenance conservée','raw datasets exclus du repo public']},
+      {id:'hostile',label:'HOSTILE RF',status:'PARTIAL',summary:'FGI hostile corpus partiel NAV/PVT',details:['FGI-GSRx / Octave','chaîne temporelle partielle','pas de claim attaque RF enregistrée']},
+      {id:'classification',label:'CLASSIFICATION',status:'OPEN',summary:'Classification RF formelle à fermer',details:['attribution causale ouverte','matrice TP/TN/FP/FN à consolider','baseline à renforcer']},
+      {id:'sensors',label:'SENSORS',status:'OPEN',summary:'IMU / radar non encore raccordés',details:['source IMU/radar manquante','fusion multi-capteurs ouverte']},
+      {id:'governance',label:'GOVERNANCE',status:'PROVEN',summary:'Périphérie non souveraine',details:['domaine traduit','kernel privé non exporté','receipts / claim matrix']},
+    ],
+    unknowns:['REAL_IMU_RADAR_SOURCE','FORMAL_RF_CLASSIFICATION','CAUSAL_ATTRIBUTION'],
+    contradictions:[],
+    risks:['PRODUCTION_ANTI_SPOOFING_NOT_CLAIMED','AVIATION_CERTIFICATION_NOT_CLAIMED'],
+    evidence:['RECORDED_REAL_GNSS','RECORDED_REAL_RF','FGI hostile chain PARTIAL'],
   },
   {
     id:'association',
     name:'Association',
-    subtitle:'Structure associative',
-    kind:'Association',
-    modules:[
-      {title:'Administration',description:'Statuts, adhésions, documents et obligations.'},
-      {title:'Membres',description:'Adhérents, bénévoles, rôles et relations.'},
-      {title:'Communication',description:'Messages, campagnes et publications.'},
-      {title:'Événements',description:'Rencontres, inscriptions et logistique.'},
-      {title:'Finances',description:'Cotisations, dépenses et subventions.'},
-      {title:'Projets',description:'Actions, responsables et résultats.'},
-    ]
-  },
-  {
-    id:'entreprise',
-    name:'Entreprise X',
-    subtitle:'Structure commerciale',
-    kind:'Entreprise',
-    modules:[
-      {title:'Administration',description:'Documents, contrats, conformité et traitement.'},
-      {title:'CRM & ventes',description:'Prospects, clients et opportunités.'},
-      {title:'Marketing',description:'Campagnes, contenus et acquisition.'},
-      {title:'Finance',description:'Budgets, facturation et trésorerie.'},
-      {title:'Production',description:'Livrables, qualité et opérations.'},
-      {title:'Projets',description:'Roadmap, responsables et résultats.'},
-    ]
+    subtitle:'Template universel pour une nouvelle structure',
+    kind:'Structure générique',
+    domainId:'association_candidate',
+    adapterId:'unregistered',
+    contractVersion:'PORTABLE_DOMAIN_REGISTRATION_V0',
+    source:'Non raccordé',
+    capabilities:[
+      {id:'identity',label:'IDENTITY',status:'OPEN',summary:'Identité et périmètre à renseigner',details:['nom','type','rôles','sources']},
+      {id:'admin',label:'ADMINISTRATION',status:'OPEN',summary:'À raccorder',details:['documents','obligations','cas']},
+      {id:'crm',label:'CRM',status:'OPEN',summary:'À raccorder',details:['membres','partenaires','contacts']},
+      {id:'tasks',label:'TASKS',status:'OPEN',summary:'À raccorder',details:['missions','responsables','échéances']},
+      {id:'proof',label:'PROOF',status:'OPEN',summary:'À raccorder',details:['evidence_refs','provenance_refs','receipts']},
+      {id:'governance',label:'GOVERNANCE',status:'OPEN',summary:'À enregistrer dans le contrat universel',details:['adapter','capabilities','KX108_ONLY']},
+    ],
+    unknowns:['ALL_FIELD_DATA'],
+    contradictions:[],
+    risks:['UNREGISTERED_PORTABLE_DOMAIN'],
+    evidence:[],
   },
 ]
 
-const cssaSummary=[
-  {label:'Structures sportives',value:'19',meta:'PUBLIC CONFIRMÉ'},
-  {label:'Bridge CRM / tâches',value:'PROVEN',meta:'181 tests PASS'},
-  {label:'Sources surveillées',value:'14',meta:'READONLY PUBLIC'},
-  {label:'Abonnés 26/27',value:'800',meta:'SNAPSHOT OFFICIEL'},
-  {label:'Partenaires actifs',value:'50+',meta:'PUBLIC CONFIRMÉ'},
-  {label:'Action externe',value:'HOLD',meta:'NON ACTIVÉE'},
-] as const
-
-const cssaQueue:{id:string;title:string;family:string;owner:string;priority:Priority;due:string;status:string}[]=[
-  {id:'fixture-incident-001',title:'Incident opérationnel à analyser',family:'RCA',owner:'Manager général',priority:'CRITICAL',due:'08 oct. · 17:00',status:'SIMULÉ'},
-  {id:'fixture-supplier-001',title:'Livraison fournisseur à confirmer',family:'Fournisseur',owner:'Matchday',priority:'NORMAL',due:'09 oct. · 09:00',status:'SIMULÉ'},
-  {id:'fixture-matchday-001',title:'Préparation buvette matchday',family:'Matchday',owner:'Matchday',priority:'HIGH',due:'09 oct. · 18:00',status:'SIMULÉ'},
-  {id:'fixture-contract-001',title:'Contrat prestataire à revoir',family:'Administration',owner:'Manager général',priority:'HIGH',due:'10 oct. · 17:00',status:'SIMULÉ'},
-  {id:'fixture-institution-001',title:'Réponse collectivité à préparer',family:'Institution',owner:'Manager général',priority:'NORMAL',due:'11 oct. · 12:00',status:'SIMULÉ'},
-]
-
-const cssaAlerts:{title:string;detail:string;gate:Gate;kind:string}[]=[
-  {title:'Organigramme Manager Général potentiellement périmé',detail:'Une page publique conserve un nom alors qu’un communiqué officiel annonce un départ.',gate:'HOLD',kind:'Contradiction publique'},
-  {title:'Réserve affichée R3 sur une source',detail:'Des sources de compétition 2026-2027 placent la réserve en R2.',gate:'HOLD',kind:'Fraîcheur source'},
-  {title:'12+ matchs domicile vs 13 matchs championnat',detail:'Écart de formulation entre page partenaires et abonnement saison.',gate:'OPEN',kind:'Écart sémantique'},
-  {title:'Site CSSA en cours de mise à jour',detail:'La fraîcheur globale du site public doit rester surveillée.',gate:'OPEN',kind:'Source freshness'},
-]
-
-const adminCases=[
-  {title:'Contrat actif valide',meta:'Autorité + signature + version uniques',gate:'ALLOW' as Gate},
-  {title:'Autorité de signature inconnue',meta:'Utilisation opérationnelle demandée',gate:'HOLD' as Gate},
-  {title:'Deux versions actives',meta:'Conflit de version',gate:'BLOCK' as Gate},
-  {title:'Contrat expiré encore utilisé',meta:'Usage opérationnel demandé',gate:'BLOCK' as Gate},
-  {title:'Échéance conformité dépassée',meta:'Preuve absente',gate:'BLOCK' as Gate},
-  {title:'Applicabilité à confirmer',meta:'Règle publique, périmètre inconnu',gate:'HOLD' as Gate},
-]
-
-const relationCases=[
-  {title:'FFF · dossier compétition',meta:'Approuvé avec preuve',gate:'ALLOW' as Gate},
-  {title:'Ville de Sedan · accusé reçu',meta:'ACKNOWLEDGED ≠ APPROVED',gate:'HOLD' as Gate},
-  {title:'Ardenne Métropole · périmètre inconnu',meta:'Autorité à confirmer',gate:'HOLD' as Gate},
-  {title:'District · mauvais canal',meta:'Portail officiel requis',gate:'BLOCK' as Gate},
-  {title:'FFF · instructions contradictoires',meta:'18:30 vs 19:30',gate:'BLOCK' as Gate},
-  {title:'LGEF · deadline dépassée',meta:'Échéance dure manquée',gate:'BLOCK' as Gate},
-]
-
-const matchdayCases=[
-  {title:'Stock buvette prêt',meta:'130 disponibles / 100 requis',gate:'ALLOW' as Gate},
-  {title:'Stock buvette insuffisant',meta:'70 disponibles / 120 requis',gate:'BLOCK' as Gate},
-  {title:'Périssable sans contrôle',meta:'Date/aptitude non vérifiée',gate:'HOLD' as Gate},
-  {title:'Livraison fournisseur confirmée',meta:'Commande + preuve présentes',gate:'ALLOW' as Gate},
-  {title:'Livraison fournisseur annulée',meta:'Ouverture demandée',gate:'BLOCK' as Gate},
-  {title:'Shift sous-staffé',meta:'5 affectés / 8 requis',gate:'BLOCK' as Gate},
-]
-
-const financeFacts=[
-  {label:'Licence U6–U9',value:'180 €',note:'pack public CSSA'},
-  {label:'Licence U10–U18',value:'240 €',note:'pack public CSSA'},
-  {label:'Licence U20–Seniors',value:'300 €',note:'pack public CSSA'},
-  {label:'Réduction 2e enfant',value:'25 €',note:'éligibilité à vérifier'},
-  {label:'Réduction féminine',value:'25 €',note:'éligibilité à vérifier'},
-  {label:'Pass Sport',value:'70 €',note:'preuve requise'},
-  {label:'Cotisation club R1/R2 LGEF',value:'367,34 €',note:'tarif public 26/27'},
-  {label:'Budget réel 26/27',value:'INCONNU',note:'donnée privée non inventée'},
-]
-
-const communicationFacts=[
-  {title:'Veille publique',value:'14 sources',meta:'weekly / biweekly / monthly'},
-  {title:'Mail gouverné',value:'PREFLIGHT PROVEN',meta:'envoi réel bloqué'},
-  {title:'Reporting',value:'ROUTING PROVEN',meta:'aucune livraison externe'},
-  {title:'Publication',value:'VALIDATION REQUISE',meta:'faits approuvés uniquement'},
-]
-
-const opsFacts=[
-  {title:'CSSA → CRM CASE',status:'PROVEN'},
-  {title:'CSSA → tâche native',status:'PROVEN'},
-  {title:'Interaction d’intake',status:'PROVEN'},
-  {title:'Follow-up CRM → task_ref',status:'PROVEN'},
-  {title:'HOLD/BLOCK → 0 mutation',status:'PROVEN'},
-  {title:'Action SaaS externe',status:'DISABLED'},
-]
-
-const governance=[
-  {label:'Autorité de décision',value:'KX108_ONLY'},
-  {label:'Action externe',value:'false'},
-  {label:'Écriture mémoire',value:'false'},
-  {label:'emits_act',value:'false'},
-  {label:'Mutation kernel',value:'false'},
-  {label:'Preuve terrain interne',value:'OPEN'},
-]
+const statusLabel:Record<Status,string>={
+  LIVE:'LIVE',
+  PROVEN:'PROVEN',
+  OPEN:'OPEN',
+  HOLD:'HOLD',
+  PAPER:'PAPER',
+  RECORDED_REAL:'REAL',
+  PARTIAL:'PARTIAL',
+}
 
 const newId=()=>typeof crypto!=='undefined'&&'randomUUID'in crypto?crypto.randomUUID():String(Date.now())
 
-function GateBadge({gate}:{gate:Gate}){
-  return <span className={'cssa-gate cssa-gate-'+gate.toLowerCase()}>{gate}</span>
-}
-
 export default function CSSAPage(){
-  const [structures,setStructures]=useState<Structure[]>(structuresSeed)
-  const [selected,setSelected]=useState<StructureId>('cssa')
-  const [selectedModule,setSelectedModule]=useState<string|null>(null)
-  const [selectedQueue,setSelectedQueue]=useState<string|null>(null)
+  const [selected,setSelected]=useState('cssa')
+  const [selectedCapability,setSelectedCapability]=useState<string|null>(null)
+  const [showUniversal,setShowUniversal]=useState(false)
   const [projects,setProjects]=useState<Record<string,Project[]>>({})
-  const [showStructureForm,setShowStructureForm]=useState(false)
   const [showProjectForm,setShowProjectForm]=useState(false)
-  const [structureName,setStructureName]=useState('')
-  const [structureKind,setStructureKind]=useState('')
   const [projectName,setProjectName]=useState('')
 
-  const current=useMemo(()=>structures.find(s=>s.id===selected)??structures[0],[structures,selected])
+  const current=useMemo(()=>organizations.find(o=>o.id===selected)??organizations[0],[selected])
+  const activeCapability=current.capabilities.find(c=>c.id===selectedCapability)??null
   const currentProjects=projects[current.id]??[]
-  const isCSSA=current.id==='cssa'
-  const module=current.modules.find(m=>m.title===selectedModule)??null
-  const queueCase=cssaQueue.find(item=>item.id===selectedQueue)??null
 
-  const chooseStructure=(id:string)=>{
+  const chooseOrganization=(id:string)=>{
     setSelected(id)
-    setSelectedModule(null)
-    setSelectedQueue(null)
+    setSelectedCapability(null)
     setShowProjectForm(false)
-  }
-
-  const addStructure=()=>{
-    const name=structureName.trim()
-    if(!name)return
-    const id=newId()
-    setStructures(prev=>[...prev,{
-      id,
-      name,
-      subtitle:name,
-      kind:structureKind.trim()||'Structure',
-      modules:[
-        {title:'Administration',description:'Documents, demandes et traitement.'},
-        {title:'CRM & relations',description:'Contacts, partenaires et suivi.'},
-        {title:'Communication',description:'Messages, contenus et publications.'},
-        {title:'Finances',description:'Budgets, paiements et justificatifs.'},
-        {title:'Opérations',description:'Missions, processus et livrables.'},
-        {title:'Projets',description:'Chantiers, responsables et résultats.'},
-      ]
-    }])
-    setSelected(id)
-    setStructureName('')
-    setStructureKind('')
-    setShowStructureForm(false)
   }
 
   const addProject=()=>{
     const title=projectName.trim()
     if(!title)return
-    setProjects(prev=>({...prev,[current.id]:[...(prev[current.id]??[]),{id:newId(),title,status:'À cadrer'}]}))
+    setProjects(prev=>({...prev,[current.id]:[...(prev[current.id]??[]),{id:newId(),title,status:'LOCAL'}]}))
     setProjectName('')
     setShowProjectForm(false)
   }
 
-  const renderCSSAModule=()=>{
-    if(!module)return null
-    const title=module.title as ModuleKey
-
-    if(title==='Administration') return <div className="cssa-work-grid">
-      {adminCases.map(item=><article className="cssa-work-item" key={item.title}><div><strong>{item.title}</strong><small>{item.meta}</small></div><GateBadge gate={item.gate}/></article>)}
-    </div>
-
-    if(title==='CRM & relations') return <div className="cssa-work-grid">
-      {relationCases.map(item=><article className="cssa-work-item" key={item.title}><div><strong>{item.title}</strong><small>{item.meta}</small></div><GateBadge gate={item.gate}/></article>)}
-    </div>
-
-    if(title==='Communication') return <div className="cssa-metric-grid cssa-metric-grid-4">
-      {communicationFacts.map(item=><article key={item.title}><small>{item.title}</small><strong>{item.value}</strong><span>{item.meta}</span></article>)}
-    </div>
-
-    if(title==='Événements') return <div className="cssa-work-grid">
-      {matchdayCases.map(item=><article className="cssa-work-item" key={item.title}><div><strong>{item.title}</strong><small>{item.meta}</small></div><GateBadge gate={item.gate}/></article>)}
-    </div>
-
-    if(title==='Finances') return <div className="cssa-metric-grid cssa-metric-grid-4">
-      {financeFacts.map(item=><article key={item.label}><small>{item.label}</small><strong>{item.value}</strong><span>{item.note}</span></article>)}
-    </div>
-
-    return <div className="cssa-work-grid">
-      {opsFacts.map(item=><article className="cssa-work-item" key={item.title}><div><strong>{item.title}</strong><small>État du bridge natif</small></div><span className={item.status==='PROVEN'?'cssa-status-ok':'cssa-status-off'}>{item.status}</span></article>)}
-    </div>
-  }
+  const provenCount=current.capabilities.filter(c=>['PROVEN','RECORDED_REAL','PAPER','PARTIAL'].includes(c.status)).length
+  const openCount=current.capabilities.filter(c=>['OPEN','HOLD'].includes(c.status)).length
 
   return <main className="cssa-page">
+    <section className="cssa-universal-bar">
+      <div>
+        <span className="cssa-kicker">OBSIDIA · UNIVERSALITÉ</span>
+        <strong>{universalContract.version}</strong>
+        <small>{universalContract.authority}</small>
+      </div>
+      <button className={showUniversal?'active':''} onClick={()=>setShowUniversal(v=>!v)}>
+        {showUniversal?'Masquer le contrat':'Voir le contrat universel'}
+      </button>
+    </section>
+
+    {showUniversal&&<section className="cssa-universal-contract">
+      <header>
+        <div><span className="cssa-kicker">CONTRAT COMMUN</span><h2>Une structure décrit ses capacités, jamais son autorité</h2></div>
+        <span className="cssa-contract-badge">NON-SOUVERAIN</span>
+      </header>
+      <div className="cssa-contract-layout">
+        <div className="cssa-contract-fields">
+          {universalContract.fields.map(field=><span key={field}>{field}</span>)}
+        </div>
+        <div className="cssa-contract-rules">
+          {universalContract.rules.map(rule=><p key={rule}>{rule}</p>)}
+        </div>
+      </div>
+    </section>}
+
     <section className="cssa-selector">
       <header>
-        <div><span className="cssa-kicker">ENTREPRISES & ORGANISATIONS</span><h1>Structures</h1></div>
-        <button className="cssa-add-structure" onClick={()=>setShowStructureForm(v=>!v)}>+ Ajouter</button>
+        <div><span className="cssa-kicker">STRUCTURES RACCORDÉES / CANDIDATES</span><h1>Choisir une structure</h1></div>
       </header>
-
-      {showStructureForm&&<div className="cssa-inline-form">
-        <input value={structureName} onChange={e=>setStructureName(e.target.value)} placeholder="Nom de la structure"/>
-        <input value={structureKind} onChange={e=>setStructureKind(e.target.value)} placeholder="Type : entreprise, association…"/>
-        <button onClick={addStructure}>Créer</button>
-        <button className="quiet" onClick={()=>setShowStructureForm(false)}>Annuler</button>
-      </div>}
-
       <div className="cssa-structure-tabs">
-        {structures.map(s=><button key={s.id} className={selected===s.id?'active':''} onClick={()=>chooseStructure(s.id)}>
-          <strong>{s.name}</strong><small>{s.kind}</small>
+        {organizations.map(org=><button key={org.id} className={selected===org.id?'active':''} onClick={()=>chooseOrganization(org.id)}>
+          <strong>{org.name}</strong>
+          <small>{org.kind}</small>
+          <em>{org.capabilities.length} capacités</em>
         </button>)}
       </div>
     </section>
 
-    {!isCSSA&&<>
-      <header className="cssa-hero">
-        <div><span className="cssa-kicker">VUE SÉLECTIONNÉE</span><h1>{current.name}</h1><p>{current.subtitle}</p></div>
-        <aside className="cssa-identity"><small>ÉTAT</small><strong>Prototype</strong><span>Raccord réel prévu plus tard</span></aside>
+    <header className="cssa-hero">
+      <div>
+        <span className="cssa-kicker">{current.domainId.toUpperCase()}</span>
+        <h1>{current.name}</h1>
+        <p>{current.subtitle}</p>
+        <div className="cssa-contract-strip">
+          <span>domain_id <b>{current.domainId}</b></span>
+          <span>adapter <b>{current.adapterId}</b></span>
+          <span>contract <b>{current.contractVersion}</b></span>
+        </div>
+      </div>
+      <aside className="cssa-identity">
+        <small>RACCORDEMENT</small>
+        <strong>{provenCount}/{current.capabilities.length}</strong>
+        <span>capacités établies / partielles</span>
+        <em>{openCount} ouvertes ou HOLD</em>
+      </aside>
+    </header>
+
+    <section className="cssa-section cssa-cockpit-universal">
+      <header>
+        <div><span className="cssa-kicker">COCKPIT DÉRIVÉ</span><h2>État de la structure</h2></div>
+        <span className="cssa-source-label">{current.source}</span>
       </header>
-      <section className="cssa-section">
-        <span className="cssa-kicker">MÉTIERS</span><h2>Modules de la structure</h2>
-        <div className="cssa-module-grid">
-          {current.modules.map(item=><button className="cssa-module" key={item.title}><span className="cssa-module-label">MODULE</span><h3>{item.title}</h3><p>{item.description}</p><div className="cssa-module-foot"><span>Non raccordé</span></div></button>)}
-        </div>
-      </section>
-    </>}
+      <div className="cssa-cockpit-row">
+        <article><small>Capacités</small><strong>{current.capabilities.length}</strong><span>{provenCount} établies</span></article>
+        <article><small>Unknowns</small><strong>{current.unknowns.length}</strong><span>conservés</span></article>
+        <article><small>Contradictions</small><strong>{current.contradictions.length}</strong><span>non masquées</span></article>
+        <article><small>Risques</small><strong>{current.risks.length}</strong><span>visibles</span></article>
+        <article><small>Preuves</small><strong>{current.evidence.length}</strong><span>références projetées</span></article>
+        <article><small>Autorité</small><strong>KX108</strong><span>seule autorité</span></article>
+      </div>
+    </section>
 
-    {isCSSA&&<>
-      <header className="cssa-hero cssa-hero-live">
-        <div>
-          <span className="cssa-kicker">CSSA · COCKPIT MÉTIER</span>
-          <h1>Club Sportif Sedan Ardennes</h1>
-          <p>Projection opérationnelle readonly construite à partir du modèle public 2026-2027 et des briques CSSA déjà prouvées. Les scénarios de validation restent séparés de la réalité terrain.</p>
-          <div className="cssa-state-row"><span>PUBLIC 26/27</span><span>READONLY</span><span>F3H-D PROVEN</span><span>KX108_ONLY</span></div>
-        </div>
-        <aside className="cssa-identity cssa-health">
-          <small>FRONTIÈRE ACTUELLE</small>
-          <strong>Terrain OPEN</strong>
-          <span>Données internes réelles non encore auditées</span>
-          <em>Action externe : HOLD</em>
-        </aside>
+    <section className="cssa-section">
+      <header>
+        <div><span className="cssa-kicker">CAPACITÉS DÉCLARÉES</span><h2>Ce que cette structure sait réellement exposer</h2></div>
+        <small className="cssa-section-note">Clique une capacité</small>
       </header>
-
-      <section className="cssa-section cssa-summary">
-        <header><div><span className="cssa-kicker">SITUATION</span><h2>Vue d’ensemble</h2></div><span className="cssa-prototype">SNAPSHOT 07/10/2026</span></header>
-        <div className="cssa-summary-grid">
-          {cssaSummary.map(item=><article key={item.label}><small>{item.label}</small><strong>{item.value}</strong><span>{item.meta}</span></article>)}
-        </div>
-      </section>
-
-      <section className="cssa-two-col">
-        <article className="cssa-panel">
-          <header><div><span className="cssa-kicker">FILE DE TRAVAIL</span><h2>Cas à traiter</h2></div><span className="cssa-sim-badge">SIMULÉS</span></header>
-          <div className="cssa-queue">
-            {cssaQueue.map(item=><button key={item.id} className={selectedQueue===item.id?'active':''} onClick={()=>setSelectedQueue(selectedQueue===item.id?null:item.id)}>
-              <span className={'cssa-priority '+item.priority.toLowerCase()}>{item.priority}</span>
-              <div><strong>{item.title}</strong><small>{item.family} · {item.owner}</small></div>
-              <time>{item.due}</time>
-            </button>)}
+      <div className="cssa-capability-grid">
+        {current.capabilities.map(cap=><button key={cap.id} className={selectedCapability===cap.id?'cssa-capability active':'cssa-capability'} onClick={()=>setSelectedCapability(selectedCapability===cap.id?null:cap.id)}>
+          <div className="cssa-capability-top">
+            <span className={'cssa-status cssa-status-'+cap.status.toLowerCase().replace('_','-')}>{statusLabel[cap.status]}</span>
+            <small>{cap.id}</small>
           </div>
-          {queueCase&&<div className="cssa-case-detail">
-            <span className="cssa-kicker">CAS SÉLECTIONNÉ</span>
-            <h3>{queueCase.title}</h3>
-            <p>Ce cas provient du corpus de validation du bridge CSSA → CRM/TASKS. Il teste le workflow et la gouvernance ; il ne doit pas être interprété comme un dossier réellement observé au club.</p>
-            <div className="cssa-detail-tags"><span>{queueCase.family}</span><span>{queueCase.owner}</span><span>{queueCase.status}</span></div>
-          </div>}
-        </article>
+          <h3>{cap.label}</h3>
+          <p>{cap.summary}</p>
+          <span className="cssa-open-label">{selectedCapability===cap.id?'Refermer ↑':'Ouvrir →'}</span>
+        </button>)}
+      </div>
 
-        <article className="cssa-panel">
-          <header><div><span className="cssa-kicker">ALERTES & INCOHÉRENCES</span><h2>À surveiller</h2></div><span className="cssa-real-badge">PUBLIC</span></header>
-          <div className="cssa-alert-list">
-            {cssaAlerts.map(item=><div className="cssa-alert" key={item.title}><div><span>{item.kind}</span><strong>{item.title}</strong><small>{item.detail}</small></div><GateBadge gate={item.gate}/></div>)}
-          </div>
-        </article>
-      </section>
-
-      <section className="cssa-section">
-        <header><div><span className="cssa-kicker">MÉTIERS</span><h2>Entrer dans le travail</h2></div><small className="cssa-section-note">Clique un métier pour ouvrir sa vue</small></header>
-        <div className="cssa-module-grid">
-          {current.modules.map(item=><button className={selectedModule===item.title?'cssa-module active':'cssa-module'} key={item.title} onClick={()=>setSelectedModule(selectedModule===item.title?null:item.title)}>
-            <span className="cssa-module-label">MÉTIER</span>
-            <h3>{item.title}</h3>
-            <p>{item.description}</p>
-            <div className="cssa-module-foot"><span>{selectedModule===item.title?'Refermer ↑':'Ouvrir →'}</span></div>
-          </button>)}
-        </div>
-
-        {module&&<div className="cssa-module-workspace">
-          <header><div><span className="cssa-kicker">ESPACE MÉTIER</span><h2>{module.title}</h2><p>{module.description}</p></div><button onClick={()=>setSelectedModule(null)}>Fermer</button></header>
-          {renderCSSAModule()}
-          <footer>
-            <span>{module.title==='Finances'||module.title==='Communication'?'Données publiques / états prouvés':'Cas de validation simulés'}</span>
-            <b>Aucune action externe depuis cette vue</b>
-          </footer>
-        </div>}
-      </section>
-
-      <section className="cssa-section cssa-governance-live">
-        <header><div><span className="cssa-kicker">GOUVERNANCE</span><h2>Frontières d’autorité</h2></div><span className="cssa-real-badge">PROVEN</span></header>
-        <div className="cssa-governance-grid">
-          {governance.map(item=><article key={item.label}><small>{item.label}</small><strong>{item.value}</strong></article>)}
-        </div>
-        <div className="cssa-decision-flow"><span>Cas métier</span><b>→</b><span>Proposition</span><b>→</b><span>KX108</span><b>→</b><span>Validation humaine si requise</span><b>→</b><span>Preuve</span></div>
-      </section>
-
-      <section className="cssa-projects">
+      {activeCapability&&<div className="cssa-capability-workspace">
         <header>
-          <div><span className="cssa-kicker">PROJETS</span><h2>Chantiers du club</h2></div>
-          <button className="cssa-add-project" onClick={()=>setShowProjectForm(v=>!v)}>+ Projet</button>
+          <div>
+            <span className={'cssa-status cssa-status-'+activeCapability.status.toLowerCase().replace('_','-')}>{statusLabel[activeCapability.status]}</span>
+            <h2>{activeCapability.label}</h2>
+            <p>{activeCapability.summary}</p>
+          </div>
+          <button onClick={()=>setSelectedCapability(null)}>Fermer</button>
         </header>
-        {showProjectForm&&<div className="cssa-inline-form">
-          <input value={projectName} onChange={e=>setProjectName(e.target.value)} placeholder="Nom du projet"/>
-          <button onClick={addProject}>Ajouter</button>
-          <button className="quiet" onClick={()=>setShowProjectForm(false)}>Annuler</button>
-        </div>}
-        <div className="cssa-project-grid">
-          {currentProjects.map(p=><article key={p.id}><span>◆</span><strong>{p.title}</strong><small>{p.status}</small></article>)}
-          {!currentProjects.length&&<article className="empty"><span>+</span><strong>Aucun chantier ajouté</strong><small>Les projets ajoutés ici restent locaux à la page pour l’instant</small></article>}
+        <div className="cssa-capability-details">
+          {activeCapability.details.map(item=><article key={item}><span>◆</span><p>{item}</p></article>)}
         </div>
-      </section>
-    </>}
+        <footer>
+          <span>Projection readonly du contrat de domaine</span>
+          <b>Aucune autorité ajoutée par l’interface</b>
+        </footer>
+      </div>}
+    </section>
+
+    <section className="cssa-triple">
+      <article className="cssa-panel">
+        <header><span className="cssa-kicker">UNKNOWNS</span><strong>{current.unknowns.length}</strong></header>
+        <div className="cssa-list">
+          {current.unknowns.length?current.unknowns.map(x=><span key={x}>{x}</span>):<em>Aucun déclaré</em>}
+        </div>
+      </article>
+      <article className="cssa-panel">
+        <header><span className="cssa-kicker">CONTRADICTIONS</span><strong>{current.contradictions.length}</strong></header>
+        <div className="cssa-list">
+          {current.contradictions.length?current.contradictions.map(x=><span key={x}>{x}</span>):<em>Aucune déclarée</em>}
+        </div>
+      </article>
+      <article className="cssa-panel">
+        <header><span className="cssa-kicker">RISQUES</span><strong>{current.risks.length}</strong></header>
+        <div className="cssa-list">
+          {current.risks.length?current.risks.map(x=><span key={x}>{x}</span>):<em>Aucun déclaré</em>}
+        </div>
+      </article>
+    </section>
+
+    <section className="cssa-section cssa-proof-section">
+      <header><div><span className="cssa-kicker">PREUVES / ÉTAT OBSERVABLE</span><h2>Ce qui soutient cette projection</h2></div></header>
+      <div className="cssa-proof-grid">
+        {current.evidence.length?current.evidence.map(item=><article key={item}><span>✓</span><strong>{item}</strong></article>):<article className="empty"><span>—</span><strong>Aucune preuve raccordée</strong></article>}
+      </div>
+    </section>
+
+    <section className="cssa-section cssa-governance-live">
+      <header><div><span className="cssa-kicker">GOUVERNANCE TRANSVERSALE</span><h2>Le domaine propose, KX108 tranche</h2></div><span className="cssa-contract-badge">KX108_ONLY</span></header>
+      <div className="cssa-decision-flow">
+        <span>Domain state</span><b>→</b><span>Governance payload</span><b>→</b><span>KX108</span><b>→</b><span>Decision</span><b>→</b><span>Execution gate</span><b>→</b><span>Receipt</span>
+      </div>
+    </section>
+
+    <section className="cssa-projects">
+      <header>
+        <div><span className="cssa-kicker">PROJETS LOCAUX</span><h2>{current.name} · chantiers</h2></div>
+        <button className="cssa-add-project" onClick={()=>setShowProjectForm(v=>!v)}>+ Projet</button>
+      </header>
+      {showProjectForm&&<div className="cssa-inline-form">
+        <input value={projectName} onChange={e=>setProjectName(e.target.value)} placeholder="Nom du projet"/>
+        <button onClick={addProject}>Ajouter</button>
+        <button className="quiet" onClick={()=>setShowProjectForm(false)}>Annuler</button>
+      </div>}
+      <div className="cssa-project-grid">
+        {currentProjects.map(p=><article key={p.id}><span>◆</span><strong>{p.title}</strong><small>{p.status}</small></article>)}
+        {!currentProjects.length&&<article className="empty"><span>+</span><strong>Aucun projet local</strong><small>Ce bloc reste local à l’interface pour l’instant</small></article>}
+      </div>
+    </section>
   </main>
 }
