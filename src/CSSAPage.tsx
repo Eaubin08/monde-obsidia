@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useState} from 'react'
 import './CSSAPage.css'
+import './CSSASport.css'
 
 type Semantic={purpose:string;context:string;observes:string;feeds:string;impact:string;limits:string}
 type SourceItem={id:string;title:string;url:string;truthClass:string;cadence:string;criticality:string;semantic:Semantic}
