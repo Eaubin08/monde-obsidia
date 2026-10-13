@@ -83,7 +83,7 @@ const territoryRelationTypes:Partial<Record<WorldZone,string[]>>={
 
 
 export default function V5Root(){
- const initial=(location.hash.slice(1)||'world') as View
+ const initial=((location.hash.slice(1)||'world').split('/')[0]) as View
  const [view,setView]=useState<View>(['world','workspace','agents','search','cssa'].includes(initial)?initial:'world')
  const [workspaceArea,setWorkspaceArea]=useState<WorkspaceArea>(()=>{const saved=sessionStorage.getItem('obsidia-workspace-area');return (['home','launchers','brody','obsidure','cli','files'].includes(saved||'')?saved:'home') as WorkspaceArea})
  const [worldZone,setWorldZone]=useState<WorldZone>('home')
@@ -112,7 +112,7 @@ export default function V5Root(){
   const refresh=async()=>{if(pending)return;pending=true;try{const [s,w]=await Promise.all([read('/obsidia-local/snapshot'),read('/obsidia-local/state')]);setSnap(s);setShared(w)}catch(e){if(!abort.signal.aborted)setMessage(String(e))}finally{pending=false}}
   void refresh()
   const timer=setInterval(refresh,4000)
-  const hash=()=>{const next=(location.hash.slice(1)||'world') as View;if(['world','workspace','agents','search','cssa'].includes(next)){setView(next);if(next==='workspace'){const saved=sessionStorage.getItem('obsidia-workspace-area');if(['home','launchers','brody','obsidure','cli','files'].includes(saved||''))setWorkspaceArea(saved as WorkspaceArea)}}}
+  const hash=()=>{const next=((location.hash.slice(1)||'world').split('/')[0]) as View;if(['world','workspace','agents','search','cssa'].includes(next)){setView(next);if(next==='workspace'){const saved=sessionStorage.getItem('obsidia-workspace-area');if(['home','launchers','brody','obsidure','cli','files'].includes(saved||''))setWorkspaceArea(saved as WorkspaceArea)}}}
   const context=(e:Event)=>setContextId((e as CustomEvent<string>).detail||sessionStorage.getItem('obsidia-focus-entity')||'')
   const worldZoneEvent=(e:Event)=>{const zone=(e as CustomEvent<WorldZone>).detail;if(zones.some(([id])=>id===zone))setWorldZone(zone)}
   window.addEventListener('hashchange',hash)
@@ -587,14 +587,14 @@ export default function V5Root(){
   </aside>
 
   <section className="v5-app">
-   <header className="v5-topbar">
+   {view!=='cssa'&&<header className="v5-topbar">
     <div className="v5-top-search"><span>⌕</span><input value={searchQuery} onChange={e=>{setSearchQuery(e.target.value);if(view!=='search'&&e.target.value.trim())go('search')}} placeholder="Rechercher un agent, une mission, un fichier, un domaine…" /></div>
     <div className="v5-system"><span className={coreRuntimeReady||snap?.available?'on':''}/><div><strong>{coreRuntimeReady?'Core LIVE':snap?.available?'Sources disponibles':'Hors ligne'}</strong><small>{coreRuntimeReady?'Kernel + API observés':snap?.available?'Sources Git disponibles · runtime core non observé':'Connexion indisponible'}</small></div></div>
     <div className="v5-core"><strong>Obsidia Core</strong><small>{snap?.branch||'branche inconnue'} · {snap?.sha?.slice(0,7)||'—'}</small></div>
-   </header>
+   </header>}
    {message&&<p className="v5-message">{message}</p>}
 
-   <main className="v5-main">
+   <main className={view==='cssa'?'v5-main v5-main-cssa':'v5-main'}>
    {view==='world'&&worldZone==='home'&&<section className="v5-page v5-dashboard">
     <header className="v5-welcome">
      <div><h1>Bienvenue sur Obsidia</h1><p>Un écosystème d’agents, de connaissances et d’actions autour de tes projets.</p></div>
