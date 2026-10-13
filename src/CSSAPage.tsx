@@ -3,6 +3,8 @@ import './CSSAPage.css'
 import './CSSASport.css'
 import CSSASportWorkspace from './CSSASportPage'
 import CSSAOpsWorkspace from './CSSAOpsWorkspace'
+import CSSAHomePage from './CSSAHomePage'
+import CSSAOrganisationPage from './CSSAOrganisationPage'
 
 type Semantic={purpose:string;context:string;observes:string;feeds:string;impact:string;limits:string}
 type SourceItem={id:string;title:string;url:string;truthClass:string;cadence:string;criticality:string;semantic:Semantic}
@@ -66,18 +68,20 @@ const cssaSources:SourceItem[]=[
 
 const structures:StructureDef[]=[
 {id:'cssa',name:'CSSA',subtitle:'Club Sportif Sedan Ardennes',badge:'KX108_ONLY',modules:[
-{id:'dashboard',label:'Dashboard',icon:'dashboard'},{id:'organisation',label:'Organisation',icon:'organisation'},{id:'sportif',label:'Sportif',icon:'sportif'},{id:'academy',label:'Académie',icon:'academy'},{id:'commercial',label:'Commercial',icon:'commercial'},{id:'tests',label:'Tests / Simulation',icon:'governance'},{id:'sources',label:'Sources',icon:'source'},{id:'crm',label:'CRM',icon:'crm',kindFilter:['case','interaction','followup','relationship']},{id:'tasks',label:'Tâches',icon:'task',kindFilter:['task']},{id:'admin',label:'Administration',icon:'admin'},{id:'mail',label:'Mail',icon:'mail'},{id:'reporting',label:'Reporting',icon:'reporting'},{id:'matchday',label:'Matchday',icon:'matchday'},{id:'finance',label:'Finance',icon:'finance'},{id:'governance',label:'Gouvernance',icon:'governance',kindFilter:['decision','receipt']},{id:'projects',label:'Projets',icon:'projects'},{id:'field',label:'Réalité terrain',icon:'field'}]},
+{id:'dashboard',label:'Accueil',icon:'dashboard'},{id:'organisation',label:'Organisation',icon:'organisation'},{id:'sportif',label:'Sportif',icon:'sportif'},{id:'academy',label:'Académie',icon:'academy'},{id:'commercial',label:'Commercial',icon:'commercial'},{id:'tests',label:'Tests / Simulation',icon:'governance'},{id:'sources',label:'Sources',icon:'source'},{id:'crm',label:'CRM',icon:'crm',kindFilter:['case','interaction','followup','relationship']},{id:'tasks',label:'Tâches',icon:'task',kindFilter:['task']},{id:'admin',label:'Administration',icon:'admin'},{id:'mail',label:'Mail',icon:'mail'},{id:'reporting',label:'Reporting',icon:'reporting'},{id:'matchday',label:'Matchday',icon:'matchday'},{id:'finance',label:'Finance',icon:'finance'},{id:'governance',label:'Gouvernance',icon:'governance',kindFilter:['decision','receipt']},{id:'projects',label:'Projets',icon:'projects'},{id:'field',label:'Réalité terrain',icon:'field'}]},
 {id:'trading',name:'Trading',subtitle:'Domaine trading gouverné',badge:'PAPER ONLY',modules:[
 {id:'dashboard',label:'Dashboard',icon:'dashboard'},{id:'market',label:'Market data',icon:'◉'},{id:'signals',label:'Signaux',icon:'⌁'},{id:'strategies',label:'Stratégies',icon:'◇'},{id:'risk',label:'Risk',icon:'△'},{id:'paper',label:'Paper execution',icon:'↗'},{id:'reporting',label:'Reporting',icon:'reporting'},{id:'governance',label:'Gouvernance',icon:'governance'},{id:'proof',label:'Proof / receipts',icon:'▣'},{id:'projects',label:'Projets',icon:'projects'}]},
 {id:'gps',name:'GPS / Défense',subtitle:'GNSS · RF · aviation',badge:'RECORDED REAL',modules:[
 {id:'dashboard',label:'Dashboard',icon:'dashboard'},{id:'sensors',label:'Sources capteurs',icon:'⌁'},{id:'gnss',label:'GNSS',icon:'⌖'},{id:'rf',label:'RF',icon:'⌁'},{id:'incidents',label:'Incidents',icon:'!'},{id:'classification',label:'Classification',icon:'◈'},{id:'evidence',label:'Evidence',icon:'▣'},{id:'governance',label:'Gouvernance',icon:'governance'},{id:'receipts',label:'Receipts',icon:'▤'},{id:'projects',label:'Projets',icon:'projects'},{id:'field',label:'Réalité terrain',icon:'field'}]}]
 
 const cssaNavSections: {title: string; moduleIds: string[]}[] = [
+  {title: 'ACCUEIL', moduleIds: ['dashboard']},
   {title: 'SPORTIF & TERRAIN', moduleIds: ['sportif', 'matchday']},
-  {title: 'GESTION & OPÉRATIONS', moduleIds: ['admin', 'tasks', 'crm']},
-  {title: 'LE CLUB & VIE DU CLUB', moduleIds: ['organisation', 'academy', 'commercial', 'finance']},
-  {title: 'TRANSPARENCE & VEILLE', moduleIds: ['dashboard', 'sources', 'tests', 'field', 'governance', 'projects', 'reporting']}
+  {title: 'OPÉRATIONS & RELATIONS', moduleIds: ['tasks', 'admin', 'crm', 'mail']},
+  {title: 'LE CLUB', moduleIds: ['organisation', 'commercial', 'finance']},
+  {title: 'SOURCES', moduleIds: ['sources']}
 ]
+const cssaAdvancedModuleIds=['tests','field','governance','projects','reporting']
 
 const profiles:Record<StructureId,Profile>={
  cssa:{domainId:'cssa',adapterId:'cssa_public_admin/native_ops',contract:'PORTABLE_DOMAIN_REGISTRATION_V0',source:'cssa-v01 · feat/cssa-native-ops-bridge-v0',sourceUrl:'https://github.com/Eaubin08/cssa-v01--entreprise-universelle-domaien-obsidia-',capabilities:[
@@ -601,7 +605,7 @@ export default function CSSAPage(){
  }
 
  const openItem=(id:string)=>{setSelectedId(id);setTab('overview');location.hash='cssa/'+moduleId+'/'+encodeURIComponent(id)}
- const openModule=(id:string,picked='')=>{setModuleId(id);setSelectedId(picked);setTab('overview');location.hash='cssa/'+id+(picked?'/'+encodeURIComponent(picked):'')}
+ const openModule=(id:string,picked='')=>{setModuleId(id);setSelectedId(picked);setQuery('');setTab('overview');location.hash='cssa/'+id+(picked?'/'+encodeURIComponent(picked):'')}
  const switchStructure=(id:StructureId)=>{setStructureId(id);setModuleId('dashboard');setSelectedId('');setQuery('');setTab('overview');setDashboardMode('capabilities');location.hash='cssa/dashboard'}
  const addProject=()=>{const title=projectName.trim();if(!title)return;setProjects(prev=>({...prev,[structureId]:[...prev[structureId],{id:'project:'+Date.now(),title,status:'LOCAL'}]}));setProjectName('')}
 
@@ -623,6 +627,14 @@ export default function CSSAPage(){
   ...(selected.kind==='source'?[{label:'Tests veille publique',module:'tests',id:'test:F3G-D',type:'SURVEILLÉ_PAR'}]:[]),
  ]:[]
  const statusTone=(v:string)=>v.toLowerCase().replaceAll(' ','-').replaceAll('/','-')
+ const moduleLabel=structure.modules.find(m=>m.id===moduleId)?.label||humanizeCode(moduleId)
+ const deepCrumbs=location.hash.startsWith('#cssa/'+moduleId+'/')
+  ? location.hash.slice(('#cssa/'+moduleId+'/').length).split('/').filter(Boolean).map(x=>decodeURIComponent(x))
+  : []
+ const crumbLabel=(value:string)=>{
+  if(/^r\d?-?j\d+/i.test(value)||/^u\d+/i.test(value))return humanizeCode(value.replaceAll('-','_'))
+  return humanizeCode(value)
+ }
 
  return <main className="u-shell">
   <aside className="u-sidebar">
@@ -650,7 +662,16 @@ export default function CSSAPage(){
             ))}
           </div>
         )
-      })
+      }).concat(showTechDetails ? [(
+        <div key="advanced" className="u-nav-group u-nav-advanced">
+          <div className="u-nav-group-title">AVANCÉ / AUDIT</div>
+          {structure.modules.filter(m=>cssaAdvancedModuleIds.includes(m.id)).map(m=>(
+            <a key={m.id} href={'#cssa/'+m.id} className={moduleId===m.id?'active':''} onClick={()=>openModule(m.id)}>
+              <span><UiIcon name={m.icon}/></span><strong>{m.label}</strong>{moduleCount(m.id)>0&&<b>{moduleCount(m.id)}</b>}
+            </a>
+          ))}
+        </div>
+      )] : [])
     ) : (
       structure.modules.map(m => (
         <a
@@ -671,7 +692,7 @@ export default function CSSAPage(){
 
   <section className="u-main">
    <header className="u-top">
-    <div><div className="u-breadcrumb"><a href="#cssa/dashboard">CSSA</a><span>›</span><strong>{structure.modules.find(m=>m.id===moduleId)?.label}</strong></div><h1>{moduleId==='dashboard'?'Dashboard ':''}{structure.name}</h1><p>{structure.subtitle}</p></div>
+    <div><div className="u-breadcrumb"><a href="#cssa/dashboard">CSSA</a><span>›</span>{deepCrumbs.length?<a href={'#cssa/'+moduleId}>{moduleLabel}</a>:<strong>{moduleLabel}</strong>}{deepCrumbs.map((part,index)=><span className="u-breadcrumb-deep" key={part+index}><span>›</span>{index===deepCrumbs.length-1?<strong>{crumbLabel(part)}</strong>:<a href={'#cssa/'+moduleId+'/'+deepCrumbs.slice(0,index+1).map(encodeURIComponent).join('/')}>{crumbLabel(part)}</a>}</span>)}</div><h1>{moduleId==='dashboard'&&structureId!=='cssa'?'Dashboard ':''}{structure.name}</h1><p>{structure.subtitle}</p></div>
     <div className="u-top-actions">
       <span className="u-badge">{structure.badge}</span>
       <button type="button" className="u-btn-tech-toggle" onClick={()=>setShowTechDetails(prev=>!prev)} title="Afficher/masquer les métriques techniques">
@@ -688,8 +709,12 @@ export default function CSSAPage(){
      </div>
    )}
 
-   {moduleId==='sportif'&&structureId==='cssa'?(
+   {moduleId==='dashboard'&&structureId==='cssa'?(
+    <CSSAHomePage contradictions={profile.contradictions} onOpen={(mod,id)=>openModule(mod,id||'')}/>
+   ):moduleId==='sportif'&&structureId==='cssa'?(
     <CSSASportWorkspace/>
+   ):moduleId==='organisation'&&structureId==='cssa'?(
+    <CSSAOrganisationPage items={items} selectedId={selectedId} onOpen={openItem} onClear={()=>openModule('organisation')}/>
    ):['admin','crm','tasks','matchday'].includes(moduleId)&&structureId==='cssa'?(
     <CSSAOpsWorkspace
       activeModule={moduleId as any}

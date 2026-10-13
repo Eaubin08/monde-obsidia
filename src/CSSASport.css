@@ -1397,3 +1397,23 @@
   .spx-controls-right input { width: auto; }
   .spx-sources > div { grid-template-columns: 1fr; }
 }
+
+/* UX2: densité et lisibilité Sportif pour écrans publics */
+@media (max-width: 1366px) {
+  .spx { grid-template-columns: 180px minmax(0, 1fr); }
+  .spx-grid { grid-template-columns: minmax(360px, 1fr) minmax(340px, .9fr); gap: 10px; min-height: 0; }
+  .spx-matches { max-height: 520px; }
+  .spx-detail-header { padding: 12px 13px; }
+}
+@media (max-width: 1100px) {
+  .spx { grid-template-columns: 170px minmax(0, 1fr); }
+  .spx-grid { grid-template-columns: 1fr; min-height:0; }
+  .spx-detail { max-height:none; }
+}
+@media (max-width: 1024px) {
+  .spx { display:block; }
+  .spx-teams { margin-bottom:10px; }
+  .spx-team-list { max-height:300px; }
+  .spx-grid { display:block; }
+  .spx-calendar { margin-bottom:10px; }
+}

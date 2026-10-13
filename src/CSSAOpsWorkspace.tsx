@@ -368,45 +368,6 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
 
   return (
     <div className="ops-wrapper">
-      {/* Barre de navigation supérieure Ops */}
-      <nav className="ops-subnav-bar">
-        <div className="ops-subnav-tabs">
-          <button
-            type="button"
-            className={`ops-subnav-btn ${activeModule === 'tasks' ? 'active' : ''}`}
-            onClick={() => onSelect('tasks', '')}
-          >
-            📋 Tâches & Suivi ({state?.tasks.length || 0})
-          </button>
-          <button
-            type="button"
-            className={`ops-subnav-btn ${activeModule === 'admin' || activeModule === 'administration' ? 'active' : ''}`}
-            onClick={() => onSelect('admin', '')}
-          >
-            🏛️ Administration Club
-          </button>
-          <button
-            type="button"
-            className={`ops-subnav-btn ${activeModule === 'crm' ? 'active' : ''}`}
-            onClick={() => onSelect('crm', '')}
-          >
-            📁 Dossiers CRM ({state?.cases.length || 0})
-          </button>
-          <button
-            type="button"
-            className={`ops-subnav-btn ${activeModule === 'matchday' || activeModule === 'intendance' ? 'active' : ''}`}
-            onClick={() => onSelect('matchday', '')}
-          >
-            🚚 Intendance Matchday ({state?.intendanceItems.length || 0})
-          </button>
-        </div>
-        <div className="ops-subnav-meta">
-          <span className="ops-subnav-badge">
-            {isTaskOrAdminView ? 'SUIVI OPÉRATIONNEL' : isCrmView ? 'LITIGES & RÈGLEMENTS' : 'LOGISTIQUE MATCHDAY'}
-          </span>
-        </div>
-      </nav>
-
       <div className="ops-workbox">
       {/* ========================================================
           COLONNE 1 : Catégories & Filtres (Boîte de travail)
