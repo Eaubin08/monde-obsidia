@@ -1,4 +1,4 @@
-import {useMemo,useState} from 'react'
+import {useEffect,useMemo,useState} from 'react'
 import './CSSAPage.css'
 
 type Status='LIVE'|'PROVEN'|'OPEN'|'HOLD'|'PAPER'|'RECORDED_REAL'|'PARTIAL'
@@ -25,6 +25,22 @@ type Organization={
   evidence:string[]
 }
 type Project={id:string;title:string;status:string}
+type NativeEntity={
+  id:string;kind:string;label:string;evidence_hash?:string;verification?:string;
+  status?:string|null;priority?:string|null;due_at?:string|null;provider?:string;
+  gate?:string|null;receipt_type?:string;mode?:string;domainId?:string;
+  agentId?:string;nativeService?:boolean;observedState?:string;phase?:string;
+  decisionAuthority?:string;reason?:string;[key:string]:unknown
+}
+type NativeReadModel={
+  schema:string;available?:boolean;readonly?:boolean;decision_authority?:string;
+  reason?:string;entities?:NativeEntity[];relations?:{from:string;type:string;to:string}[];
+  availability?:Record<string,string>;projection_hash?:string
+}
+type WorldState={
+  schema?:string;readonly?:boolean;entities?:NativeEntity[];relations?:unknown[];
+  observedAt?:string;decisionAuthority?:string
+}
 
 const universalContract={
   version:'PORTABLE_DOMAIN_REGISTRATION_V0',
@@ -154,15 +170,53 @@ export default function CSSAPage(){
   const [projects,setProjects]=useState<Record<string,Project[]>>({})
   const [showProjectForm,setShowProjectForm]=useState(false)
   const [projectName,setProjectName]=useState('')
+  const [worldState,setWorldState]=useState<WorldState|null>(null)
+  const [nativeModel,setNativeModel]=useState<NativeReadModel|null>(null)
+  const [runtimeError,setRuntimeError]=useState('')
+  const [selectedNative,setSelectedNative]=useState('')
+  const [refreshing,setRefreshing]=useState(false)
 
   const current=useMemo(()=>organizations.find(o=>o.id===selected)??organizations[0],[selected])
+
+  const refreshRuntime=async()=>{
+    setRefreshing(true)
+    setRuntimeError('')
+    try{
+      const [stateResult,nativeResult]=await Promise.allSettled([
+        fetch('/obsidia-local/state',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('STATE_UNAVAILABLE');return r.json()}),
+        fetch('/obsidia-local/native-enterprise',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('NATIVE_READ_MODEL_UNAVAILABLE');return r.json()}),
+      ])
+      if(stateResult.status==='fulfilled')setWorldState(stateResult.value)
+      else setRuntimeError(prev=>prev||'Runtime local indisponible')
+      if(nativeResult.status==='fulfilled')setNativeModel(nativeResult.value)
+      else setNativeModel({schema:'MONDE_OBSIDIA_NATIVE_READ_MODEL_V0',available:false,readonly:true,reason:'LOCAL_BRIDGE_ROUTE_NOT_AVAILABLE',entities:[],relations:[],availability:{}})
+    }finally{
+      setRefreshing(false)
+    }
+  }
+
+  useEffect(()=>{
+    refreshRuntime()
+    const timer=window.setInterval(refreshRuntime,5000)
+    return()=>window.clearInterval(timer)
+  },[])
   const activeCapability=current.capabilities.find(c=>c.id===selectedCapability)??null
+  const worldEntities=worldState?.entities??[]
+  const nativeEntities=nativeModel?.entities??[]
+  const serviceIds=current.id==='trading'?['trading-x108','kernel-x108','obsidia-api']:
+    current.id==='gps'?['gps-defense','kernel-x108','obsidia-api']:
+    ['kernel-x108','obsidia-api']
+  const liveServices=worldEntities.filter(e=>e.kind==='session'&&e.nativeService&&serviceIds.includes(String(e.agentId||'')))
+  const liveDecisions=worldEntities.filter(e=>e.kind==='decision_record'&&(!e.domainId||String(e.domainId)===current.domainId))
+  const selectedNativeEntity=nativeEntities.find(e=>e.id===selectedNative)??null
+  const nativeKinds=useMemo(()=>nativeEntities.reduce<Record<string,number>>((acc,e)=>{acc[e.kind]=(acc[e.kind]||0)+1;return acc},{}),[nativeEntities])
   const currentProjects=projects[current.id]??[]
 
   const chooseOrganization=(id:string)=>{
     setSelected(id)
     setSelectedCapability(null)
     setShowProjectForm(false)
+    setSelectedNative('')
   }
 
   const addProject=()=>{
@@ -234,6 +288,70 @@ export default function CSSAPage(){
         <em>{openCount} ouvertes ou HOLD</em>
       </aside>
     </header>
+
+    <section className="cssa-section cssa-runtime-real">
+      <header>
+        <div>
+          <span className="cssa-kicker">RÉEL CONNECTÉ</span>
+          <h2>Runtime local + stores natifs</h2>
+        </div>
+        <button className="cssa-refresh" onClick={refreshRuntime} disabled={refreshing}>{refreshing?'Lecture…':'Rafraîchir'}</button>
+      </header>
+
+      <div className="cssa-runtime-statusline">
+        <span className={worldState?'ok':'off'}>WORLD STATE · {worldState?'CONNECTED':'UNAVAILABLE'}</span>
+        <span className={nativeModel?.available?'ok':'off'}>NATIVE STORE · {nativeModel?.available?'CONNECTED':'UNAVAILABLE'}</span>
+        <span>KX108_ONLY</span>
+        <span>READONLY</span>
+      </div>
+
+      {runtimeError&&<p className="cssa-runtime-error">{runtimeError}</p>}
+
+      <div className="cssa-real-layout">
+        <article className="cssa-real-block">
+          <header><div><span className="cssa-kicker">SERVICES OBSERVÉS</span><h3>Runtime réel</h3></div><strong>{liveServices.length}</strong></header>
+          <div className="cssa-service-list">
+            {liveServices.length?liveServices.map(service=><div key={service.id} className="cssa-service-row">
+              <span className={'cssa-runtime-dot '+(service.observedState==='READY'?'ready':'waiting')}></span>
+              <div><strong>{service.label}</strong><small>{String(service.observedState||service.phase||'OBSERVED')} · {String(service.decisionAuthority||'KX108_ONLY')}</small></div>
+            </div>):<p>Aucun service natif observé pour cette structure.</p>}
+          </div>
+          <div className="cssa-live-decisions">
+            <small>DÉCISIONS OBSERVÉES</small>
+            <strong>{liveDecisions.length}</strong>
+            <span>records locaux correspondant au domaine quand identifiable</span>
+          </div>
+        </article>
+
+        <article className="cssa-real-block">
+          <header><div><span className="cssa-kicker">STORE NATIF</span><h3>Objets persistés</h3></div><strong>{nativeEntities.length}</strong></header>
+          {nativeModel?.available?<div className="cssa-native-kind-grid">
+            {Object.entries(nativeKinds).map(([kind,count])=><span key={kind}><b>{count}</b>{kind}</span>)}
+          </div>:<div className="cssa-native-unavailable">
+            <strong>{nativeModel?.reason||'NATIVE_READ_MODEL_UNAVAILABLE'}</strong>
+            <p>Le cockpit n’invente aucun CASE/TASK/receipt. Le bridge GET-only doit être présent et les roots locaux configurés.</p>
+          </div>}
+          {nativeModel?.projection_hash&&<small className="cssa-projection-hash">projection {nativeModel.projection_hash.slice(0,20)}…</small>}
+        </article>
+      </div>
+
+      {nativeModel?.available&&nativeEntities.length>0&&<div className="cssa-native-browser">
+        <div className="cssa-native-objects">
+          <header><strong>Objets canoniques</strong><small>replay/hash vérifiés selon le type</small></header>
+          {nativeEntities.slice(0,80).map(entity=><button key={entity.id} className={selectedNative===entity.id?'active':''} onClick={()=>setSelectedNative(entity.id)}>
+            <span><strong>{entity.label}</strong><small>{entity.kind} · {String(entity.verification||entity.status||entity.gate||'OBSERVED')}</small></span>
+            <b>›</b>
+          </button>)}
+        </div>
+        <aside className="cssa-native-inspector">
+          {selectedNativeEntity?<><span className="cssa-kicker">OBJET RÉEL</span><h3>{selectedNativeEntity.label}</h3>
+            <div className="cssa-native-fields">
+              {Object.entries(selectedNativeEntity).filter(([key])=>!['label'].includes(key)).map(([key,value])=><div key={key}><small>{key}</small><strong>{String(value??'—')}</strong></div>)}
+            </div>
+          </>:<><span className="cssa-kicker">INSPECTEUR</span><h3>Sélectionne un objet</h3><p>La page montre uniquement les métadonnées persistées fournies par le read model natif.</p></>}
+        </aside>
+      </div>}
+    </section>
 
     <section className="cssa-section cssa-cockpit-universal">
       <header>
