@@ -273,3 +273,36 @@ Conformément à la directive du club (ne pas créer 19 copies plates de tableau
 
 
 
+
+
+---
+
+## PASSE UX2 — CSSA Public Ready Completion
+
+- **Date :** 13 octobre 2026
+- **Base :** `d7b7faaa45eca176b953cb3c91c127ffa71e7dfb`
+- **PR :** #16
+- **Merge :** `2bd464393dc65ca4468b14f456ec71f481f6b17a`
+
+### Corrections principales
+- accueil CSSA orienté action plutôt que capacités techniques ;
+- page Organisation restructurée en pôles humains et objets cliquables ;
+- Mail restauré dans la navigation ;
+- suppression de la sous-navigation Ops dupliquant la sidebar ;
+- modules avancés/audit masqués par défaut ;
+- breadcrumb profond CSSA ;
+- responsive renforcé pour 1366 / 1024 / mobile ;
+- Sportif ajusté côté responsive sans toucher aux données métier ;
+- tests UX2 ajoutés.
+
+### Validation
+Workflow GitHub Actions `38399824910` :
+- Ubuntu : SUCCESS
+- Windows : SUCCESS
+- build : PASS
+- tests : 92 total / 91 pass / 0 fail
+- updater Windows : PASS
+
+### Verdict
+- **Code gate : PASS**
+- **Public Ready visuel : validation humaine locale encore requise**
