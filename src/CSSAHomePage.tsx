@@ -31,9 +31,11 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
 
   const tasks=ops?.tasks??[]
   const realCases=(ops?.cases??[]).filter(c=>!c.isTestFixture)
-  const critical=useMemo(()=>tasks.filter(t=>attentionStatuses.has(t.status)&&['CRITIQUE','HAUTE'].includes(String(t.priority||''))).slice(0,6),[tasks])
+  const highPriority=useMemo(()=>tasks.filter(t=>attentionStatuses.has(t.status)&&['CRITIQUE','HAUTE'].includes(String(t.priority||''))),[tasks])
+  const critical=highPriority.slice(0,6)
   const blocked=useMemo(()=>tasks.filter(t=>['BLOQUE','BLOQUÉ','EN_ATTENTE'].includes(t.status)).slice(0,6),[tasks])
-  const activeCases=useMemo(()=>realCases.filter(c=>!['TERMINE','FERME','CLOSED'].includes(String(c.status||''))).slice(0,6),[realCases])
+  const openCaseRows=useMemo(()=>realCases.filter(c=>!['TERMINE','FERME','CLOSED'].includes(String(c.status||''))),[realCases])
+  const activeCases=openCaseRows.slice(0,6)
   const openTasks=tasks.filter(t=>attentionStatuses.has(t.status)).length
 
   return <section className="cssa-home">
@@ -50,8 +52,8 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
 
     <div className="cssa-home-kpis">
       <button onClick={()=>onOpen('tasks')}><small>TÂCHES OUVERTES</small><strong>{openTasks}</strong><span>Voir le suivi</span></button>
-      <button onClick={()=>onOpen('tasks')}><small>PRIORITÉ HAUTE / CRITIQUE</small><strong>{critical.length}</strong><span>À traiter</span></button>
-      <button onClick={()=>onOpen('crm')}><small>DOSSIERS ACTIFS</small><strong>{activeCases.length}</strong><span>Ouvrir le CRM</span></button>
+      <button onClick={()=>onOpen('tasks')}><small>PRIORITÉ HAUTE / CRITIQUE</small><strong>{highPriority.length}</strong><span>À traiter</span></button>
+      <button onClick={()=>onOpen('crm')}><small>DOSSIERS ACTIFS</small><strong>{openCaseRows.length}</strong><span>Ouvrir le CRM</span></button>
       <button onClick={()=>onOpen('sources')}><small>CONTRADICTIONS PUBLIQUES</small><strong>{contradictions.length}</strong><span>À examiner</span></button>
     </div>
 
