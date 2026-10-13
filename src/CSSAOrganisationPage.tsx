@@ -2,7 +2,7 @@ import {useMemo,useState} from 'react'
 import './CSSAOrganisation.css'
 
 type OrgItem={id:string;title:string;subtitle:string;kind:string;status:string;meta?:Record<string,string>;semantic?:{purpose:string;limits:string}}
-type Props={items:OrgItem[];onOpen:(id:string)=>void}
+type Props={items:OrgItem[];selectedId?:string;onOpen:(id:string)=>void;onClear:()=>void}
 
 const roleGroups=[
   {id:'direction',label:'Gouvernance & direction',roles:['PRESIDENT','GENERAL_MANAGER','TECHNICAL_DIRECTOR']},
@@ -20,7 +20,7 @@ function teamGroup(item:OrgItem){
   return 'other'
 }
 
-export default function CSSAOrganisationPage({items,onOpen}:Props){
+export default function CSSAOrganisationPage({items,selectedId,onOpen,onClear}:Props){
   const [filter,setFilter]=useState('all')
   const roles=items.filter(x=>x.kind==='role')
   const teams=items.filter(x=>x.kind==='team')
@@ -33,6 +33,19 @@ export default function CSSAOrganisationPage({items,onOpen}:Props){
     {id:'feminines',label:'Pôle féminin',items:teams.filter(t=>teamGroup(t)==='feminines')}
   ],[roles,teams])
   const shown=filter==='all'?groups:groups.filter(g=>g.id===filter)
+  const selected=items.find(x=>x.id===selectedId)
+
+  if(selected&&selected.id!=='org-overview')return <section className="orgx">
+    <nav className="orgx-breadcrumb"><button onClick={onClear}>Organisation</button><span>›</span><strong>{selected.title}</strong></nav>
+    <article className="orgx-detail">
+      <header><div><small>{selected.kind==='role'?'RÔLE':'ÉQUIPE / STRUCTURE'}</small><h2>{selected.title}</h2><p>{selected.subtitle}</p></div><span className="orgx-status">{selected.status}</span></header>
+      <div className="orgx-detail-grid">
+        <section><h3>Rôle dans le club</h3><p>{selected.semantic?.purpose||'Objet public de l’organisation CSSA.'}</p></section>
+        <section><h3>Ce qui est connu</h3>{selected.meta?Object.entries(selected.meta).map(([k,v])=><div className="orgx-fact" key={k}><small>{k}</small><strong>{v}</strong></div>):<p>Aucune métadonnée supplémentaire.</p>}</section>
+        <section className="orgx-limit"><h3>Limite</h3><p>{selected.semantic?.limits||'Les informations non publiquement vérifiées restent UNKNOWN.'}</p></section>
+      </div>
+    </article>
+  </section>
 
   return <section className="orgx">
     <header className="orgx-hero">
