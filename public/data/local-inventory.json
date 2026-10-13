@@ -3,7 +3,7 @@
   "available": true,
   "commit": "d9295d93f541eb1c66d922cbc7d6e7a2735ac415",
   "branch": "repair/brody-native-memory-cleanup-20261008",
-  "observedAt": "2026-10-13T10:00:52.026Z",
+  "observedAt": "2026-10-13T10:18:17.543Z",
   "agentFiles": [
     "periphery/agents/__init__.py",
     "periphery/agents/action_sequence_agent.py",
