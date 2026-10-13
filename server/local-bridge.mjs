@@ -9,6 +9,7 @@ import {buildObsidiaState} from './obsidia-state.mjs'
 import {readNativeEnterpriseView} from './native-enterprise-read.mjs'
 import {readCssaSportWatch} from './cssa-sport-watch.mjs'
 import {readCssaSportState,writeCssaSportState} from './cssa-sport-store.mjs'
+import {readCssaOpsState,writeCssaOpsState} from './cssa-ops-store.mjs'
 import {randomUUID} from 'node:crypto'
 import {execFileSync,spawn} from 'node:child_process'
 import {existsSync,realpathSync,readFileSync,readdirSync,statSync,appendFileSync,mkdirSync} from 'node:fs'
@@ -570,6 +571,8 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  if(req.method==='GET'&&url.pathname==='/cssa-sport-watch'){res.end(JSON.stringify(await readCssaSportWatch({force:url.searchParams.get('force')==='1'})));return}
  if(req.method==='GET'&&url.pathname==='/cssa-sport-state'){res.end(JSON.stringify(readCssaSportState()));return}
  if(req.method==='POST'&&url.pathname==='/cssa-sport-state'){const patch=await body(req);res.end(JSON.stringify(writeCssaSportState(patch)));return}
+ if(req.method==='GET'&&url.pathname==='/cssa-ops-state'){res.end(JSON.stringify(readCssaOpsState()));return}
+ if(req.method==='POST'&&url.pathname==='/cssa-ops-state'){const patch=await body(req);res.end(JSON.stringify(writeCssaOpsState(patch)));return}
  if(req.method==='GET'&&url.pathname==='/state'){
  const snap=snapshot(),live=liveSnapshot()
  live.sessions=(live.sessions||[]).map(s=>{

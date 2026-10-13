@@ -399,26 +399,6 @@ export default function CSSASportWorkspace() {
   const [newTaskText, setNewTaskText] = useState('')
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'offline'>('saved')
 
-  // Hash route synchronization
-  useEffect(() => {
-    const onHashChange = () => {
-      const {activeView: nextView, matchId: nextMatch} = parseHash()
-      if (nextView && nextView !== activeView) setActiveView(nextView)
-      if (nextMatch !== undefined && nextMatch !== selectedId) setSelectedId(nextMatch)
-    }
-    window.addEventListener('hashchange', onHashChange)
-    return () => window.removeEventListener('hashchange', onHashChange)
-  }, [parseHash, activeView, selectedId])
-
-  const navigateTo = useCallback((nextView: string, nextMatch?: string) => {
-    setActiveView(nextView)
-    if (nextMatch !== undefined) setSelectedId(nextMatch)
-    const url = `#cssa/sportif/${encodeURIComponent(nextView)}${nextMatch ? '/' + encodeURIComponent(nextMatch) : ''}`
-    if (location.hash !== url) {
-      location.hash = url
-    }
-  }, [])
-
   // Load persistent state from server
   const loadServerState = useCallback(async () => {
     try {
@@ -441,6 +421,27 @@ export default function CSSASportWorkspace() {
       setTasks(JSON.parse(localStorage.getItem('cssa:sport:tasks') || '{}'))
     } catch {}
     setSaveStatus('offline')
+  }, [])
+
+  // Hash route synchronization
+  useEffect(() => {
+    const onHashChange = () => {
+      const {activeView: nextView, matchId: nextMatch} = parseHash()
+      if (nextView && nextView !== activeView) setActiveView(nextView)
+      if (nextMatch !== undefined && nextMatch !== selectedId) setSelectedId(nextMatch)
+      loadServerState()
+    }
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [parseHash, activeView, selectedId, loadServerState])
+
+  const navigateTo = useCallback((nextView: string, nextMatch?: string) => {
+    setActiveView(nextView)
+    if (nextMatch !== undefined) setSelectedId(nextMatch)
+    const url = `#cssa/sportif/${encodeURIComponent(nextView)}${nextMatch ? '/' + encodeURIComponent(nextMatch) : ''}`
+    if (location.hash !== url) {
+      location.hash = url
+    }
   }, [])
 
   useEffect(() => {
@@ -1234,8 +1235,12 @@ export default function CSSASportWorkspace() {
 
                           {/* Tâches liées */}
                           <section className="spx-tasks-section">
-                            <header>
+                            <header style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                               <h4>Tâches Liées à la Rencontre ({(tasks[selected.id] || []).length})</h4>
+                              <div style={{display: 'flex', gap: '8px', fontSize: '0.75rem'}}>
+                                <a href="#cssa/tasks" style={{color: '#16a34a', textDecoration: 'none', fontWeight: 600}}>Vue Globale TASKS →</a>
+                                <a href="#cssa/matchday" style={{color: '#64748b', textDecoration: 'none'}}>Matchday →</a>
+                              </div>
                             </header>
                             <div className="spx-task-add">
                               <input
@@ -1258,6 +1263,13 @@ export default function CSSASportWorkspace() {
                                     onChange={() => handleToggleTask(selected.id, task.id)}
                                   />
                                   <span>{task.label}</span>
+                                  <a
+                                    href={'#cssa/tasks/' + encodeURIComponent(task.id)}
+                                    title="Ouvrir la fiche tâche dans le module TASKS"
+                                    style={{fontSize: '0.75rem', marginLeft: 'auto', marginRight: '6px', color: '#0284c7', textDecoration: 'none'}}
+                                  >
+                                    Détail →
+                                  </a>
                                   <button
                                     className="spx-task-del"
                                     onClick={() => handleDeleteTask(selected.id, task.id)}

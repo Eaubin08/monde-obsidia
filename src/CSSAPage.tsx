@@ -2,6 +2,7 @@ import {useEffect,useMemo,useState} from 'react'
 import './CSSAPage.css'
 import './CSSASport.css'
 import CSSASportWorkspace from './CSSASportPage'
+import CSSAOpsWorkspace from './CSSAOpsWorkspace'
 
 type Semantic={purpose:string;context:string;observes:string;feeds:string;impact:string;limits:string}
 type SourceItem={id:string;title:string;url:string;truthClass:string;cadence:string;criticality:string;semantic:Semantic}
@@ -634,7 +635,15 @@ export default function CSSAPage(){
 
    <div className="u-runtime-strip"><span className={world?'ok':'off'}>WORLD {world?'CONNECTED':'UNAVAILABLE'}</span><span className={native?.available?'ok':'off'}>STORE {native?.available?'CONNECTED':'UNAVAILABLE'}</span><span>{entities.length} objets natifs</span><span>{liveServices.length} services</span><span>{decisions.length} décisions</span>{native?.projection_hash&&<span>projection {native.projection_hash.slice(0,12)}…</span>}</div>
 
-   {moduleId==='sportif'&&structureId==='cssa'?<CSSASportWorkspace/>:moduleId==='dashboard'?<div className="u-dashboard-grid">
+   {moduleId==='sportif'&&structureId==='cssa'?(
+    <CSSASportWorkspace/>
+   ):['admin','crm','tasks','matchday'].includes(moduleId)&&structureId==='cssa'?(
+    <CSSAOpsWorkspace
+      activeModule={moduleId as any}
+      selectedId={selectedId}
+      onSelect={(mod, id)=>openModule(mod, id)}
+    />
+   ):moduleId==='dashboard'?<div className="u-dashboard-grid">
     <section className="u-dashboard-summary">
      <div className="u-summary-cards">
       <button className={dashboardMode==='capabilities'?'active':''} onClick={()=>{setDashboardMode('capabilities');setSelectedId('')}}><small>CAPACITÉS</small><strong>{profile.capabilities.length}</strong><span>{provenCount} établies</span></button>

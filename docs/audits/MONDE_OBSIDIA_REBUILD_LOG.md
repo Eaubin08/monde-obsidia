@@ -132,4 +132,76 @@ Conformément à la directive du club (ne pas créer 19 copies plates de tableau
 2. Gestion des convocations nominatives des joueurs par catégorie une fois la base d'effectif raccordée.
 3. Extension du module aux aspects financiers, licences et billetterie pour les matchs à Dugauguez.
 
+---
+
+## TRANCHE 3 — CSSA Administration / Intendance / Tasks-CRM
+
+- **Date d'exécution** : 13 octobre 2026
+- **Responsable** : Antigravity Agent
+- **Cible locale** : `C:\Users\Aubin\Desktop\OBSIDIA_WORLDS\monde-obsidia-git`
+- **Branche** : `main`
+- **HEAD précédent** : `0a0c114`
+
+---
+
+### 1. Objectifs de la tranche
+
+1. **Audit & Alignement sur le bridge natif canonique** :
+   - Audit de `obsidia-cssa-readonly` (`cssa_native_ops_bridge_v0.py`).
+   - Alignement strict sur les entités canoniques : `CASE` (Dossier CRM) → `INTERACTION` → `TASK` (Tâche native) → `FOLLOWUP` (Rappel/Échéance) avec receipts KX108.
+   - Ségrégation étanche des fixtures F3H-D de test (`fixture-contract-001`, `fixture-institution-001`, `fixture-matchday-001`, `fixture-incident-001`) identifiées comme `SIMULATED_NOT_OBSERVED / TEST_FIXTURE`.
+2. **Synchronisation Bi-directionnelle Sportif ⇄ Tasks/Admin (Contrat de non-duplication)** :
+   - Une tâche créée sur une fiche de match dans Sportif (ex: `r1-j7` Bogny) se répercute instantanément dans l'Administration et le module Tâches avec le même ID, le même libellé et le lien vers le match.
+   - La modification d'état (`A_FAIRE`, `EN_COURS`, `EN_ATTENTE`, `BLOQUE`, `TERMINE`) ou des notes depuis l'Administration/Tâches se reflète immédiatement dans la fiche de match.
+   - Les modifications persistent sur disque local dans `.obsidia-live/cssa_ops_state.json` et `.obsidia-live/cssa_sport_state.json` et survivent aux rechargements `F5`.
+3. **Console Métier "Boîte de Travail" en 3 Colonnes (Zéro cartes décoratives)** :
+   - Colonne 1 (Gauche) : Filtres de statut, domaines d'origine, priorités, catégories intendance et séparation des dossiers CRM.
+   - Colonne 2 (Centre) : Liste opérationnelle navigable avec recherche textuelle et indicateurs de priorité et de vérité.
+   - Colonne 3 (Droite) : Fiche d'inspection et d'action opérationnelle complète (actions d'état directes, bascule de priorités, checklists interactives, notes persistantes, relations avec liens vers match ou CASE, création et suppression de tâches).
+4. **Dossiers Réglementaires & Procédures Réelles Sourcées** :
+   - **Décalage de match J7 Bogny** : application stricte de l'Art. 20.7 des Règlements LGEF (accord écrit préalable des 2 clubs avant saisine de la CRC, statut de validation LGEF, frontière d'autorité explicite).
+   - **Conformité FMI & Procédure papier** : respect de l'Art. 24 LGEF (tablette matchday, synchronisation Footclubs, kit papier de secours obligatoire avant lundi 10h00, mention de l'absence d'API Footclubs publique).
+   - **Stade Louis-Dugauguez** : convention d'occupation avec Ardenne Métropole (SIREN 939505657), créneau J8 sans collision, homologation niveau 4.
+   - **Affiliation et Organigramme** : Art. 3.2-3.3 LGEF et distinction juridique Association CSSA vs SAS Sedan.
+5. **Règle Épistémique d'Intégrité Absolue (Zéro responsable inventé)** :
+   - Tous les champs responsables non prouvés sont obligatoirement `UNKNOWN / NON ASSIGNÉ`.
+   - Statuts logistiques et intendance strictement limités à `CONFIRMÉ`, `À PRÉPARER`, `EN ATTENTE`, `UNKNOWN`.
+
+---
+
+### 2. Fichiers créés et modifiés
+
+#### Fichiers créés
+- `server/cssa-ops-store.mjs` : Moteur de persistance serveur local pour les tâches, dossiers CRM et intendance dans `.obsidia-live/cssa_ops_state.json`, avec synchronisation bidirectionnelle automatique vers `cssa_sport_state.json`.
+- `src/CSSAOpsWorkspace.tsx` : Console opérationnelle de travail en 3 colonnes pour Administration, Tâches, CRM et Intendance/Matchday.
+- `src/CSSAOps.css` : Styles CSS stricts de la boîte de travail en 3 colonnes.
+- `tests/cssa-ops.test.mjs` : Suite de 6 tests automatisés validant la persistance, le CRUD, les règles épistémiques, les workflows LGEF et la synchronisation bidirectionnelle.
+
+#### Fichiers modifiés
+- `server/cssa-sport-store.mjs` : Intégration de la lecture et de l'écriture synchronisée avec `cssa-ops-store.mjs` et isolation des chemins de test.
+- `server/local-bridge.mjs` : Exposition des endpoints `GET /obsidia-local/cssa-ops-state` et `POST /obsidia-local/cssa-ops-state`.
+- `src/CSSAPage.tsx` : Routage des modules `#cssa/admin`, `#cssa/tasks`, `#cssa/crm`, `#cssa/matchday` vers `CSSAOpsWorkspace`.
+- `src/CSSASportPage.tsx` : Raccordement des liens profonds vers `#cssa/tasks`, `#cssa/matchday` et rafraîchissement au changement de hash.
+
+---
+
+### 3. Résultats des tests et vérifications
+
+| Commande | Résultat | Détail |
+|---|---|---|
+| `npm.cmd run build` | **PASS** | `tsc -b` (0 erreur TS) + Vite build (30 modules compilés en 214ms) |
+| `npm.cmd test` | **PASS** | 87 passés / 0 échoué |
+| `node --test tests/cssa-ops.test.mjs` | **PASS** | 6 passés / 0 échoué |
+| `node --test tests/cssa-sport.test.mjs` | **PASS** | 11 passés / 0 échoué |
+| `npm.cmd run lint` | **PASS** | 0 erreur (28 warnings bénins de bibliothèques tierces conservés) |
+
+---
+
+### 4. Limites restantes pour la tranche suivante
+
+1. Pas d'automatisation des envois d'emails : le preflight gouverné reste sous verrou `KX108_HOLD` (aucune émission SMTP réelle vers la LGEF ou Bogny).
+2. L'accès Footclubs reste en procédure assistée manuelle (aucune API FFF publique n'existe à ce jour).
+3. Les effectifs nominatifs de joueurs et arbitres demeurent non inventés et marqués `UNKNOWN` jusqu'au raccordement d'une source officielle certifiée.
+
+
 
