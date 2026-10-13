@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {mkdtempSync,mkdirSync,writeFileSync,rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
-import {readNativeEnterpriseView,resolveNativeReadModelRepo} from '../server/native-enterprise-read.mjs'
+import {readNativeEnterpriseView,resolveNativeReadModelRepo,detectEnterpriseRoots} from '../server/native-enterprise-read.mjs'
 
 function makeModuleRoot(prefix='monde-enterprise-'){
  const root=mkdtempSync(join(tmpdir(),prefix))
@@ -24,65 +24,85 @@ test('dedicated read-model checkout can differ from active Obsidia checkout',()=
  const active=mkdtempSync(join(tmpdir(),'obsidia-active-'))
  const readModel=makeModuleRoot('obsidia-read-model-')
  try{
-  const selected=resolveNativeReadModelRepo({
-   repoRoot:active,
-   env:{OBSIDIA_ENTERPRISE_READ_MODEL_REPO:readModel}
-  })
+  const selected=resolveNativeReadModelRepo({repoRoot:active,env:{OBSIDIA_ENTERPRISE_READ_MODEL_REPO:readModel}})
   assert.equal(selected.root,readModel)
   assert.equal(selected.source,'OBSIDIA_ENTERPRISE_READ_MODEL_REPO')
   assert.equal(selected.present,true)
- }finally{
-  rmSync(active,{recursive:true,force:true})
-  rmSync(readModel,{recursive:true,force:true})
- }
+ }finally{rmSync(active,{recursive:true,force:true});rmSync(readModel,{recursive:true,force:true})}
 })
 
-test('present module without configured native roots remains unavailable',()=>{
+test('auto-detection finds only existing marker-backed roots',()=>{
+ const active=mkdtempSync(join(tmpdir(),'obsidia-detect-'))
+ const runtime=join(active,'runtime')
+ const native=join(active,'native')
+ mkdirSync(join(runtime,'packets'),{recursive:true})
+ mkdirSync(join(native,'native_tasks'),{recursive:true})
+ mkdirSync(join(native,'native_crm'),{recursive:true})
+ try{
+  const detected=detectEnterpriseRoots({repoRoot:active,readModelRoot:active,env:{LOCALAPPDATA:join(active,'none')}})
+  assert.equal(detected.roots.source_runtime,runtime)
+  assert.equal(detected.roots.native_store,native)
+  assert.equal(detected.provenance.source_runtime,'AUTO_DETECTED')
+  assert.equal(detected.provenance.native_store,'AUTO_DETECTED')
+  assert.equal(detected.roots.governance,undefined)
+  assert.equal(detected.roots.execution,undefined)
+ }finally{rmSync(active,{recursive:true,force:true})}
+})
+
+test('configured environment roots take priority over auto detection',()=>{
+ const active=mkdtempSync(join(tmpdir(),'obsidia-env-'))
+ const automatic=join(active,'native');mkdirSync(join(automatic,'native_tasks'),{recursive:true})
+ const explicit=join(active,'explicit-native');mkdirSync(join(explicit,'native_crm'),{recursive:true})
+ try{
+  const detected=detectEnterpriseRoots({
+   repoRoot:active,readModelRoot:active,
+   env:{LOCALAPPDATA:join(active,'none'),OBSIDIA_ENTERPRISE_NATIVE_STORE_ROOT:explicit}
+  })
+  assert.equal(detected.roots.native_store,explicit)
+  assert.equal(detected.provenance.native_store,'ENV:OBSIDIA_ENTERPRISE_NATIVE_STORE_ROOT')
+ }finally{rmSync(active,{recursive:true,force:true})}
+})
+
+test('present module without any real roots remains unavailable',()=>{
  const root=makeModuleRoot()
  try{
   let calls=0
-  const r=readNativeEnterpriseView({repoRoot:root,env:{},run:()=>{calls++}})
+  const r=readNativeEnterpriseView({repoRoot:root,env:{LOCALAPPDATA:join(root,'missing')},run:()=>{calls++}})
   assert.equal(r.reason,'NATIVE_ENTERPRISE_ROOTS_NOT_CONFIGURED')
   assert.equal(calls,0)
+  assert.equal(Object.keys(r.root_detection.roots).length,0)
  }finally{rmSync(root,{recursive:true,force:true})}
 })
 
-test('configured dedicated checkout runs read model from dedicated root',()=>{
- const active=mkdtempSync(join(tmpdir(),'obsidia-active-'))
- const readModel=makeModuleRoot('obsidia-read-model-')
- const store=join(readModel,'native');mkdirSync(store)
+test('auto-detected native store is passed to read model without mutation',()=>{
+ const root=makeModuleRoot()
+ const store=join(root,'native');mkdirSync(join(store,'native_tasks'),{recursive:true})
  try{
   let called=0
   const data={schema:'MONDE_OBSIDIA_NATIVE_READ_MODEL_V0',readonly:true,decision_authority:'KX108_ONLY',canonical_truth:false,entities:[],relations:[],availability:{task:'UNAVAILABLE'},projection_hash:'a'.repeat(64)}
   const result=readNativeEnterpriseView({
-    repoRoot:active,
-    env:{
-      OBSIDIA_ENTERPRISE_READ_MODEL_REPO:readModel,
-      OBSIDIA_ENTERPRISE_NATIVE_STORE_ROOT:store
-    },
+    repoRoot:root,env:{LOCALAPPDATA:join(root,'missing')},
     run:(python,args,opts)=>{
       called++
       assert.deepEqual(args.slice(0,2),['-m','periphery.native_ops.monde_native_read_model_v0'])
-      assert.deepEqual(args.slice(-2),['--native-store-root',store])
-      assert.equal(opts.cwd,readModel)
+      assert.ok(args.includes('--native-store-root'))
+      assert.ok(args.includes(store))
+      assert.equal(opts.cwd,root)
       return JSON.stringify(data)
     }
   })
   assert.equal(called,1)
   assert.equal(result.available,true)
-  assert.equal(result.read_model_repo_source,'OBSIDIA_ENTERPRISE_READ_MODEL_REPO')
- }finally{
-  rmSync(active,{recursive:true,force:true})
-  rmSync(readModel,{recursive:true,force:true})
- }
+  assert.equal(result.root_detection.provenance.native_store,'AUTO_DETECTED')
+ }finally{rmSync(root,{recursive:true,force:true})}
 })
 
-test('invalid or failing canonical reads never return invented objects',()=>{
+test('invalid canonical read never returns invented objects',()=>{
  const root=makeModuleRoot()
- const store=join(root,'native');mkdirSync(store)
+ const store=join(root,'native');mkdirSync(join(store,'native_tasks'),{recursive:true})
  try{
   const r=readNativeEnterpriseView({
-   repoRoot:root,env:{OBSIDIA_ENTERPRISE_NATIVE_STORE_ROOT:store},
+   repoRoot:root,env:{LOCALAPPDATA:join(root,'missing')},
    run:()=>JSON.stringify({schema:'WRONG',readonly:false,entities:[{id:'fabricated'}],relations:[]})
   })
   assert.equal(r.available,false)
