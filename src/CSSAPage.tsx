@@ -3,7 +3,6 @@ import './CSSAPage.css'
 import './CSSASport.css'
 import CSSASportWorkspace from './CSSASportPage'
 import CSSAHomePage from './CSSAHomePage'
-import CSSABusinessPage from './CSSABusinessPage'
 import CSSAMailPage from './CSSAMailPage'
 import CSSACommercePage from './CSSACommercePage'
 import CSSAFinancePage from './CSSAFinancePage'
@@ -14,6 +13,7 @@ import CSSAAdminPage from './CSSAAdminPage'
 import CSSADocumentsPage from './CSSADocumentsPage'
 import CSSAOrganisationVisualPage from './CSSAOrganisationVisualPage'
 import CSSAMatchdayPage from './CSSAMatchdayPage'
+import CSSADossiersPage from './CSSADossiersPage'
 
 type Semantic={purpose:string;context:string;observes:string;feeds:string;impact:string;limits:string}
 type SourceItem={id:string;title:string;url:string;truthClass:string;cadence:string;criticality:string;semantic:Semantic}
@@ -732,7 +732,7 @@ export default function CSSAPage(){
    ):moduleId==='organisation'&&structureId==='cssa'?(
     <CSSAOrganisationVisualPage items={items} selectedId={selectedId} onOpen={openItem} onClear={()=>openModule('organisation')}/>
    ):moduleId==='dossiers'&&structureId==='cssa'?(
-    <CSSABusinessPage mode="dossiers" selectedId={selectedId} onOpen={(mod,id)=>openModule(mod,id||'')}/>
+    <CSSADossiersPage selectedId={selectedId} onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):moduleId==='documents'&&structureId==='cssa'?(
     <CSSADocumentsPage selectedId={selectedId} onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):moduleId==='commercial'&&structureId==='cssa'?(

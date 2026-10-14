@@ -1,0 +1,31 @@
+
+.dosv{display:flex;flex-direction:column;gap:18px;max-width:1480px;margin:0 auto;padding:6px 0 28px;color:#e8eef5}
+.dosv-hero{display:flex;justify-content:space-between;gap:22px;align-items:flex-end;padding:30px;border:1px solid #3a354b;border-radius:20px;background:radial-gradient(circle at 18% 18%,rgba(153,111,255,.15),transparent 34%),linear-gradient(135deg,#15111f,#0a1119)}
+.dosv-hero small,.dosv-kpis small,.dosv-focus small{font-size:10px;letter-spacing:.11em;color:#9b8bb6}
+.dosv-hero h2{font-size:34px;margin:6px 0 6px;letter-spacing:-.03em;max-width:900px}
+.dosv-hero p{margin:0;color:#9a91a8;font-size:13px;max-width:820px;line-height:1.55}
+.dosv-hero button,.dosv-focus button{border:1px solid #63518e;background:#271c48;color:#efe9ff;border-radius:10px;padding:10px 14px;cursor:pointer}
+.dosv-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.dosv-kpis button{border:1px solid #243548;background:#091722;color:#e6edf5;border-radius:14px;padding:17px;text-align:left;cursor:pointer}
+.dosv-kpis button:hover{background:#0d2030}.dosv-kpis button.danger{border-color:#6f3d46;background:#1b1115}
+.dosv-kpis strong{display:block;font-size:25px;margin:7px 0 3px}.dosv-kpis span{font-size:9px;color:#788fa2}
+.dosv-tabs{display:flex;gap:18px;border-bottom:1px solid #1b3448}
+.dosv-tabs button{border:0;border-bottom:2px solid transparent;background:transparent;color:#7f93a7;padding:10px 2px;cursor:pointer}
+.dosv-tabs button.active{color:#fff;border-bottom-color:#8f6ee8}
+.dosv-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.dosv-board article{border:1px solid #1c3448;background:linear-gradient(180deg,#0a1722,#08141d);border-radius:16px;padding:15px;cursor:pointer;transition:transform .12s ease,border-color .12s ease}
+.dosv-board article:hover{transform:translateY(-2px);border-color:#3a5870}.dosv-board article.late{border-color:#624047}
+.dosv-board header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.dosv-board header small{font-size:8px;color:#887aa0;letter-spacing:.08em}.dosv-board header h3{margin:3px 0 0;font-size:15px}.dosv-board header>span{font-size:7.5px;color:#8297a9}
+.dosv-board h4{font-size:13px;margin:14px 0 4px}.dosv-board p{margin:0;color:#7e93a5;font-size:9px}
+.dosv-progress{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin:16px 0 10px}
+.dosv-progress>div{height:7px;border-radius:999px;background:#132638;overflow:hidden}.dosv-progress>div>span{display:block;height:100%;background:linear-gradient(90deg,#6654aa,#8d78ec)}
+.dosv-progress strong{font-size:9px;color:#bdb1e5}.dosv-meta{display:flex;gap:8px;flex-wrap:wrap}.dosv-meta span{font-size:7.5px;color:#7890a2;border:1px solid #1e3447;border-radius:999px;padding:4px 6px}
+.dosv-board footer{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid #142b3d}
+.dosv-board footer b{font-size:8px;color:#8fa4b6}.dosv-board footer b.ready{color:#72d9aa}.dosv-board footer b.info{color:#83c5ef}.dosv-board footer b.result{color:#d7b2ff}.dosv-board footer b.latepill{color:#ef9a9a}.dosv-board footer em{font-size:8px;font-style:normal;color:#a896dd}
+.dosv-focus,.dosv-tools{border:1px solid #1b3448;background:#08151f;border-radius:16px;overflow:hidden}
+.dosv-focus{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:17px}.dosv-focus h3{margin:4px 0;font-size:15px}.dosv-focus p{margin:0;color:#8198aa;font-size:10px}
+.dosv-tools>summary{cursor:pointer;list-style:none;padding:13px 15px;color:#9bb0c0;font-size:10px;background:#0a1823}.dosv-tools>summary::-webkit-details-marker{display:none}.dosv-tools[open]>summary{border-bottom:1px solid #1b3448;color:#e5eef5}.dosv-tools>.biz{padding:12px}
+.dosv-empty{padding:24px;color:#8197a9}
+@media(max-width:1100px){.dosv-board{grid-template-columns:repeat(2,1fr)}.dosv-kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.dosv-hero{align-items:flex-start;flex-direction:column}.dosv-hero h2{font-size:27px}.dosv-board,.dosv-kpis{grid-template-columns:1fr}.dosv-tabs{overflow:auto}.dosv-focus{align-items:flex-start;flex-direction:column}}
