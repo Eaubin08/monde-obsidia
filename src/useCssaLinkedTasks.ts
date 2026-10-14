@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react'
 import {cssaSourceAvailable} from './cssaLinkedReference'
-export type CssaLinkedTask={id:string;title:string;status:string;responsible?:string;responsiblePersonId?:string|null;source?:string}
+export type CssaLinkedTask={id:string;title:string;status:string;responsible?:string;responsiblePersonId?:string|null;source?:string;dueAt?:string;isTestFixture?:boolean}
 export default function useCssaLinkedTasks(){
  const [tasks,setTasks]=useState<{available:boolean;rows:CssaLinkedTask[]}>({available:false,rows:[]})
  useEffect(()=>{

@@ -98,7 +98,7 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
   {selected&&<section className="dosv-provenance">
    <h3>Sources et références du dossier</h3>
    <p>Pilote : {resolveCssaPerson(selected.d.ownerPersonId,selected.d.owner,organisation)}</p>
-   <p>Source : {selected.d.source||'UNKNOWN'} · dossier {selected.d.id}</p>
+   <p>Source : {selected.d.source||'UNKNOWN'} · dossier {selected.d.id}</p>{selected.d.ownerPersonId&&<button onClick={()=>onOpen?.('organisation','person:'+selected.d.ownerPersonId)}>Ouvrir la fiche du pilote</button>}
    <p>Validation enregistrée : {selected.validation?`${selected.validation.id} · ${selected.validation.status}`:'UNKNOWN'}</p>
    <p>Preuve de dépôt enregistrée : {selected.proof?`${selected.proof.id} · ${selected.proof.submittedAt||'UNKNOWN'}`:'UNKNOWN'}</p>
    <p>Référence externe de dépôt : {selected.proof?.externalReference||'UNKNOWN'} · pièce : {selected.proof?.proofRef||'UNKNOWN'} · source : {selected.proof?.source||'UNKNOWN'}</p>

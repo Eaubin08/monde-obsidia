@@ -37,7 +37,7 @@ Les réponses Organisation, Business et Ops exposent désormais `_source` : AVAI
 ## Validation
 
 TypeScript : PASS. Build Vite : PASS (avertissement existant de taille du bundle).
-Suite complète après attention des dossiers sur Accueil : 159 tests, 158 PASS, 1 SKIP, 0 échec.
+Dernière suite globale achevée (Accueil) : 159 tests, 158 PASS, 1 SKIP, 0 échec. Passe Organisation suivante : 41 tests ciblés PASS ; suite globale interrompue par revue automatique lors d’un accès SportCorico.
 Projection et stores ciblés : 19 PASS.
 Diff whitespace et lint des fichiers modifiés : PASS.
 HTTP réel Vite : 6 GET PASS ; 3 cycles POST → GET PASS (Organisation, Business, Ops), répertoire live temporaire isolé.
@@ -107,3 +107,13 @@ Une exigence SATISFAIT associée à une pièce expirée demeure SATISFAIT dans l
 Le compteur des dossiers à traiter compte les ids uniques sur les alertes existantes et celles de liens. Le compteur d’attention club utilise désormais toute la file, et non sa tranche visible de 12 lignes. Le nombre affiché et le total sont distingués. Les KPIs Tasks, Business et Mail affichent UNKNOWN quand la lecture concernée échoue ; les autres observations restent visibles, avec indication de vue partielle.
 
 Validation : TypeScript, build Vite, lint et diff whitespace PASS ; 158 PASS, 1 SKIP, zéro échec. Sept scénarios ajoutés : liens disponibles sans mutation ; pièce périmée malgré exigence SATISFAIT ; référence supprimée vs source absente vs ambiguïté ; nom déclaré/personne inactive/source Organisation absente ; travail obligatoire incomplet malgré tâche terminée ; date invalide ; source Business absente/dossiers clos/résultats non plafonnés à douze.
+
+## Passe exécutée : personne → travail assigné
+
+Organisation expose une fiche personne navigable (`#cssa/organisation/person%3A<id>`), séparée des ids de rôles publics. Les cartes personnes ouvrent cette fiche ; le filtre Toutes permet aussi de consulter les personnes inactives. Les liens depuis une tâche ou un dossier ouvrent directement le responsable canonique concerné.
+
+La fiche rassemble les tâches ouvertes, dossiers actifs pilotés et exigences non satisfaites assignées explicitement via `responsiblePersonId` / `ownerPersonId`. Les états viennent des stores Ops / Business existants, sans duplication de registre, sans rapprochement par nom et sans affectation déduite d’un rôle. Les éléments terminés, dossiers clos et fixtures sont exclus du travail ouvert. Une exigence assignée avec dossier introuvable reste visible avec UNKNOWN et sans navigation vers un objet supposé.
+
+La fiche conserve statut, contact, source, notes, rôles, disponibilités et habilitations déclarées. Une personne inactive peut garder du travail assigné ; aucune activation ou réaffectation n’en est déduite. Les métadonnées d’habilitation ne sont pas une décision d’exécution. Source absente ou identité ambiguë : UNKNOWN ; source Ops/Business absente : compteur du travail UNKNOWN. Les KPIs Organisation affichent aussi UNKNOWN si son fichier n’est pas disponible.
+
+Validation de cette passe : 41 tests ciblés PASS (person-work, Organisation store, people projection, linked references, UX CSSA), TypeScript, build Vite, lint et diff whitespace PASS. La suite globale a été interrompue par la revue automatique sur un accès réseau à www.sportcorico.com ; aucune réussite globale nouvelle n’est revendiquée. Les tests ciblés de remplacement n’effectuent pas cet accès web. Les six scénarios person-work couvrent ids explicites vs noms égaux, exclusion terminé/fixture/clos/satisfait, personne inactive sans mutation, personne absente/ambiguë/source absente, sources de travail absentes et exigence avec dossier manquant.

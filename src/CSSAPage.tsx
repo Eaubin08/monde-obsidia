@@ -751,7 +751,7 @@ export default function CSSAPage(){
    ):moduleId==='sportif'&&structureId==='cssa'?(
     <CSSASportWorkspace/>
    ):moduleId==='organisation'&&structureId==='cssa'?(
-    <CSSAOrganisationVisualPage items={items} selectedId={selectedId} onOpen={openItem} onClear={()=>openModule('organisation')}/>
+    <CSSAOrganisationVisualPage items={items} selectedId={selectedId} onOpen={openItem} onClear={()=>openModule('organisation')} onNavigate={(mod,id)=>openModule(mod,id||'')}/>
    ):moduleId==='dossiers'&&structureId==='cssa'?(
     <CSSADossiersPage selectedId={selectedId} onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):moduleId==='documents'&&structureId==='cssa'?(

@@ -1,18 +1,19 @@
 import {useEffect,useState} from 'react'
 import {cssaSourceAvailable} from './cssaLinkedReference'
-export type LinkedDossier={id:string;reference:string;title:string;status:string}
+export type LinkedDossier={id:string;reference:string;title:string;status:string;ownerPersonId?:string|null;source?:string}
+export type LinkedRequirement={id:string;dossierId:string;label:string;state:string;ownerPersonId?:string|null;source?:string;dueAt?:string}
 export default function useCssaLinkedDossiers(){
- const [state,setState]=useState<{available:boolean;rows:LinkedDossier[]}>({available:false,rows:[]})
+ const [state,setState]=useState<{available:boolean;rows:LinkedDossier[];requirements:LinkedRequirement[]}>({available:false,rows:[],requirements:[]})
  useEffect(()=>{
   let active=true;let generation=0
   const read=async()=>{
-   const request=++generation;let next={available:false,rows:[] as LinkedDossier[]}
+   const request=++generation;let next={available:false,rows:[] as LinkedDossier[],requirements:[] as LinkedRequirement[]}
    try{
     const response=await fetch('/obsidia-local/cssa-business-state',{cache:'no-store',signal:AbortSignal.timeout(4000)})
     if(!response.ok)throw new Error('unavailable')
     const data=await response.json()
-    if(!cssaSourceAvailable(data)||!Array.isArray(data.dossiers))throw new Error('unavailable')
-    next={available:true,rows:data.dossiers}
+    if(!cssaSourceAvailable(data)||!Array.isArray(data.dossiers)||!Array.isArray(data.requirements))throw new Error('unavailable')
+    next={available:true,rows:data.dossiers,requirements:data.requirements}
    }catch{/* Unavailable data cannot resolve a dossier. */}
    if(active&&request===generation)setState(next)
   }
