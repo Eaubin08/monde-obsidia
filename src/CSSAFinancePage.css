@@ -33,3 +33,9 @@
 .finx-empty{padding:30px;border:1px solid #1b354a;border-radius:14px;color:#8298aa}
 @media(max-width:1000px){.finx-kpis{grid-template-columns:repeat(2,1fr)}.finx-visual-grid,.finx-columns{grid-template-columns:1fr}}
 @media(max-width:680px){.finx{gap:12px}.finx-hero{padding:20px;align-items:flex-start;flex-direction:column}.finx-hero h2{font-size:27px}.finx-kpis{grid-template-columns:1fr}.finx-strip{grid-template-columns:1fr}}
+
+.finx-tools{border:1px solid #1b3448;border-radius:14px;background:#07131d;overflow:hidden}
+.finx-tools>summary{cursor:pointer;list-style:none;padding:13px 15px;color:#9bb0c0;font-size:10px;background:#0a1823}
+.finx-tools>summary::-webkit-details-marker{display:none}
+.finx-tools[open]>summary{border-bottom:1px solid #1b3448;color:#e5eef5}
+.finx-tools>.biz{padding:12px}
