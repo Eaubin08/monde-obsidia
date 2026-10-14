@@ -563,6 +563,7 @@ export function writeCssaOpsState(patch = {}, filePath = defaultOpsFile) {
         team: p.team || null,
         matchRef: p.matchRef || null,
         responsible: p.responsible || 'UNKNOWN / NON ASSIGNÉ',
+        responsiblePersonId: p.responsiblePersonId || null,
         source: p.source || 'Saisie utilisateur',
         truthClass: p.truthClass || 'PUBLIC_CONFIRMED',
         checklist: p.checklist || {},
@@ -652,6 +653,7 @@ export function syncOpsToSportState(opsState, sportFilePath = defaultSportFile) 
           dueAt: task.dueAt,
           origin: task.origin,
           responsible: task.responsible,
+          responsiblePersonId: task.responsiblePersonId || null,
           source: task.source,
           truthClass: task.truthClass,
           notes: task.notes
@@ -706,6 +708,7 @@ export function syncSportTasksToOps(matchId, matchTasksList, opsFilePath = defau
         team: matchId.startsWith('r1-') ? 'SENIORS_R1' : matchId.startsWith('r2-') ? 'SENIORS_R2' : matchId.startsWith('u20-') ? 'U20_R1' : 'FORMATION',
         matchRef: matchId,
         responsible: mt.responsible || 'UNKNOWN / NON ASSIGNÉ',
+        responsiblePersonId: mt.responsiblePersonId || null,
         source: 'Dossier de match Sportif',
         truthClass: mt.truthClass || 'PUBLIC_CONFIRMED',
         checklist: {},
