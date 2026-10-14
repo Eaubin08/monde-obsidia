@@ -37,7 +37,7 @@ Les réponses Organisation, Business et Ops exposent désormais `_source` : AVAI
 ## Validation
 
 TypeScript : PASS. Build Vite : PASS (avertissement existant de taille du bundle).
-Suite complète après navigation des liens métier : 144 tests, 143 PASS, 1 SKIP, 0 échec.
+Suite complète après fiabilisation de la création des tâches : 152 tests, 151 PASS, 1 SKIP, 0 échec.
 Projection et stores ciblés : 19 PASS.
 Diff whitespace et lint des fichiers modifiés : PASS.
 HTTP réel Vite : 6 GET PASS ; 3 cycles POST → GET PASS (Organisation, Business, Ops), répertoire live temporaire isolé.
@@ -85,3 +85,15 @@ Documents possède une fiche sélectionnée avec version, statut, source, réfé
 Cette passe est une projection/navigation : zéro nouvelle écriture métier, zéro création automatique d’objet, zéro changement d’autorité. Aucun fichier référencé n’est ouvert ou téléchargé automatiquement.
 
 Validation : TypeScript, build Vite, lint des fichiers modifiés et diff whitespace PASS. Suite : 143 PASS, 1 SKIP, zéro échec. Tests : résolution unique par id, absence de lien, source indisponible, id dupliqué et distinction template / source disponible.
+
+## Passe exécutée : création de tâche confirmée et retour au dossier
+
+Le bouton de création relit l’exigence, son dossier et les tâches du registre. Une référence absente/ambiguë, une source INVALID/UNREADABLE ou un dossier supprimé bloque le raccord. Une tâche existante liée à la même exigence et au même dossier est réutilisée sans réinitialiser son statut ni ses données.
+
+Pour une nouvelle tâche, l’identifiant est stable par exigence (`task-dossier-<requirement-id>`). Les réponses des deux écritures sont vérifiées. Le lien n’est envoyé au store Business qu’après confirmation de la tâche. La dernière version de l’exigence est relue ; seul `taskRefId` est écrit, sans réécrire son état, sa source ou sa validation. La fiche affiche les erreurs et bloque les clics concurrents dans cette instance de la page.
+
+Les stores restent séparés : si la tâche existe mais que le lien échoue, la tâche est conservée et l’échec signalé. Une reprise relit les relations et réutilise cette tâche. Aucun rollback automatique ni transaction interstores n’est introduit. Les sources MISSING permettent l’initialisation Ops par l’action explicite existante ; leurs templates ne sont pas traités comme tâches live avant cette écriture.
+
+La tâche expose un retour à son dossier depuis sa relation DOSSIER, résolue dans le store Business réel. Une référence cassée ou ambiguë reste UNKNOWN.
+
+Validation : TypeScript, build Vite, lint et diff whitespace PASS ; 151 PASS, 1 SKIP, zéro échec. Scénarios : échec écriture tâche sans lien, succès conservant l’état courant d’exigence, échec lien puis reprise sans doublon et sans remise à zéro, tâche déjà liée sans écritures, ambiguïté, source invalide, référence cassée, dossier supprimé et id occupé non écrasé. Scénario HTTP isolé : création → lien → répétition sans doublon, exigence A_VERIFIER conservée.

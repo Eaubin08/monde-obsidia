@@ -1,3 +1,5 @@
+import useCssaLinkedDossiers from './useCssaLinkedDossiers'
+import {resolveCssaReference,referenceLabels} from './cssaLinkedReference'
 import useCssaPeople from './useCssaPeople'
 import {resolveCssaPerson} from './cssaPeopleProjection'
 import CSSAStoreSourceNotice from './CSSAStoreSourceNotice'
@@ -13,6 +15,7 @@ const statusColumns:{id:TaskStatus;label:string}[]=[
 
 export default function CSSATasksPage({selectedId,onSelect}:Props){
  const organisation=useCssaPeople()
+ const dossiers=useCssaLinkedDossiers()
  const responsible=(task:OpsTask)=>resolveCssaPerson(task.responsiblePersonId,task.responsible,organisation)
  const [state,setState]=useState<OpsState|null>(null)
  const [error,setError]=useState(false)
@@ -34,7 +37,7 @@ export default function CSSATasksPage({selectedId,onSelect}:Props){
   <section className="taskx-priority"><header><div><small>FOCUS</small><h3>À traiter en premier</h3></div></header>{view.critical.length?<div>{view.critical.slice(0,8).map(t=><button key={t.id} onClick={()=>onSelect('tasks',t.id)}><span className={'taskx-priority-pill '+t.priority.toLowerCase()}>{t.priority}</span><div><strong>{t.title}</strong><small>{t.origin} · {t.dueAt||'échéance inconnue'} · {responsible(t)}</small></div><b>{t.status.replaceAll('_',' ')}</b></button>)}</div>:<p className="taskx-empty">Aucune tâche haute ou critique.</p>}</section>
   <section className="taskx-board">{statusColumns.map(col=><article key={col.id}><header><h3>{col.label}</h3><span>{view.open.filter(t=>t.status===col.id).length}</span></header><div>{view.open.filter(t=>t.status===col.id).slice(0,10).map(t=><button key={t.id} onClick={()=>onSelect('tasks',t.id)}><small>{t.origin}</small><strong>{t.title}</strong><span>{responsible(t)}</span><small>Source : {t.source||'UNKNOWN'} · {t.truthClass||'UNKNOWN'}</small><footer><em>{t.priority}</em><time>{t.dueAt||'—'}</time></footer></button>)}{!view.open.some(t=>t.status===col.id)&&<p>Rien ici.</p>}</div></article>)}</section>
   <section className="taskx-due"><header><div><small>ÉCHÉANCES</small><h3>Ce qui arrive bientôt</h3></div></header>{view.due.length?<div>{view.due.map(t=><button key={t.id} onClick={()=>onSelect('tasks',t.id)}><time>{t.dueAt}</time><div><strong>{t.title}</strong><small>{t.origin} · {responsible(t)}</small></div><span>{t.status.replaceAll('_',' ')}</span></button>)}</div>:<p className="taskx-empty">Aucune échéance renseignée.</p>}</section>
-  {view.tasks.filter(t=>t.id===selectedId).map(t=><section className="taskx-provenance" key={t.id}><h3>{t.title} · provenance</h3><p>Responsable : {responsible(t)}</p><p>Source : {t.source||'UNKNOWN'} · classe de vérité : {t.truthClass||'UNKNOWN'}</p><p>Références : tâche {t.id} · dossier CRM {t.caseRef||'UNKNOWN'} · match {t.matchRef||'UNKNOWN'}</p><button onClick={()=>onSelect('organisation','')}>Ouvrir Organisation</button></section>)}
+  {view.tasks.filter(t=>t.id===selectedId).map(t=><section className="taskx-provenance" key={t.id}><h3>{t.title} · provenance</h3><p>Responsable : {responsible(t)}</p><p>Source : {t.source||'UNKNOWN'} · classe de vérité : {t.truthClass||'UNKNOWN'}</p><p>Références : tâche {t.id} · dossier CRM {t.caseRef||'UNKNOWN'} · match {t.matchRef||'UNKNOWN'}</p><button onClick={()=>onSelect('organisation','')}>Ouvrir Organisation</button>{(t.relations||[]).filter(rel=>rel.type==='DOSSIER').map(rel=>{const dossier=resolveCssaReference(rel.targetId,dossiers.rows,dossiers.available);return <div key={rel.targetId}>{dossier.item?<button onClick={()=>onSelect('dossiers',dossier.item!.id)}>Retour au dossier · {dossier.item.reference} · {dossier.item.title}</button>:<p>{referenceLabels[dossier.status]} · dossier {rel.targetId}</p>}</div>})}</section>)}
   <details className="taskx-tools"><summary>Gestion détaillée des tâches</summary><CSSAOpsWorkspace activeModule="tasks" selectedId={selectedId} onSelect={onSelect}/></details>
  </section>
 }
