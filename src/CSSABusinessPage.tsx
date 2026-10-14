@@ -60,7 +60,6 @@ export default function CSSABusinessPage({mode,selectedId,onOpen}:Props){
  const vals=useMemo(()=>state?.validations.filter(v=>v.dossierId===selected)||[],[state,selected])
  const required=reqs.filter(r=>r.criticality==='OBLIGATOIRE')
  const satisfied=required.filter(r=>r.state==='SATISFAIT').length
- const missing=required.filter(r=>['MANQUANT','BLOQUE'].includes(r.state)).length
  const toValidate=vals.filter(v=>v.status==='EN_ATTENTE'||v.status==='HOLD').length
  const blockingRequired=required.filter(r=>r.state!=='SATISFAIT')
  const finalValidation=vals.find(v=>v.type==='REVUE_FINALE')
@@ -69,7 +68,6 @@ export default function CSSABusinessPage({mode,selectedId,onOpen}:Props){
  const revenues=state?.revenues||[], expenses=state?.expenses||[]
  const revenueTotal=revenues.reduce((s,x)=>s+(Number(x.amount)||0),0)
  const expenseTotal=expenses.reduce((s,x)=>s+(Number(x.amount)||0),0)
- const result=revenueTotal-expenseTotal
  const invoiceOpen=(state?.invoices||[]).filter(x=>!['PAYEE','ENCAISSEE','ANNULEE'].includes(x.status)).length
  const today=new Date().toISOString().slice(0,10)
  const overdueInvoices=(state?.invoices||[]).filter(x=>x.dueAt&&x.dueAt<today&&!['PAYEE','ENCAISSEE','ANNULEE'].includes(x.status))
