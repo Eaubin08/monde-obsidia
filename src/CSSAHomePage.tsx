@@ -2,8 +2,10 @@ import {useEffect,useMemo,useState} from 'react'
 import './CSSAHome.css'
 
 type OpsTask={id:string;title:string;status:string;priority?:string;dueAt?:string;matchRef?:string}
-type OpsCase={id:string;title:string;status?:string;priority?:string;truthClass?:string;isTestFixture?:boolean}
+type OpsCase={id:string;title?:string;subject?:string;status?:string;priority?:string;truthClass?:string;isTestFixture?:boolean}
 type OpsState={tasks?:OpsTask[];cases?:OpsCase[];intendanceItems?:{id:string;label?:string;title?:string;status:string}[];updatedAt?:string}
+type DossierRow={id:string;reference:string;type:string;title:string;organization:string;deadline:string;status:string}
+type BusinessState={dossiers?:DossierRow[];revenues?:{amount:number}[];expenses?:{amount:number}[];updatedAt?:string}
 
 type Props={
   contradictions:string[]
@@ -14,13 +16,18 @@ const attentionStatuses=new Set(['A_FAIRE','EN_COURS','EN_ATTENTE','BLOQUE','BLO
 
 export default function CSSAHomePage({contradictions,onOpen}:Props){
   const [ops,setOps]=useState<OpsState|null>(null)
+  const [business,setBusiness]=useState<BusinessState|null>(null)
   const [error,setError]=useState(false)
 
   const refresh=async()=>{
     try{
-      const r=await fetch('/obsidia-local/cssa-ops-state',{cache:'no-store'})
-      if(!r.ok)throw new Error('ops unavailable')
-      setOps(await r.json())
+      const [opsRes,businessRes]=await Promise.all([
+        fetch('/obsidia-local/cssa-ops-state',{cache:'no-store'}),
+        fetch('/obsidia-local/cssa-business-state',{cache:'no-store'})
+      ])
+      if(!opsRes.ok)throw new Error('ops unavailable')
+      setOps(await opsRes.json())
+      if(businessRes.ok)setBusiness(await businessRes.json())
       setError(false)
     }catch{
       setError(true)
@@ -37,6 +44,8 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
   const openCaseRows=useMemo(()=>realCases.filter(c=>!['TERMINE','FERME','CLOSED'].includes(String(c.status||''))),[realCases])
   const activeCases=openCaseRows.slice(0,6)
   const openTasks=tasks.filter(t=>attentionStatuses.has(t.status)).length
+  const activeDossiers=(business?.dossiers??[]).filter(d=>!['DEPOSE','ATTRIBUE','NON_RETENU','ANNULE'].includes(d.status))
+  const upcomingDossiers=[...activeDossiers].sort((a,b)=>(a.deadline||'9999').localeCompare(b.deadline||'9999')).slice(0,6)
 
   return <section className="cssa-home">
     <header className="cssa-home-hero">
@@ -77,9 +86,17 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
       <section>
         <header><h3>Dossiers en cours</h3><button onClick={()=>onOpen('crm')}>CRM →</button></header>
         {activeCases.length?activeCases.map(c=><button className="cssa-home-row" key={c.id} onClick={()=>onOpen('crm',c.id)}>
-          <div><strong>{c.title}</strong><small>{c.truthClass||'État sourcé'}</small></div>
+          <div><strong>{c.subject||c.title||c.id}</strong><small>{c.truthClass||'État sourcé'}</small></div>
           <span>{c.status||'OUVERT'}</span>
         </button>):<p className="cssa-home-empty">Aucun dossier actif observé.</p>}
+      </section>
+
+      <section>
+        <header><h3>Dossiers & échéances</h3><button onClick={()=>onOpen('dossiers')}>Tous les dossiers →</button></header>
+        {upcomingDossiers.length?upcomingDossiers.map(d=><button className="cssa-home-row" key={d.id} onClick={()=>onOpen('dossiers',d.id)}>
+          <div><strong>{d.reference} · {d.title}</strong><small>{d.organization||'Organisme inconnu'} · {d.deadline?'échéance '+d.deadline:'échéance inconnue'}</small></div>
+          <span>{d.status.replaceAll('_',' ')}</span>
+        </button>):<p className="cssa-home-empty">Aucun dossier transverse actif. Rien n’est inventé.</p>}
       </section>
 
       <section>
@@ -95,7 +112,10 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
       <button onClick={()=>onOpen('tasks')}>Opérations</button>
       <button onClick={()=>onOpen('organisation')}>Organisation</button>
       <button onClick={()=>onOpen('crm')}>Relations</button>
+      <button onClick={()=>onOpen('dossiers')}>Dossiers</button>
       <button onClick={()=>onOpen('admin')}>Administration</button>
+      <button onClick={()=>onOpen('commercial')}>Commerce</button>
+      <button onClick={()=>onOpen('finance')}>Finance</button>
       <button onClick={()=>onOpen('mail')}>Mail</button>
     </nav>
   </section>
