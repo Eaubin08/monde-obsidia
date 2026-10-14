@@ -31,3 +31,23 @@
 .cssa-home-attention-list small{font-size:8px;color:#7f96aa;margin-top:2px}
 .cssa-home-attention-list em{font-style:normal;font:7.5px ui-monospace,monospace;color:#7ba8ca;text-align:right}
 @media(max-width:760px){.cssa-home-attention-list>button{grid-template-columns:68px minmax(0,1fr)}.cssa-home-attention-list em{display:none}}
+
+.cssa-home-agenda{border:1px solid #274158;background:#081722;border-radius:11px;overflow:hidden}
+.cssa-home-agenda>header{display:flex;justify-content:space-between;align-items:center;padding:12px 13px;border-bottom:1px solid #193247;background:#0a1926}
+.cssa-home-agenda>header small{font-size:7px;letter-spacing:.08em;color:#6e879d}
+.cssa-home-agenda>header h3{margin:2px 0 0;font-size:13px}
+.cssa-home-agenda>header>span{font-size:8px;color:#8eabc2}
+.cssa-home-agenda-grid{display:grid;grid-template-columns:1fr 1fr}
+.cssa-home-agenda-grid>div{min-width:0}
+.cssa-home-agenda-grid>div+div{border-left:1px solid #193247}
+.cssa-home-agenda-grid h4{margin:0;padding:10px 12px;border-bottom:1px solid #142a3b;font-size:9px;color:#9cb0c1}
+.cssa-home-agenda-grid button{width:100%;display:grid;grid-template-columns:82px minmax(0,1fr) 90px;gap:9px;align-items:center;border:0;border-bottom:1px solid #13293a;background:transparent;color:#dce8f4;padding:9px 11px;text-align:left;cursor:pointer}
+.cssa-home-agenda-grid button:hover{background:#0c2030}
+.cssa-home-agenda-grid time{font:7.5px ui-monospace,monospace;color:#83bce9}
+.cssa-home-agenda-grid strong,.cssa-home-agenda-grid small{display:block}
+.cssa-home-agenda-grid strong{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cssa-home-agenda-grid small{font-size:7.5px;color:#7e95aa;margin-top:2px}
+.cssa-home-agenda-grid em{font-style:normal;font:7px ui-monospace,monospace;color:#789ab5;text-align:right}
+.cssa-home-agenda>footer{padding:8px 12px;border-top:1px solid #193247;font-size:7.5px;color:#71899d}
+@media(max-width:900px){.cssa-home-agenda-grid{grid-template-columns:1fr}.cssa-home-agenda-grid>div+div{border-left:0;border-top:1px solid #193247}}
+@media(max-width:600px){.cssa-home-agenda-grid button{grid-template-columns:68px minmax(0,1fr)}.cssa-home-agenda-grid em{display:none}}
