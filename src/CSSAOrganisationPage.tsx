@@ -59,7 +59,7 @@ export default function CSSAOrganisationPage({items,selectedId,onOpen,onClear}:P
  useEffect(()=>{void refresh()},[])
  const post=async(patch:Record<string,unknown>)=>{
   const r=await fetch('/obsidia-local/cssa-organisation-state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)})
-  if(r.ok)setState(await r.json())
+  if(r.ok){const data=await r.json();setState(data);window.dispatchEvent(new CustomEvent('cssa-organisation-updated',{detail:data}))}
  }
  const assignmentsFor=(roleSlot:string)=>state?.roleAssignments.filter(a=>a.roleSlot===roleSlot&&a.status==='ACTIF')||[]
  const personFor=(id:string)=>state?.people.find(p=>p.id===id)

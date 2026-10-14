@@ -12,7 +12,7 @@ export default function CSSATasksPage({selectedId,onSelect}:Props){
  const [state,setState]=useState<OpsState|null>(null)
  const [error,setError]=useState(false)
  const refresh=async()=>{try{const r=await fetch('/obsidia-local/cssa-ops-state',{cache:'no-store'});if(!r.ok)throw new Error();setState(await r.json());setError(false)}catch{setError(true)}}
- useEffect(()=>{void refresh()},[])
+ useEffect(()=>{void refresh();const timer=window.setInterval(refresh,15000);const changed=()=>{void refresh()};window.addEventListener('cssa-ops-updated',changed);return()=>{window.clearInterval(timer);window.removeEventListener('cssa-ops-updated',changed)}},[])
  const view=useMemo(()=>{
   const tasks=state?.tasks||[]
   const open=tasks.filter(t=>t.status!=='TERMINE')

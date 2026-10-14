@@ -182,6 +182,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
       if (res.ok) {
         const updated: OpsState = await res.json()
         setState(updated)
+        window.dispatchEvent(new CustomEvent('cssa-ops-updated',{detail:updated}))
       }
     } catch {}
   }

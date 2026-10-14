@@ -17,7 +17,7 @@ export default function CSSAOrganisationVisualPage({items,selectedId,onOpen,onCl
  const [state,setState]=useState<OrgState|null>(null)
  const [error,setError]=useState(false)
  const refresh=async()=>{try{const r=await fetch('/obsidia-local/cssa-organisation-state',{cache:'no-store'});if(!r.ok)throw new Error();setState(await r.json());setError(false)}catch{setError(true)}}
- useEffect(()=>{void refresh()},[])
+ useEffect(()=>{void refresh();const timer=window.setInterval(refresh,15000);const changed=()=>{void refresh()};window.addEventListener('cssa-organisation-updated',changed);return()=>{window.clearInterval(timer);window.removeEventListener('cssa-organisation-updated',changed)}},[])
 
  const view=useMemo(()=>{
   const people=state?.people||[]

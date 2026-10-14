@@ -38,26 +38,35 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
   const [organisation,setOrganisation]=useState<OrganisationState|null>(null)
   const [error,setError]=useState(false)
 
+  const [unavailable,setUnavailable]=useState<string[]>([])
   const refresh=async()=>{
-    try{
-      const [opsRes,businessRes,mailRes,organisationRes]=await Promise.all([
-        fetch('/obsidia-local/cssa-ops-state',{cache:'no-store'}),
-        fetch('/obsidia-local/cssa-business-state',{cache:'no-store'}),
-        fetch('/obsidia-local/cssa-mail-state',{cache:'no-store'}),
-        fetch('/obsidia-local/cssa-organisation-state',{cache:'no-store'})
-      ])
-      if(!opsRes.ok)throw new Error('ops unavailable')
-      setOps(await opsRes.json())
-      if(businessRes.ok)setBusiness(await businessRes.json())
-      if(mailRes.ok)setMail(await mailRes.json())
-      if(organisationRes.ok)setOrganisation(await organisationRes.json())
-      setError(false)
-    }catch{
-      setError(true)
-    }
+    const sources=[
+      {route:'cssa-ops-state',set:setOps,lists:['tasks','cases','intendanceItems']},
+      {route:'cssa-business-state',set:setBusiness,lists:['dossiers','requirements','validations','submissionProofs','dossierOutcomes','invoices','stockItems','contracts','assets','revenues','expenses']},
+      {route:'cssa-mail-state',set:setMail,lists:['messages','drafts']},
+      {route:'cssa-organisation-state',set:setOrganisation,lists:['people','availabilities']}
+    ]
+    const results=await Promise.all(sources.map(async source=>{
+      try{
+        const response=await fetch(`/obsidia-local/${source.route}`,{cache:'no-store',signal:AbortSignal.timeout(4000)})
+        if(!response.ok)throw new Error('unavailable')
+        const data=await response.json()
+        if(!data||typeof data!=='object'||Array.isArray(data)||source.lists.some(key=>!Array.isArray(data[key])))throw new Error('invalid state')
+        source.set(data)
+        return null
+      }catch{source.set(null);return source.route}
+    }))
+    setUnavailable(results.filter((x):x is string=>x!==null))
+    setError(results.some(Boolean))
   }
 
-  useEffect(()=>{refresh();const t=window.setInterval(refresh,15000);return()=>window.clearInterval(t)},[])
+  useEffect(()=>{
+    void refresh();const timer=window.setInterval(refresh,15000)
+    const events=['cssa-ops-updated','cssa-business-updated','cssa-organisation-updated']
+    const changed=()=>{void refresh()}
+    events.forEach(event=>window.addEventListener(event,changed))
+    return()=>{window.clearInterval(timer);events.forEach(event=>window.removeEventListener(event,changed))}
+  },[])
 
   const tasks=ops?.tasks??[]
   const realCases=(ops?.cases??[]).filter(c=>!c.isTestFixture)
@@ -235,7 +244,7 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
       <button onClick={refresh}>Actualiser</button>
     </header>
 
-    {error&&<div className="cssa-home-warning">État opérationnel local indisponible. Les raccourcis restent accessibles, aucune donnée n’est inventée.</div>}
+    {error&&<div className="cssa-home-warning">Sources locales indisponibles · UNKNOWN : {unavailable.join(' · ')}. Les compteurs de ces sources ne constituent pas un état observé.</div>}
 
     <div className="cssa-home-kpis">
       <button onClick={()=>onOpen('tasks')}><small>ATTENTION CLUB</small><strong>{clubAttention.length}</strong><span>{criticalClub} critique(s) · {actionClub} action(s)</span></button>

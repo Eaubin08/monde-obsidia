@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useState} from 'react'
+import {cssaProfileStores,projectCssaProfile,type Observations,type StoreId} from './cssaLiveProfile'
 import './CSSAPage.css'
 import './CSSASport.css'
 import CSSASportWorkspace from './CSSASportPage'
@@ -539,7 +540,27 @@ export default function CSSAPage(){
  const [showTechDetails,setShowTechDetails]=useState(false)
 
  const structure=structures.find(s=>s.id===structureId)!
- const profile=profiles[structureId]
+ const [observations,setObservations]=useState<Observations>({})
+ const profile=useMemo(()=>structureId==='cssa'?projectCssaProfile(profiles.cssa,observations):profiles[structureId],[structureId,observations])
+ useEffect(()=>{
+  let active=true
+  const read=async()=>{
+   const rows=await Promise.all(Object.entries(cssaProfileStores).map(async([id,definition])=>{
+    try{
+     const response=await fetch(`/obsidia-local/${definition.route}`,{cache:'no-store',signal:AbortSignal.timeout(4000)})
+     if(!response.ok)throw new Error('unavailable')
+     const state=await response.json()
+     if(!state||typeof state!=='object'||Array.isArray(state)||definition.lists.some(key=>!Array.isArray(state[key])))throw new Error('invalid state')
+     return [id,{available:true,state}] as const
+    }catch{return [id,{available:false}] as const}
+   }))
+   if(active)setObservations(Object.fromEntries(rows) as Observations)
+  }
+  void read();const timer=window.setInterval(read,5000)
+  const events=(Object.keys(cssaProfileStores) as StoreId[]).map(id=>`cssa-${id}-updated`)
+  events.forEach(event=>window.addEventListener(event,read))
+  return()=>{active=false;window.clearInterval(timer);events.forEach(event=>window.removeEventListener(event,read))}
+ },[])
  const entities=native?.entities??[]
  const worldEntities=world?.entities??[]
 
@@ -753,6 +774,7 @@ export default function CSSAPage(){
     <CSSAMatchdayPage selectedId={selectedId} onSelect={(mod,id)=>openModule(mod,id)}/>
    ):moduleId==='dashboard'?<div className="u-dashboard-grid">
     <section className="u-dashboard-summary">
+     {structureId==='cssa'&&<p>Projection des registres locaux · UNKNOWN si indisponibles. Références historiques signalées ; aucune autorisation déduite.</p>}
      <div className="u-summary-cards">
       <button className={dashboardMode==='capabilities'?'active':''} onClick={()=>{setDashboardMode('capabilities');setSelectedId('')}}><small>CAPACITÉS</small><strong>{profile.capabilities.length}</strong><span>{provenCount} établies</span></button>
       <button className={dashboardMode==='evidence'?'active':''} onClick={()=>{setDashboardMode('evidence');setSelectedId('')}}><small>PREUVES</small><strong>{profile.evidence.length}</strong><span>observables</span></button>

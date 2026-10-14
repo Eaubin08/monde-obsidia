@@ -17,7 +17,7 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
  const [filter,setFilter]=useState<'ACTIFS'|'PRETS'|'DEPOSES'|'CLOTURES'|'TOUS'>('ACTIFS')
  const [error,setError]=useState(false)
  const refresh=async()=>{try{const r=await fetch('/obsidia-local/cssa-business-state',{cache:'no-store'});if(!r.ok)throw new Error();setState(await r.json());setError(false)}catch{setError(true)}}
- useEffect(()=>{void refresh()},[])
+ useEffect(()=>{void refresh();const timer=window.setInterval(refresh,15000);return()=>window.clearInterval(timer)},[])
  useEffect(()=>{const h=(e:Event)=>setState((e as CustomEvent<BusinessState>).detail);window.addEventListener('cssa-business-updated',h);return()=>window.removeEventListener('cssa-business-updated',h)},[])
 
  const rows=useMemo(()=>{
