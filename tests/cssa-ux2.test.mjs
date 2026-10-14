@@ -169,3 +169,16 @@ test('UX11 · deposited and awarded states require first-class evidence objects'
   assert.match(business,/Enregistrer le résultat/)
   assert.match(business,/next==='DEPOSE'&&\(!dossierReady\|\|!submissionProof\)/)
 })
+
+
+test('UX12 · Accueil surfaces dossier deadlines validation submission waits and outcomes',()=>{
+  assert.match(home,/DOSSIERS À TRAITER/)
+  assert.match(home,/Alertes dossiers/)
+  assert.match(home,/Validation finale en attente/)
+  assert.match(home,/Dossier prêt : preuve de dépôt manquante/)
+  assert.match(home,/Déposé : résultat externe attendu/)
+  assert.match(home,/Échéance dépassée sans preuve de dépôt/)
+  assert.match(home,/Résultats dossiers/)
+  assert.match(home,/submissionProofs/)
+  assert.match(home,/dossierOutcomes/)
+})
