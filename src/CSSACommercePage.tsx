@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useState} from 'react'
 import './CSSACommercePage.css'
+import CSSABusinessPage from './CSSABusinessPage'
 
 type Revenue={id:string;category:string;label:string;amount:number;date:string;status:string;matchRef:string|null;source:string}
 type StockItem={id:string;label:string;channel:string;quantity:number;threshold:number|null;unitCost:number|null;unitPrice:number|null;status:string;source:string}
@@ -39,6 +40,7 @@ export default function CSSACommercePage({onOpen}:Props){
   }catch{setError(true)}
  }
  useEffect(()=>{void refresh()},[])
+ useEffect(()=>{const h=(e:Event)=>setState((e as CustomEvent<BusinessState>).detail);window.addEventListener('cssa-business-updated',h);return()=>window.removeEventListener('cssa-business-updated',h)},[])
 
  const view=useMemo(()=>{
   const revenues=state?.revenues||[]
@@ -89,5 +91,6 @@ export default function CSSACommercePage({onOpen}:Props){
    <header><div><small>DERNIÈRES RECETTES</small><h3>Activité enregistrée</h3></div><button onClick={()=>onOpen?.('finance')}>Consolidation Finance →</button></header>
    {state.revenues.length?<div>{state.revenues.slice(0,12).map(x=><article key={x.id}><span>{human(x.category)}</span><div><strong>{x.label}</strong><small>{x.date}{x.matchRef?' · '+x.matchRef:''}</small></div><b>{euro(x.amount)}</b></article>)}</div>:<p className="comx-empty">Aucune recette saisie.</p>}
   </section>
+  <details className="comx-tools"><summary>Gestion détaillée · saisir / modifier l’activité commerciale</summary><CSSABusinessPage mode="commerce" onOpen={onOpen}/></details>
  </section>
 }
