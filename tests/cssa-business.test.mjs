@@ -68,3 +68,24 @@ test('business state update is an upsert and does not duplicate canonical object
   assert.equal(s.revenues[0].category,'BOUTIQUE')
  }finally{rmSync(dir,{recursive:true,force:true})}
 })
+
+
+test('business state preserves Organisation person references across dossiers and finance',()=>{
+ const dir=mkdtempSync(join(tmpdir(),'cssa-business-person-'))
+ const file=join(dir,'state.json')
+ try{
+  writeCssaBusinessState({dossierPatch:{id:'d-person',reference:'AO-P',title:'Dossier personne',ownerPersonId:'p1'}},file)
+  writeCssaBusinessState({validationPatch:{id:'v-person',dossierId:'d-person',type:'REVUE_FINALE',status:'VALIDE',decidedBy:'p1'}},file)
+  writeCssaBusinessState({revenuePatch:{id:'rev-person',category:'BUVETTE',label:'Caisse',amount:12,recordedByPersonId:'p1'}},file)
+  writeCssaBusinessState({invoicePatch:{id:'inv-person',label:'Facture',amount:12,responsiblePersonId:'p1'}},file)
+  writeCssaBusinessState({paymentPatch:{id:'pay-person',amount:12,recordedByPersonId:'p1'}},file)
+  writeCssaBusinessState({treasuryPatch:{id:'tre-person',label:'Mouvement',amount:12,recordedByPersonId:'p1'}},file)
+  const s=readCssaBusinessState(file)
+  assert.equal(s.dossiers.find(x=>x.id==='d-person').ownerPersonId,'p1')
+  assert.equal(s.validations.find(x=>x.id==='v-person').decidedBy,'p1')
+  assert.equal(s.revenues.find(x=>x.id==='rev-person').recordedByPersonId,'p1')
+  assert.equal(s.invoices.find(x=>x.id==='inv-person').responsiblePersonId,'p1')
+  assert.equal(s.payments.find(x=>x.id==='pay-person').recordedByPersonId,'p1')
+  assert.equal(s.treasuryEntries.find(x=>x.id==='tre-person').recordedByPersonId,'p1')
+ }finally{rmSync(dir,{recursive:true,force:true})}
+})

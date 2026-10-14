@@ -17,6 +17,7 @@ export type OpsTask = {
   team: string | null
   matchRef: string | null
   responsible: string
+  responsiblePersonId?: string | null
   source: string
   truthClass: string
   checklist: Record<string, boolean>
@@ -75,7 +76,11 @@ export type IntendanceItem = {
   notes: string
   truthClass: string
   linkedTaskId: string | null
+  responsiblePersonId?: string | null
 }
+
+type OrgPerson = {id:string;displayName:string;status:string}
+type OrgState = {people:OrgPerson[]}
 
 export type OpsState = {
   version: string
@@ -93,6 +98,7 @@ type Props = {
 
 export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: Props) {
   const [state, setState] = useState<OpsState | null>(null)
+  const [orgState, setOrgState] = useState<OrgState | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -111,6 +117,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
   const [newPriority, setNewPriority] = useState<TaskPriority>('NORMALE')
   const [newMatchRef, setNewMatchRef] = useState('')
   const [newDueAt, setNewDueAt] = useState('2026-10-20')
+  const [newResponsiblePersonId, setNewResponsiblePersonId] = useState('')
 
   // Draft note
   const [draftNote, setDraftNote] = useState('')
@@ -120,11 +127,15 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
   // Fetch state on mount
   const fetchOpsState = useCallback(async () => {
     try {
-      const res = await fetch('/obsidia-local/cssa-ops-state', {cache: 'no-store'})
+      const [res, orgRes] = await Promise.all([
+        fetch('/obsidia-local/cssa-ops-state', {cache: 'no-store'}),
+        fetch('/obsidia-local/cssa-organisation-state', {cache: 'no-store'})
+      ])
       if (res.ok) {
         const data: OpsState = await res.json()
         setState(data)
       }
+      if (orgRes.ok) setOrgState(await orgRes.json())
     } catch {}
     finally {
       setLoading(false)
@@ -160,6 +171,29 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
         setState(updated)
       }
     } catch {}
+  }
+
+  const personName = (personId?: string | null) => {
+    if (!personId) return 'NON ASSIGNÉ'
+    return orgState?.people.find(p => p.id === personId)?.displayName || 'PERSONNE INCONNUE'
+  }
+
+  const handleTaskResponsible = (taskId: string, personId: string) => {
+    if (!state) return
+    const target = state.tasks.find(t => t.id === taskId)
+    if (!target) return
+    const updated = {...target, responsiblePersonId: personId || null, responsible: personId ? personName(personId) : 'UNKNOWN / NON ASSIGNÉ'}
+    setState(prev => prev ? {...prev, tasks: prev.tasks.map(t => t.id === taskId ? updated : t)} : null)
+    void postPatch({taskPatch: updated})
+  }
+
+  const handleIntendanceResponsible = (itemId: string, personId: string) => {
+    if (!state) return
+    const target = state.intendanceItems.find(i => i.id === itemId)
+    if (!target) return
+    const updated = {...target, responsiblePersonId: personId || null}
+    setState(prev => prev ? {...prev, intendanceItems: prev.intendanceItems.map(i => i.id === itemId ? updated : i)} : null)
+    void postPatch({intendancePatch: updated})
   }
 
   // Tâche : changement de statut
@@ -273,7 +307,8 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
       structure: 'cssa',
       team: newMatchRef ? (newMatchRef.startsWith('r1-') ? 'SENIORS_R1' : newMatchRef.startsWith('r2-') ? 'SENIORS_R2' : 'U20_R1') : null,
       matchRef: newMatchRef.trim() || null,
-      responsible: 'UNKNOWN / NON ASSIGNÉ',
+      responsible: newResponsiblePersonId ? personName(newResponsiblePersonId) : 'UNKNOWN / NON ASSIGNÉ',
+      responsiblePersonId: newResponsiblePersonId || null,
       source: 'Boîte de travail Administration CSSA',
       truthClass: 'PUBLIC_CONFIRMED',
       checklist: {},
@@ -292,6 +327,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
     setNewTitle('')
     setNewDesc('')
     setNewMatchRef('')
+    setNewResponsiblePersonId('')
     setShowCreateModal(false)
     onSelect(activeModule, newTask.id)
   }
@@ -581,6 +617,10 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
                 onChange={e => setNewDueAt(e.target.value)}
               />
             </div>
+            <select value={newResponsiblePersonId} onChange={e => setNewResponsiblePersonId(e.target.value)}>
+              <option value="">Responsable : non assigné</option>
+              {(orgState?.people || []).filter(p => p.status === 'ACTIF').map(p => <option key={p.id} value={p.id}>{p.displayName}</option>)}
+            </select>
             <div className="ops-create-modal-actions">
               <button type="button" className="ops-state-btn" onClick={() => setShowCreateModal(false)}>
                 Annuler
@@ -614,7 +654,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
                   <span className="badge-origin">{t.origin}</span>
                   {t.matchRef && <span className="badge-origin">Match: {t.matchRef}</span>}
                   <span className="badge-truth" style={{fontSize: '7px'}}>
-                    👤 {t.responsible}
+                    👤 {t.responsiblePersonId ? personName(t.responsiblePersonId) : t.responsible}
                   </span>
                   <span style={{fontSize: '8px', color: '#688099', marginLeft: 'auto'}}>📅 {t.dueAt}</span>
                 </div>
@@ -769,17 +809,18 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
                 </div>
               </div>
 
-              {/* Responsable (Strictement encadré) */}
+              {/* Responsable canonique Organisation */}
               <div className="ops-panel-box">
                 <div className="ops-panel-box-head">
                   <h4>Responsable assigné</h4>
                 </div>
-                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                  <span className="badge-truth" style={{padding: '5px 8px', fontSize: '10px'}}>
-                    {selectedTask.responsible}
-                  </span>
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap'}}>
+                  <select className="ops-person-select" value={selectedTask.responsiblePersonId || ''} onChange={e => handleTaskResponsible(selectedTask.id, e.target.value)}>
+                    <option value="">NON ASSIGNÉ</option>
+                    {(orgState?.people || []).filter(p => p.status === 'ACTIF').map(p => <option key={p.id} value={p.id}>{p.displayName}</option>)}
+                  </select>
                   <small style={{fontSize: '8.5px', color: '#7a8fA6'}}>
-                    (Règle F3G-D : aucun salarié ou bénévole fictif n’est attribué sans preuve publique).
+                    Référence vers Organisation. Aucun nom n’est inventé ou recopié comme seconde source de vérité.
                   </small>
                 </div>
               </div>
@@ -1142,6 +1183,15 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div className="ops-panel-box">
+                <div className="ops-panel-box-head"><h4>Responsable matchday</h4></div>
+                <select className="ops-person-select" value={selectedIntendance.responsiblePersonId || ''} onChange={e => handleIntendanceResponsible(selectedIntendance.id, e.target.value)}>
+                  <option value="">NON ASSIGNÉ</option>
+                  {(orgState?.people || []).filter(p => p.status === 'ACTIF').map(p => <option key={p.id} value={p.id}>{p.displayName}</option>)}
+                </select>
+                <small style={{display:'block',marginTop:'7px',fontSize:'8.5px',color:'#7a8fA6'}}>Personne canonique issue de Organisation.</small>
               </div>
 
               {/* Notes logistiques */}

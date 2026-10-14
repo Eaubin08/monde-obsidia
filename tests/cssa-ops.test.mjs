@@ -264,3 +264,16 @@ test('cssa-ops-store : bi-directional synchronization and non-duplication contra
     rmSync(tempDir, {recursive: true, force: true})
   }
 })
+
+
+test('cssa-ops-store : preserves canonical Organisation person references on tasks and matchday',()=>{
+  const tempDir=mkdtempSync(join(tmpdir(),'obsidia-person-link-test-'))
+  const testFile=join(tempDir,'ops_state.json')
+  try{
+    writeCssaOpsState({taskPatch:{id:'task-person-link',title:'Tâche liée personne',responsible:'Personne test',responsiblePersonId:'p1'}},testFile)
+    writeCssaOpsState({intendancePatch:{id:'int-person-link',category:'MATCHDAY',title:'Matchday test',matchRef:'r1-j99',venue:'Test',status:'À PRÉPARER',notes:'',truthClass:'UNKNOWN',linkedTaskId:null,responsiblePersonId:'p1'}},testFile)
+    const s=readCssaOpsState(testFile)
+    assert.equal(s.tasks.find(t=>t.id==='task-person-link').responsiblePersonId,'p1')
+    assert.equal(s.intendanceItems.find(i=>i.id==='int-person-link').responsiblePersonId,'p1')
+  }finally{rmSync(tempDir,{recursive:true,force:true})}
+})

@@ -716,3 +716,5 @@
   .ops-workbox { display:block; }
   .ops-col-filters,.ops-col-list,.ops-col-detail { margin-bottom:10px; min-height:0; }
 }
+
+.ops-person-select{background:#07131e;border:1px solid #24435a;color:#dce8f4;border-radius:6px;padding:7px 9px;font-size:9px;min-width:190px}
