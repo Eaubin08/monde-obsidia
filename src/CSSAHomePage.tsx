@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useState} from 'react'
 import './CSSAHome.css'
+import {R1_MATCHES,R2_MATCHES,U20_MATCHES,FORMATION_MATCHES,FEMININES_MATCHES,COUPE_DE_FRANCE} from './CSSASportPage'
 
 type OpsTask={id:string;title:string;status:string;priority?:string;dueAt?:string;matchRef?:string;origin?:string}
 type OpsCase={id:string;title?:string;subject?:string;status?:string;priority?:string;truthClass?:string;isTestFixture?:boolean}
@@ -18,6 +19,10 @@ type BusinessState={dossiers?:DossierRow[];requirements?:RequirementRow[];valida
 type MailRow={id:string;subject:string;status:string;receivedAt:string;organizationId:string|null}
 type MailState={messages?:MailRow[];drafts?:{id:string;status:string}[];updatedAt?:string}
 type ClubAttention={id:string;level:'CRITIQUE'|'ACTION'|'INFO';domain:'TASK'|'MATCHDAY'|'DOSSIER'|'FINANCE'|'STOCK'|'CONTRAT'|'MAINTENANCE'|'MAIL';title:string;detail:string;moduleId:string;targetId?:string}
+type AvailabilityRow={id:string;personId:string;from:string;to:string;status:string;note:string}
+type PersonRow={id:string;displayName:string;status:string}
+type OrganisationState={people?:PersonRow[];availabilities?:AvailabilityRow[]}
+type AgendaItem={id:string;date:string;time:string;domain:'MATCH'|'TASK'|'DOSSIER'|'FINANCE'|'CONTRAT'|'MAINTENANCE'|'HUMAIN';title:string;detail:string;moduleId:string;targetId?:string}
 
 type Props={
   contradictions:string[]
@@ -30,19 +35,22 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
   const [ops,setOps]=useState<OpsState|null>(null)
   const [business,setBusiness]=useState<BusinessState|null>(null)
   const [mail,setMail]=useState<MailState|null>(null)
+  const [organisation,setOrganisation]=useState<OrganisationState|null>(null)
   const [error,setError]=useState(false)
 
   const refresh=async()=>{
     try{
-      const [opsRes,businessRes,mailRes]=await Promise.all([
+      const [opsRes,businessRes,mailRes,organisationRes]=await Promise.all([
         fetch('/obsidia-local/cssa-ops-state',{cache:'no-store'}),
         fetch('/obsidia-local/cssa-business-state',{cache:'no-store'}),
-        fetch('/obsidia-local/cssa-mail-state',{cache:'no-store'})
+        fetch('/obsidia-local/cssa-mail-state',{cache:'no-store'}),
+        fetch('/obsidia-local/cssa-organisation-state',{cache:'no-store'})
       ])
       if(!opsRes.ok)throw new Error('ops unavailable')
       setOps(await opsRes.json())
       if(businessRes.ok)setBusiness(await businessRes.json())
       if(mailRes.ok)setMail(await mailRes.json())
+      if(organisationRes.ok)setOrganisation(await organisationRes.json())
       setError(false)
     }catch{
       setError(true)
@@ -175,6 +183,46 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
   ] as ClubAttention[]).sort((a,b)=>rank[a.level]-rank[b.level]).slice(0,12)
   const criticalClub=clubAttention.filter(x=>x.level==='CRITIQUE').length
   const actionClub=clubAttention.filter(x=>x.level==='ACTION').length
+  const horizon7=new Date(Date.now()+7*86400000).toISOString().slice(0,10)
+  const people=organisation?.people??[]
+  const availabilities=organisation?.availabilities??[]
+  const personName=(id:string)=>people.find(p=>p.id===id)?.displayName||'Personne inconnue'
+  const fixtures=[...R1_MATCHES,...COUPE_DE_FRANCE,...R2_MATCHES,...U20_MATCHES,...FORMATION_MATCHES,...FEMININES_MATCHES]
+    .filter(f=>!f.simulated&&f.date>=today&&f.date<=horizon7)
+  const agenda=([
+    ...fixtures.map<AgendaItem>(f=>({
+      id:'match:'+f.id,date:f.date,time:f.time||'',domain:'MATCH',
+      title:f.home+' — '+f.away,
+      detail:[f.competition,f.stage,f.truth==='PUBLIC_CONFLICT_REVIEW'?'horaire à confirmer':f.venue].filter(Boolean).join(' · '),
+      moduleId:'sportif',targetId:f.id
+    })),
+    ...tasks.filter(t=>attentionStatuses.has(t.status)&&t.dueAt&&t.dueAt.slice(0,10)>=today&&t.dueAt.slice(0,10)<=horizon7).map<AgendaItem>(t=>({
+      id:'agenda-task:'+t.id,date:t.dueAt!.slice(0,10),time:'',domain:'TASK',title:t.title,
+      detail:[t.priority,t.status,t.origin].filter(Boolean).join(' · '),moduleId:'tasks',targetId:t.id
+    })),
+    ...activeDossiers.filter(d=>d.deadline&&d.deadline.slice(0,10)>=today&&d.deadline.slice(0,10)<=horizon7).map<AgendaItem>(d=>({
+      id:'agenda-dossier:'+d.id,date:d.deadline.slice(0,10),time:d.deadline.includes('T')?d.deadline.slice(11,16):'',domain:'DOSSIER',
+      title:d.reference+' · '+d.title,detail:d.status.replaceAll('_',' '),moduleId:'dossiers',targetId:d.id
+    })),
+    ...invoices.filter(x=>x.dueAt&&x.dueAt>=today&&x.dueAt<=horizon7&&!['PAYEE','ENCAISSEE','ANNULEE'].includes(x.status)).map<AgendaItem>(x=>({
+      id:'agenda-invoice:'+x.id,date:x.dueAt,time:'',domain:'FINANCE',title:'Échéance facture · '+(x.number||x.label),
+      detail:new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(x.amount||0)+' · '+x.status,moduleId:'finance'
+    })),
+    ...contracts.filter(x=>x.endAt&&x.endAt>=today&&x.endAt<=horizon7&&!['TERMINE','ANNULE'].includes(x.status)).map<AgendaItem>(x=>({
+      id:'agenda-contract:'+x.id,date:x.endAt,time:'',domain:'CONTRAT',title:'Échéance contrat · '+x.label,detail:x.kind,moduleId:'commercial'
+    })),
+    ...assets.filter(x=>x.maintenanceDueAt&&x.maintenanceDueAt>=today&&x.maintenanceDueAt<=horizon7&&!['TERMINE','ANNULE'].includes(x.status)).map<AgendaItem>(x=>({
+      id:'agenda-maintenance:'+x.id,date:x.maintenanceDueAt,time:'',domain:'MAINTENANCE',title:'Maintenance · '+x.label,detail:x.kind,moduleId:'finance'
+    })),
+    ...availabilities.filter(a=>a.from&&a.from.slice(0,10)>=today&&a.from.slice(0,10)<=horizon7&&['INDISPONIBLE','INCONNU'].includes(a.status)).map<AgendaItem>(a=>({
+      id:'agenda-human:'+a.id,date:a.from.slice(0,10),time:a.from.includes('T')?a.from.slice(11,16):'',domain:'HUMAIN',
+      title:personName(a.personId)+' · '+(a.status==='INDISPONIBLE'?'indisponible':'disponibilité inconnue'),
+      detail:a.note||'Disponibilité déclarée',moduleId:'organisation'
+    }))
+  ] as AgendaItem[]).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time))
+  const agendaToday=agenda.filter(x=>x.date===today)
+  const agendaWeek=agenda.filter(x=>x.date>today).slice(0,18)
+
 
 
   return <section className="cssa-home">
@@ -203,6 +251,19 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
         <div><strong>{a.title}</strong><small>{a.detail}</small></div>
         <em>{a.domain}</em>
       </button>)}</div>:<p className="cssa-home-empty">Aucune attention transverse dérivée des données actuelles.</p>}
+    </section>
+
+    <section className="cssa-home-agenda">
+      <header><div><small>TEMPS CLUB</small><h3>Aujourd’hui & 7 prochains jours</h3></div><span>{agenda.length} échéance(s)</span></header>
+      <div className="cssa-home-agenda-grid">
+        <div><h4>Aujourd’hui · {today}</h4>{agendaToday.length?agendaToday.map(x=><button key={x.id} onClick={()=>onOpen(x.moduleId,x.targetId)}>
+          <time>{x.time||'—'}</time><div><strong>{x.title}</strong><small>{x.detail}</small></div><em>{x.domain}</em>
+        </button>):<p className="cssa-home-empty">Aucune échéance datée aujourd’hui.</p>}</div>
+        <div><h4>Cette semaine</h4>{agendaWeek.length?agendaWeek.map(x=><button key={x.id} onClick={()=>onOpen(x.moduleId,x.targetId)}>
+          <time>{x.date.slice(5)}{x.time?' · '+x.time:''}</time><div><strong>{x.title}</strong><small>{x.detail}</small></div><em>{x.domain}</em>
+        </button>):<p className="cssa-home-empty">Aucune échéance datée dans les 7 prochains jours.</p>}</div>
+      </div>
+      <footer>Agenda dérivé uniquement des dates déjà présentes : matchs non simulés, tâches, dossiers, factures, contrats, maintenance et disponibilités humaines.</footer>
     </section>
 
     <div className="cssa-home-grid">
