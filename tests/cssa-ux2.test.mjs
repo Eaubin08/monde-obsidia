@@ -227,7 +227,7 @@ test('UX14 · Accueil consolidates today and the next seven days across club ope
 
 test('UX15 · Commerce Finance and Media are distinct visual products, not one reused dashboard',()=>{
   assert.match(page,/label:'Média'/)
-  assert.match(page,/MÉDIA & COMMUNICATION/)
+  assert.match(page,/RELATIONS & COMMUNICATION/)
   assert.match(page,/CSSACommercePage/)
   assert.match(page,/CSSAFinancePage/)
   assert.match(page,/CSSAMediaPage/)
