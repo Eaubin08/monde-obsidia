@@ -538,3 +538,38 @@ test('README documents the frozen Qwen path as local only',()=>{
  assert.ok(!readme.includes("Hugging Face n'est utilisé qu'en absence de modèle local prêt"))
 })
 
+
+test('Workspace Obsidure exposes R12 prepare-only without execution authority',()=>{
+ const supervised=readFileSync(resolve(process.cwd(),'src/SupervisedMissionPanel.tsx'),'utf8')
+ for(const invariant of [
+  "import SupervisedMissionPanel",
+  "<SupervisedMissionPanel/>",
+  "tool==='obsidure'",
+ ]) assert.ok(root.includes(invariant),invariant)
+ for(const invariant of [
+  '/obsidia-local/supervised-mission/projection',
+  '/obsidia-local/supervised-mission/prepare-only',
+  'PREPARE_ONLY',
+  'KX108_ONLY',
+  'Binder',
+  'executor_invoked',
+  'approval_created',
+  'memory_write',
+ ]) assert.ok(supervised.includes(invariant),invariant)
+ for(const forbidden of [
+  '/obsidia-local/supervised-mission/authorize-execution',
+  '/obsidia-local/supervised-mission/verify-ticket',
+  'human_authorization_reference',
+  'execution_authority_hash',
+ ]) assert.ok(!supervised.includes(forbidden),forbidden)
+ for(const invariant of [
+  "'/supervised-mission/projection'",
+  "'/supervised-mission/prepare-only'",
+  "'/api/supervised-missions/prepare-only'",
+  'OBSIDIA_MONDE_SUPERVISED_MISSION_PROXY_V1',
+  'OBSIDIA_MONDE_SUPERVISED_MISSION_PREPARE_PROXY_V1',
+  'stripSensitive',
+ ]) assert.ok(bridge.includes(invariant),invariant)
+ assert.ok(!bridge.includes("'/supervised-mission/authorize-execution'"))
+ assert.ok(!bridge.includes("'/supervised-mission/verify-ticket'"))
+})

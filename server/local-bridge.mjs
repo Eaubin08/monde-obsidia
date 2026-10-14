@@ -20,6 +20,8 @@ export {repository} from './paths.mjs'
 export function contained(root,path){const r=realpathSync(root),p=realpathSync(resolve(r,path));const rel=relative(r,p);if(rel.startsWith('..'+sep)||rel==='..'||rel.startsWith(sep))throw Error('Chemin hors projet');return p}
 const launchers={cli:'scripts/obsidia_cli.py',brody:'scripts/brody_terminal_chat.py',obsidure:'scripts/obsidure_cli.py'}
 const nativeServiceIds=new Set(['kernel-x108','obsidia-api','qwen-text','qwen-vl','open-jarvis','open-jarvis-ui','gps-defense','trading-x108','brody-enriched','obsidure-dry'])
+const supervisedIdPattern=/^[A-Za-z0-9_.:-]{1,128}$/
+const supervisedCheckpointPattern=/^smc-[A-Za-z0-9_.:-]{1,80}$/
 function nativeServiceSpec(id,root){
  const q=s=>"'" + String(s).replaceAll("'","''") + "'"
  const rt=resolve(root,'runtime_terrain_bank_trading_gps')
@@ -278,6 +280,74 @@ function externalFamily(root,name,relativeRepo,agentFile,kind='agents',envPath=n
   return {id:name,label:name,sourceRepo:relativeRepo,sourceRoot:repo,localPresent:true,kind,agents}
  }catch{return {id:name,label:name,sourceRepo:relativeRepo,localPresent:false,kind,agents:[]}}
 }
+function obsidiaApiBase(){
+ return (process.env.OBSIDIA_API_BASE||process.env.VITE_ENGINE_API_BASE||'http://127.0.0.1:8000').replace(/\/+$/,'')
+}
+function stripSensitive(value){
+ if(Array.isArray(value))return value.map(stripSensitive)
+ if(value&&typeof value==='object'){
+  const out={}
+  for(const [key,raw] of Object.entries(value)){
+   if(/api[_-]?key|credential|secret|token/i.test(key))continue
+   if(key==='local_root')continue
+   if(key==='worktree'){out.worktree_visible=!!raw;continue}
+   out[key]=stripSensitive(raw)
+  }
+  return out
+ }
+ return value
+}
+function unavailable(reason,extra={}){
+ return {schema_version:'OBSIDIA_MONDE_SUPERVISED_MISSION_PROXY_V1',status:'UNAVAILABLE',reason,readonly:true,authority:'NONE',decision_authority:'KX108_ONLY',emits_act:false,approval_created:false,executor_invoked:false,memory_write:false,native_memory_write:false,kx108_called:false,binder_mutation:false,...extra}
+}
+export async function supervisedMissionReadonlyProjection(missionId,checkpointId){
+ if(!supervisedIdPattern.test(String(missionId||'')))throw Error('Mission invalide')
+ if(!supervisedCheckpointPattern.test(String(checkpointId||'')))throw Error('Checkpoint invalide')
+ const upstream=new URL('/api/supervised-missions/'+encodeURIComponent(missionId)+'/projection',obsidiaApiBase())
+ upstream.searchParams.set('checkpoint_id',checkpointId)
+ const headers={Accept:'application/json'}
+ if(process.env.OBSIDIA_API_KEY)headers['X-API-Key']=process.env.OBSIDIA_API_KEY
+ let response,data
+ try{
+  response=await fetch(upstream,{headers})
+  const text=await response.text()
+  data=text?JSON.parse(text):{}
+ }catch(e){
+  return unavailable('UPSTREAM_API_UNAVAILABLE',{upstream_base:obsidiaApiBase(),error:String(e?.message||e)})
+ }
+ if(!response.ok){
+  const detail=data?.detail||data||{}
+  const reason=response.status===401?'UPSTREAM_AUTH_DENIED':String(detail.reason||detail.error||data.error||'UPSTREAM_REJECTED')
+  return unavailable(reason,{upstream_status:response.status})
+ }
+ const projection=stripSensitive(data)
+ return {...projection,monde_proxy_schema:'OBSIDIA_MONDE_SUPERVISED_MISSION_PROXY_V1',readonly:true,authority:'NONE',decision_authority:'KX108_ONLY',emits_act:false,approval_created:false,executor_invoked:false,memory_write:false,native_memory_write:false,kx108_called:false,binder_mutation:false}
+}
+export async function supervisedMissionPrepareOnly(payload){
+ if(!payload||typeof payload!=='object'||Array.isArray(payload))throw Error('Contrat de mission invalide')
+ const upstream=new URL('/api/supervised-missions/prepare-only',obsidiaApiBase())
+ const headers={Accept:'application/json','Content-Type':'application/json'}
+ if(process.env.OBSIDIA_API_KEY)headers['X-API-Key']=process.env.OBSIDIA_API_KEY
+ let response,data
+ try{
+  response=await fetch(upstream,{method:'POST',headers,body:JSON.stringify(payload)})
+  const text=await response.text()
+  data=text?JSON.parse(text):{}
+ }catch(e){
+  return unavailable('UPSTREAM_API_UNAVAILABLE',{upstream_base:obsidiaApiBase(),error:String(e?.message||e),prepare_only:true})
+ }
+ if(!response.ok){
+  const detail=data?.detail||data||{}
+  const reason=response.status===401?'UPSTREAM_AUTH_DENIED':String(detail.reason||detail.error||data.error||'UPSTREAM_REJECTED')
+  return unavailable(reason,{upstream_status:response.status,prepare_only:true,status:response.status===401?'UNAVAILABLE':'ERROR'})
+ }
+ const prepared=stripSensitive(data)
+ const result={...prepared,monde_proxy_schema:'OBSIDIA_MONDE_SUPERVISED_MISSION_PREPARE_PROXY_V1',authority:'NONE',decision_authority:'KX108_ONLY',emits_act:false,approval_created:false,executor_invoked:false,memory_write:false,native_memory_write:false,kx108_called:false,binder_mutation:false}
+ if(result.mission_id&&result.checkpoint_id&&result.checkpoint_projection_available){
+  result.checkpoint_projection=await supervisedMissionReadonlyProjection(result.mission_id,result.checkpoint_id)
+ }
+ return result
+}
 function agentFamilies(root){
  const sigma=sigmaDomains(root).map(d=>({id:'sigma:'+d.id,label:d.displayName,sourceRepo:'obsidia-x108-proofs',sourcePath:d.sourcePath,localPresent:d.runtimeFilePresent,kind:'sigma',agents:d.agents}))
  const periphery=peripheryAgents(root)
@@ -497,7 +567,7 @@ async function startInterfaceChild(session,p){
  return child
 }
 
-async function body(req){let value='';for await(const chunk of req){value+=chunk;if(value.length>8192)throw Error('Requête trop grande')}return value?JSON.parse(value):{}}
+async function body(req,limit=8192){let value='';for await(const chunk of req){value+=chunk;if(value.length>limit)throw Error('Requête trop grande')}return value?JSON.parse(value):{}}
 export function localBridge(){return {name:'obsidia-local-bridge',configureServer(server){server.httpServer?.once('close',()=>{closeOwnedBrodyApi();for(const p of processes.values())if(!p.native){p.stopRequested=true;if(p.restartTimer)clearTimeout(p.restartTimer);if(p.active)p.child.kill()}});server.middlewares.use('/obsidia-local',async(req,res)=>{
  let launchKey;
  const url=new URL(req.url,'http://localhost');res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');
@@ -507,6 +577,15 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  if(req.method==='GET'&&url.pathname==='/universal-c53-observed'){res.end(JSON.stringify(projectC53ObservedEvidence(canonicalRuntimeEvidence())));return}
  if(req.method==='GET'&&url.pathname==='/universal-c5'){res.end(JSON.stringify(readUniversalC5Local({organizationId:process.env.OBSIDIA_C5_ORGANIZATION_ID,recordsPath:process.env.OBSIDIA_C5_RECORDS_PATH})));return}
  if(req.method==='GET'&&url.pathname==='/services'){res.end(JSON.stringify({brody:await brodyServiceStatus()}));return}
+ if(req.method==='GET'&&url.pathname==='/supervised-mission/projection'){
+  const projection=await supervisedMissionReadonlyProjection(url.searchParams.get('mission_id'),url.searchParams.get('checkpoint_id'))
+  res.end(JSON.stringify(projection));return
+ }
+ if(req.method==='POST'&&url.pathname==='/supervised-mission/prepare-only'){
+  if(req.headers.origin!==`http://${req.headers.host}`)throw Error('Origine refusée')
+  const prepared=await supervisedMissionPrepareOnly(await body(req,65536))
+  res.end(JSON.stringify(prepared));return
+ }
  if(req.method==='GET'&&url.pathname==='/jarjar/status'){res.end(JSON.stringify(jarjarObservedStatus()));return}
  if(req.method==='POST'&&url.pathname==='/jarjar/stop'){
   if(req.headers.origin!==`http://${req.headers.host}`)throw Error('Origine refusée')
