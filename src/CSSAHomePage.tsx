@@ -5,7 +5,11 @@ type OpsTask={id:string;title:string;status:string;priority?:string;dueAt?:strin
 type OpsCase={id:string;title?:string;subject?:string;status?:string;priority?:string;truthClass?:string;isTestFixture?:boolean}
 type OpsState={tasks?:OpsTask[];cases?:OpsCase[];intendanceItems?:{id:string;label?:string;title?:string;status:string}[];updatedAt?:string}
 type DossierRow={id:string;reference:string;type:string;title:string;organization:string;deadline:string;status:string}
-type BusinessState={dossiers?:DossierRow[];revenues?:{amount:number}[];expenses?:{amount:number}[];updatedAt?:string}
+type RequirementRow={id:string;dossierId:string;criticality:string;state:string}
+type ValidationRow={id:string;dossierId:string;type:string;status:string}
+type SubmissionProofRow={id:string;dossierId:string;submittedAt:string;externalReference:string}
+type OutcomeRow={id:string;dossierId:string;result:string;decidedAt:string;externalReference:string;amount:number|null}
+type BusinessState={dossiers?:DossierRow[];requirements?:RequirementRow[];validations?:ValidationRow[];submissionProofs?:SubmissionProofRow[];dossierOutcomes?:OutcomeRow[];revenues?:{amount:number}[];expenses?:{amount:number}[];updatedAt?:string}
 
 type Props={
   contradictions:string[]
@@ -44,8 +48,35 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
   const openCaseRows=useMemo(()=>realCases.filter(c=>!['TERMINE','FERME','CLOSED'].includes(String(c.status||''))),[realCases])
   const activeCases=openCaseRows.slice(0,6)
   const openTasks=tasks.filter(t=>attentionStatuses.has(t.status)).length
-  const activeDossiers=(business?.dossiers??[]).filter(d=>!['DEPOSE','ATTRIBUE','NON_RETENU','ANNULE'].includes(d.status))
-  const upcomingDossiers=[...activeDossiers].sort((a,b)=>(a.deadline||'9999').localeCompare(b.deadline||'9999')).slice(0,6)
+  const dossiers=business?.dossiers??[]
+  const requirements=business?.requirements??[]
+  const validations=business?.validations??[]
+  const submissionProofs=business?.submissionProofs??[]
+  const dossierOutcomes=business?.dossierOutcomes??[]
+  const activeDossiers=dossiers.filter(d=>!['ATTRIBUE','NON_RETENU','ANNULE'].includes(d.status))
+  const upcomingDossiers=[...activeDossiers].filter(d=>!['DEPOSE'].includes(d.status)).sort((a,b)=>(a.deadline||'9999').localeCompare(b.deadline||'9999')).slice(0,6)
+  const today=new Date().toISOString().slice(0,10)
+  const attentionDossiers=dossiers.map(d=>{
+    const reqs=requirements.filter(r=>r.dossierId===d.id&&r.criticality==='OBLIGATOIRE')
+    const blocking=reqs.filter(r=>r.state!=='SATISFAIT').length
+    const finalValidation=validations.find(v=>v.dossierId===d.id&&v.type==='REVUE_FINALE')
+    const proof=submissionProofs.find(p=>p.dossierId===d.id)
+    const outcome=dossierOutcomes.find(o=>o.dossierId===d.id)
+    const ready=reqs.length>0&&blocking===0&&finalValidation?.status==='VALIDE'
+    let level:'CRITIQUE'|'ACTION'|'INFO'='INFO'
+    let reason=''
+    if(d.deadline&&d.deadline.slice(0,10)<today&&!proof&&!['ATTRIBUE','NON_RETENU','ANNULE'].includes(d.status)){level='CRITIQUE';reason='Échéance dépassée sans preuve de dépôt'}
+    else if(finalValidation&&['EN_ATTENTE','HOLD'].includes(finalValidation.status)){level='ACTION';reason=finalValidation.status==='HOLD'?'Validation finale en HOLD':'Validation finale en attente'}
+    else if(ready&&!proof){level='ACTION';reason='Dossier prêt : preuve de dépôt manquante'}
+    else if(proof&&!outcome){level='INFO';reason='Déposé : résultat externe attendu'}
+    return reason?{d,level,reason}:null
+  }).filter(Boolean) as {d:DossierRow;level:'CRITIQUE'|'ACTION'|'INFO';reason:string}[]
+  const dossierAttention=attentionDossiers.sort((a,b)=>{
+    const rank={CRITIQUE:0,ACTION:1,INFO:2}
+    return rank[a.level]-rank[b.level]||String(a.d.deadline||'9999').localeCompare(String(b.d.deadline||'9999'))
+  }).slice(0,8)
+  const recentOutcomes=[...dossierOutcomes].sort((a,b)=>String(b.decidedAt||'').localeCompare(String(a.decidedAt||''))).slice(0,6)
+  const unresolvedDossierAttention=attentionDossiers.filter(x=>x.level!=='INFO').length
 
   return <section className="cssa-home">
     <header className="cssa-home-hero">
@@ -62,7 +93,7 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
     <div className="cssa-home-kpis">
       <button onClick={()=>onOpen('tasks')}><small>TÂCHES OUVERTES</small><strong>{openTasks}</strong><span>Voir le suivi</span></button>
       <button onClick={()=>onOpen('tasks')}><small>PRIORITÉ HAUTE / CRITIQUE</small><strong>{highPriority.length}</strong><span>À traiter</span></button>
-      <button onClick={()=>onOpen('crm')}><small>DOSSIERS ACTIFS</small><strong>{openCaseRows.length}</strong><span>Ouvrir le CRM</span></button>
+      <button onClick={()=>onOpen('dossiers')}><small>DOSSIERS À TRAITER</small><strong>{unresolvedDossierAttention}</strong><span>Validation, deadline, dépôt</span></button>
       <button onClick={()=>onOpen('sources')}><small>CONTRADICTIONS PUBLIQUES</small><strong>{contradictions.length}</strong><span>À examiner</span></button>
     </div>
 
@@ -97,6 +128,22 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
           <div><strong>{d.reference} · {d.title}</strong><small>{d.organization||'Organisme inconnu'} · {d.deadline?'échéance '+d.deadline:'échéance inconnue'}</small></div>
           <span>{d.status.replaceAll('_',' ')}</span>
         </button>):<p className="cssa-home-empty">Aucun dossier transverse actif. Rien n’est inventé.</p>}
+      </section>
+
+      <section className="cssa-home-attention">
+        <header><h3>Alertes dossiers</h3><button onClick={()=>onOpen('dossiers')}>Piloter →</button></header>
+        {dossierAttention.length?dossierAttention.map(({d,level,reason})=><button className="cssa-home-row" key={d.id+'-'+reason} onClick={()=>onOpen('dossiers',d.id)}>
+          <div><strong>{d.reference} · {d.title}</strong><small>{reason}</small></div>
+          <span className={'cssa-home-level '+level.toLowerCase()}>{level}</span>
+        </button>):<p className="cssa-home-empty">Aucune alerte dossier dérivée des données actuelles.</p>}
+      </section>
+
+      <section>
+        <header><h3>Résultats dossiers</h3><button onClick={()=>onOpen('dossiers')}>Historique →</button></header>
+        {recentOutcomes.length?recentOutcomes.map(o=>{const d=dossiers.find(x=>x.id===o.dossierId);return <button className="cssa-home-row" key={o.id} onClick={()=>onOpen('dossiers',o.dossierId)}>
+          <div><strong>{d?d.reference+' · '+d.title:o.dossierId}</strong><small>{o.decidedAt||'Date inconnue'} · {o.externalReference||'Référence inconnue'}</small></div>
+          <span>{o.result.replaceAll('_',' ')}{o.amount!=null?' · '+new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(o.amount):''}</span>
+        </button>}):<p className="cssa-home-empty">Aucun résultat externe enregistré.</p>}
       </section>
 
       <section>
