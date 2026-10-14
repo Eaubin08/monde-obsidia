@@ -12,7 +12,8 @@ const business=readFileSync(new URL('../src/CSSABusinessPage.tsx',import.meta.ur
 
 test('UX2 · CSSA navigation keeps Mail and uses an action-first Accueil',()=>{
   assert.match(page,/label:'Accueil'/)
-  assert.match(page,/moduleIds: \['tasks', 'admin', 'crm', 'mail'\]/)
+  assert.match(page,/moduleIds: \['dossiers', 'admin', 'documents', 'tasks'\]/)
+  assert.match(page,/moduleIds: \['crm', 'mail'\]/)
   assert.match(page,/CSSAHomePage/)
   assert.match(home,/Ce qui demande votre attention/)
   assert.match(home,/onOpen\('mail'\)/)
