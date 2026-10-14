@@ -1,3 +1,5 @@
+import useCssaLinkedTasks from './useCssaLinkedTasks'
+import {resolveCssaReference,cssaSourceAvailable,referenceLabels} from './cssaLinkedReference'
 import useCssaPeople from './useCssaPeople'
 import {resolveCssaPerson} from './cssaPeopleProjection'
 import CSSAStoreSourceNotice from './CSSAStoreSourceNotice'
@@ -6,7 +8,7 @@ import CSSABusinessPage from './CSSABusinessPage'
 import './CSSADossiersPage.css'
 
 type Dossier={id:string;reference:string;type:string;title:string;organization:string;organizationId:string|null;deadline:string;status:string;source:string;owner:string;ownerPersonId:string|null;submissionChannel:string;createdAt:string}
-type Requirement={id:string;dossierId:string;label:string;criticality:string;state:string;documentRefId:string|null;taskRefId:string|null;dueAt:string}
+type Requirement={id:string;dossierId:string;label:string;criticality:string;state:string;documentRefId:string|null;taskRefId:string|null;dueAt:string;source?:string;owner?:string;ownerPersonId?:string|null}
 type DocumentRef={id:string;dossierId:string|null;title:string;status:string;validUntil:string;usedIn:string[]}
 type Validation={id:string;dossierId:string;type:string;status:string}
 type SubmissionProof={id:string;dossierId:string;submittedAt:string;externalReference:string;proofRef:string;source?:string}
@@ -17,6 +19,7 @@ const human=(v:string)=>String(v||'').replaceAll('_',' ').toLowerCase().replace(
 
 export default function CSSADossiersPage({selectedId,onOpen}:Props){
  const organisation=useCssaPeople()
+ const linkedTasks=useCssaLinkedTasks()
  const [state,setState]=useState<BusinessState|null>(null)
  const [filter,setFilter]=useState<'ACTIFS'|'PRETS'|'DEPOSES'|'CLOTURES'|'TOUS'>('ACTIFS')
  const [error,setError]=useState(false)
@@ -101,6 +104,21 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
    <p>Référence externe de dépôt : {selected.proof?.externalReference||'UNKNOWN'} · pièce : {selected.proof?.proofRef||'UNKNOWN'} · source : {selected.proof?.source||'UNKNOWN'}</p>
    <p>Résultat enregistré : {selected.outcome?`${selected.outcome.id} · ${selected.outcome.result}`:'UNKNOWN'} · référence externe : {selected.outcome?.externalReference||'UNKNOWN'} · source : {selected.outcome?.source||'UNKNOWN'}</p>
    <p>Documents liés : {selected.docs.length?selected.docs.map(doc=>`${doc.id} · ${doc.title} · ${doc.status}`).join(' ; '):'Aucun lien document renseigné'}</p>
+  </section>}
+  {selected&&<section className="dosv-requirements">
+   <header><h3>Exigences et travail lié</h3><p>Les états affichés restent indépendants : une tâche terminée ne valide pas une exigence.</p></header>
+   {selected.reqs.length?selected.reqs.map(req=>{
+    const document=resolveCssaReference(req.documentRefId,state.documentRefs,cssaSourceAvailable(state))
+    const task=resolveCssaReference(req.taskRefId,linkedTasks.rows,linkedTasks.available)
+    return <article key={req.id}>
+     <div><small>{human(req.criticality)} · {human(req.state)}</small><h4>{req.label}</h4><p>Échéance : {req.dueAt||'UNKNOWN'}</p><p>Responsable : {resolveCssaPerson(req.ownerPersonId,req.owner,organisation)}</p><p>Source : {req.source||'UNKNOWN'}</p></div>
+     <div><p>Document : {document.item?`${document.item.title} · ${document.item.status}`:referenceLabels[document.status]}{req.documentRefId?` · ${req.documentRefId}`:''}</p>
+      {document.item&&<button onClick={()=>onOpen?.('documents',document.item!.id)}>Ouvrir le document</button>}
+      <p>Tâche : {task.item?`${task.item.title} · ${human(task.item.status)}`:referenceLabels[task.status]}{req.taskRefId?` · ${req.taskRefId}`:''}</p>
+      {task.item&&<><p>Responsable tâche : {resolveCssaPerson(task.item.responsiblePersonId,task.item.responsible,organisation)}</p><p>Source tâche : {task.item.source||'UNKNOWN'}</p><button onClick={()=>onOpen?.('tasks',task.item!.id)}>Ouvrir la tâche</button></>}
+     </div>
+    </article>
+   }):<p>Aucune exigence enregistrée. Les pièces attendues restent à renseigner depuis leurs sources.</p>}
   </section>}
   <details className="dosv-tools" open={Boolean(selectedId)}>
    <summary>{selectedId?'Pilotage détaillé du dossier':'Gestion détaillée · créer / piloter un dossier'}</summary>

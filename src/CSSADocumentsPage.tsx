@@ -1,3 +1,5 @@
+import CSSAStoreSourceNotice from './CSSAStoreSourceNotice'
+import {resolveCssaReference,cssaSourceAvailable,referenceLabels} from './cssaLinkedReference'
 import {useEffect,useMemo,useState} from 'react'
 import CSSABusinessPage from './CSSABusinessPage'
 import './CSSADocumentsPage.css'
@@ -16,7 +18,7 @@ export default function CSSADocumentsPage({selectedId,onOpen}:Props){
  const [error,setError]=useState(false)
 
  const refresh=async()=>{try{const r=await fetch('/obsidia-local/cssa-business-state',{cache:'no-store'});if(!r.ok)throw new Error();setState(await r.json());setError(false)}catch{setError(true)}}
- useEffect(()=>{void refresh()},[])
+ useEffect(()=>{void refresh();const timer=window.setInterval(refresh,15000);return()=>window.clearInterval(timer)},[])
  useEffect(()=>{const h=(e:Event)=>setState((e as CustomEvent<BusinessState>).detail);window.addEventListener('cssa-business-updated',h);return()=>window.removeEventListener('cssa-business-updated',h)},[])
 
  const view=useMemo(()=>{
@@ -39,7 +41,11 @@ export default function CSSADocumentsPage({selectedId,onOpen}:Props){
  if(error)return <section className="docxv"><div className="docxv-empty">Documents indisponibles.</div></section>
  if(!state)return <section className="docxv"><div className="docxv-empty">Chargement…</div></section>
 
+ const selected=resolveCssaReference(selectedId,state.documentRefs,cssaSourceAvailable(state))
+ const selectedDoc=selected.item
+ const linkedDossierIds=selectedDoc?[...new Set([selectedDoc.dossierId,...(selectedDoc.usedIn||[]),...state.requirements.filter(req=>req.documentRefId===selectedDoc.id).map(req=>req.dossierId)].filter((id):id is string=>Boolean(id)))]:[]
  return <section className="docxv">
+  <CSSAStoreSourceNotice state={state}/>
   <header className="docxv-hero">
    <div><small>DOCUMENTS CSSA</small><h2>La bibliothèque utile du club</h2><p>Trouver rapidement une pièce, voir sa validité, sa provenance et les dossiers qui l’utilisent sans passer par un registre technique.</p></div>
    <div className="docxv-hero-card"><span>▤</span><strong>{view.docs.length}</strong><small>documents canoniques</small></div>
@@ -52,6 +58,14 @@ export default function CSSADocumentsPage({selectedId,onOpen}:Props){
    <button onClick={()=>setFilter('MAIL')}><small>REÇUS PAR MAIL</small><strong>{view.mail.length}</strong><span>Provenance conservée</span></button>
   </section>
 
+  {selectedId&&<section className="docxv-focus">
+   {selectedDoc?<><h3>{selectedDoc.title}</h3><p>{selectedDoc.type} · version {selectedDoc.version||'UNKNOWN'} · {human(selectedDoc.status)}</p><p>Source : {selectedDoc.source||'UNKNOWN'} · fichier référencé : {selectedDoc.fileRef||'UNKNOWN'}</p><p>Validité : {selectedDoc.validUntil||'UNKNOWN'} · origine mail : {selectedDoc.originMailId||'Aucun lien renseigné'}</p>
+    <h4>Dossiers utilisateurs</h4>{linkedDossierIds.length?linkedDossierIds.map(id=>{
+     const dossier=resolveCssaReference(id,state.dossiers,cssaSourceAvailable(state))
+     return <div key={id}>{dossier.item?<button onClick={()=>onOpen?.('dossiers',id)}>{dossier.item.reference} · {dossier.item.title} →</button>:<p>{referenceLabels[dossier.status]} · {id}</p>}</div>
+    }):<p>Aucun dossier lié enregistré.</p>}
+   </>:<p>{referenceLabels[selected.status]} · {selectedId}</p>}
+  </section>}
   <section className="docxv-library">
    <header><div><small>BIBLIOTHÈQUE</small><h3>Documents</h3></div><div className="docxv-search"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher un document…"/><select value={filter} onChange={e=>setFilter(e.target.value as any)}><option>TOUS</option><option>VALIDE</option><option>A_VERIFIER</option><option>EXPIRE</option><option>MAIL</option></select></div></header>
    {view.shown.length?<div className="docxv-grid">{view.shown.map(d=>{
@@ -66,6 +80,6 @@ export default function CSSADocumentsPage({selectedId,onOpen}:Props){
 
   <section className="docxv-strip"><div><small>ÉCHÉANCE 60 JOURS</small><strong>{view.expiring.length}</strong><span>document(s)</span></div><div><small>DOSSIERS UTILISATEURS</small><strong>{view.used}</strong><span>dossier(s) liés</span></div><div><small>PRINCIPE</small><strong>1 document</strong><span>réutilisable, versionné, sourcé</span></div></section>
 
-  <details className="docxv-tools"><summary>Gestion détaillée · ajouter / vérifier / modifier les documents</summary><CSSABusinessPage mode="documents" selectedId={selectedId} onOpen={onOpen}/></details>
+  <details className="docxv-tools" open={Boolean(selectedId)}><summary>Gestion détaillée · ajouter / vérifier / modifier les documents</summary><CSSABusinessPage mode="documents" selectedId={selectedId} onOpen={onOpen}/></details>
  </section>
 }

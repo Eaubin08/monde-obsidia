@@ -33,3 +33,5 @@
 .dosv-provenance{padding:16px;border:1px solid #30475b;border-radius:12px;background:#0a1722;color:#a9bbcc;overflow-wrap:anywhere}
 .dosv-provenance h3{color:#edf4fa;margin:0 0 10px;font-size:15px}
 .dosv-provenance p{font-size:12px;line-height:1.5;margin:6px 0}
+
+.dosv-requirements{padding:18px;border:1px solid #30475b;border-radius:14px;background:#0a1722;color:#a9bbcc}.dosv-requirements h3,.dosv-requirements h4{color:#edf4fa;margin:0 0 8px}.dosv-requirements p{font-size:12px;line-height:1.5;overflow-wrap:anywhere}.dosv-requirements article{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:16px 0;border-top:1px solid #30475b}.dosv-requirements button{padding:8px 12px;border:1px solid #63518e;border-radius:8px;background:#271c48;color:#efe9ff;cursor:pointer}@media(max-width:760px){.dosv-requirements article{grid-template-columns:1fr}}

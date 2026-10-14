@@ -37,7 +37,7 @@ Les réponses Organisation, Business et Ops exposent désormais `_source` : AVAI
 ## Validation
 
 TypeScript : PASS. Build Vite : PASS (avertissement existant de taille du bundle).
-Suite complète après raccord des personnes : 141 tests, 140 PASS, 1 SKIP, 0 échec.
+Suite complète après navigation des liens métier : 144 tests, 143 PASS, 1 SKIP, 0 échec.
 Projection et stores ciblés : 19 PASS.
 Diff whitespace et lint des fichiers modifiés : PASS.
 HTTP réel Vite : 6 GET PASS ; 3 cycles POST → GET PASS (Organisation, Business, Ops), répertoire live temporaire isolé.
@@ -73,3 +73,15 @@ Référence de direction : `OBSIDIA_PLAN_MAITRE_MONDE_V01_BUILDER_UNIVERSALITE_2
 Correction de reprise issue de `Texte collé(20261014-192844).txt` (audit sémantique, passe 2) : composer `NonSovereignAgentSpec`, `AgentResult`, `ContextPacket`, contrats providers et leases existants. FunctionContract ne se reconstruit pas de zéro. OrganizationBaseline ne remplace pas DomainState. UNKNOWN conduit à HOLD DESIGN, pas à la création automatique d’un agent. Les patterns de promotion mémoire ne constituent pas un lifecycle d’organe.
 
 Instruction de reprise de l’utilisateur : audits terminés, continuer leur exécution sans rouvrir une campagne d’audit. Les futurs raccords s’appuient sur ces conclusions et préservent les responsabilités des dépôts.
+
+## Passe exécutée : dossier → exigence → document / tâche
+
+Le dossier sélectionné expose maintenant chaque exigence : criticité, état déclaré, échéance, responsable canonique et source. Les liens vers document et tâche ne sont navigables que si la source locale est AVAILABLE et si l’identifiant désigne exactement un objet. Lien absent, référence supprimée, doublon ambigu et source indisponible sont distingués. Aucun nom ou titre ne sert à deviner une relation.
+
+Les tâches sont lues depuis le store Ops existant et actualisées après ses événements de modification et toutes les 15 secondes. Aucun registre de tâches secondaire n’est créé. La tâche garde son état et responsable propres ; son achèvement ne modifie ni exigence ni validation.
+
+Documents possède une fiche sélectionnée avec version, statut, source, référence de fichier, validité, origine mail et boutons vers les dossiers utilisateurs. Ces liens proviennent exclusivement de `dossierId`, `usedIn` ou des exigences référant le document. Une référence cassée reste UNKNOWN. Le document sélectionné est visible même si les filtres de la bibliothèque le masquent ; la gestion détaillée est ouverte à la sélection.
+
+Cette passe est une projection/navigation : zéro nouvelle écriture métier, zéro création automatique d’objet, zéro changement d’autorité. Aucun fichier référencé n’est ouvert ou téléchargé automatiquement.
+
+Validation : TypeScript, build Vite, lint des fichiers modifiés et diff whitespace PASS. Suite : 143 PASS, 1 SKIP, zéro échec. Tests : résolution unique par id, absence de lien, source indisponible, id dupliqué et distinction template / source disponible.
