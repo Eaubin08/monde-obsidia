@@ -123,3 +123,16 @@
 .biz-proof-ok{color:#72d9aa!important}
 .biz-proof-review{color:#e1be69!important}
 @media(max-width:900px){.biz-doc-actions{width:100%;justify-content:space-between}}
+
+.biz-submission{display:flex;flex-direction:column;gap:10px}
+.biz-submission>h3{margin-bottom:0}
+.biz-proof-card{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;border:1px solid #2d694f;background:#0a211a;border-radius:9px;padding:12px}
+.biz-proof-card>div{display:flex;flex-direction:column;gap:4px}
+.biz-proof-card small{font-size:7px;color:#71d8a8}
+.biz-proof-card strong{font-size:11px;color:#eef8f3}
+.biz-proof-card span{font-size:8px;color:#8fa99c}
+.biz-proof-card>em{font-size:8px;font-style:normal;color:#83c7aa;word-break:break-word;text-align:right}
+.biz-proof-card.outcome{border-color:#2b5e86;background:#091b2a}
+.biz-proof-card.outcome small{color:#74bcea}
+.biz-hold-note{border:1px solid #70552c;background:#21180b;color:#e1bd69!important;border-radius:8px;padding:10px!important}
+@media(max-width:760px){.biz-proof-card{flex-direction:column}.biz-proof-card>em{text-align:left}}
