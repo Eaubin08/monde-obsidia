@@ -16,6 +16,9 @@ const media=readFileSync(new URL('../src/CSSAMediaPage.tsx',import.meta.url),'ut
 const crmVisual=readFileSync(new URL('../src/CSSACrmPage.tsx',import.meta.url),'utf8')
 const tasksVisual=readFileSync(new URL('../src/CSSATasksPage.tsx',import.meta.url),'utf8')
 const adminVisual=readFileSync(new URL('../src/CSSAAdminPage.tsx',import.meta.url),'utf8')
+const docsVisual=readFileSync(new URL('../src/CSSADocumentsPage.tsx',import.meta.url),'utf8')
+const orgVisual=readFileSync(new URL('../src/CSSAOrganisationVisualPage.tsx',import.meta.url),'utf8')
+const matchdayVisual=readFileSync(new URL('../src/CSSAMatchdayPage.tsx',import.meta.url),'utf8')
 
 test('UX2 · CSSA navigation keeps Mail and uses an action-first Accueil',()=>{
   assert.match(page,/label:'Accueil'/)
@@ -280,4 +283,29 @@ test('UX18 · old Ops workspace remains available only as detailed management in
   assert.match(crmVisual,/CSSAOpsWorkspace activeModule="crm"/)
   assert.match(tasksVisual,/CSSAOpsWorkspace activeModule="tasks"/)
   assert.match(adminVisual,/CSSAOpsWorkspace activeModule="admin"/)
+})
+
+
+test('UX19 · Documents Organisation and Matchday each get a distinct visual métier surface',()=>{
+  assert.match(page,/CSSADocumentsPage/)
+  assert.match(page,/CSSAOrganisationVisualPage/)
+  assert.match(page,/CSSAMatchdayPage/)
+  assert.match(docsVisual,/La bibliothèque utile du club/)
+  assert.match(docsVisual,/REÇUS PAR MAIL/)
+  assert.match(docsVisual,/réutilisable, versionné, sourcé/)
+  assert.match(orgVisual,/Qui fait quoi dans le club/)
+  assert.match(orgVisual,/ÉQUIPE HUMAINE/)
+  assert.match(orgVisual,/HABILITATIONS À REVOIR/)
+  assert.match(matchdayVisual,/PROCHAIN MATCH NON SIMULÉ/)
+  assert.match(matchdayVisual,/CHECKLIST MATCHDAY/)
+  assert.match(matchdayVisual,/Avant → match → après/)
+})
+
+test('UX20 · detailed legacy management stays collapsed behind visual Documents Organisation and Matchday',()=>{
+  assert.match(docsVisual,/Gestion détaillée · ajouter \/ vérifier \/ modifier les documents/)
+  assert.match(docsVisual,/CSSABusinessPage mode="documents"/)
+  assert.match(orgVisual,/Gestion détaillée · personnes, rôles, disponibilités et habilitations/)
+  assert.match(orgVisual,/CSSAOrganisationPage/)
+  assert.match(matchdayVisual,/Gestion détaillée Matchday \/ intendance/)
+  assert.match(matchdayVisual,/CSSAOpsWorkspace activeModule="matchday"/)
 })
