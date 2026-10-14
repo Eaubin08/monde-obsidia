@@ -7,6 +7,8 @@ type Dossier={id:string;reference:string;type:DossierType;title:string;organizat
 type Requirement={id:string;dossierId:string;label:string;category:string;criticality:'OBLIGATOIRE'|'RECOMMANDE'|'OPTIONNEL'|'INCONNU';state:'SATISFAIT'|'MANQUANT'|'A_VERIFIER'|'EN_COURS'|'BLOQUE'|'INCONNU';source:string;documentRefId:string|null;taskRefId:string|null;owner:string;ownerPersonId?:string|null;dueAt:string;validationRequired:boolean}
 type DocumentRef={id:string;dossierId:string|null;type:string;title:string;version:string;status:'VALIDE'|'EXPIRE'|'A_VERIFIER'|'INCONNU';issuedAt:string;validUntil:string;source:string;fileRef:string;usedIn:string[];originType?:string;originMailId?:string|null;requirementIds?:string[];receivedAt?:string;proof?:string}
 type Validation={id:string;dossierId:string;type:string;status:'EN_ATTENTE'|'VALIDE'|'REFUSE'|'HOLD';requiredRole:string;decidedBy:string|null;decidedAt:string|null;comment:string}
+type SubmissionProof={id:string;dossierId:string;channel:string;submittedAt:string;externalReference:string;proofRef:string;submittedByPersonId:string|null;status:'CONFIRME'|'A_VERIFIER';source:string}
+type DossierOutcome={id:string;dossierId:string;result:'ATTRIBUE'|'NON_RETENU'|'ANNULE';decidedAt:string;externalReference:string;proofRef:string;amount:number|null;source:string;note:string}
 type MoneyRow={id:string;category:string;label:string;amount:number;date:string;status:string;matchRef:string|null;source:string;note:string;recordedByPersonId?:string|null}
 type StockItem={id:string;channel:'BUVETTE'|'BOUTIQUE'|'SPORT'|'AUTRE';label:string;sku:string;quantity:number;unitCost:number|null;salePrice:number|null;threshold:number|null;supplierId:string|null;status:string}
 type Supplier={id:string;name:string;category:string;contact:string;status:string;source:string;organizationId?:string|null}
@@ -15,7 +17,7 @@ type Invoice={id:string;direction:'EMISE'|'RECUE';number:string;party:string;par
 type Payment={id:string;invoiceId:string|null;direction:'ENTREE'|'SORTIE';amount:number;date:string;method:string;account:string;status:string;source:string;recordedByPersonId?:string|null}
 type TreasuryEntry={id:string;account:string;date:string;direction:'ENTREE'|'SORTIE';label:string;amount:number;source:string;paymentId:string|null;recordedByPersonId?:string|null}
 type Asset={id:string;kind:'VEHICULE'|'MATERIEL_SPORTIF'|'INFORMATIQUE'|'INFRASTRUCTURE'|'AUTRE';label:string;status:string;location:string;acquiredAt:string;maintenanceDueAt:string;value:number|null;source:string}
-type BusinessState={version:string;updatedAt:string;dossiers:Dossier[];requirements:Requirement[];documentRefs:DocumentRef[];validations:Validation[];revenues:MoneyRow[];expenses:MoneyRow[];stockItems:StockItem[];suppliers:Supplier[];contracts:Contract[];invoices:Invoice[];payments:Payment[];treasuryEntries:TreasuryEntry[];assets:Asset[]}
+type BusinessState={version:string;updatedAt:string;dossiers:Dossier[];requirements:Requirement[];documentRefs:DocumentRef[];validations:Validation[];submissionProofs:SubmissionProof[];dossierOutcomes:DossierOutcome[];revenues:MoneyRow[];expenses:MoneyRow[];stockItems:StockItem[];suppliers:Supplier[];contracts:Contract[];invoices:Invoice[];payments:Payment[];treasuryEntries:TreasuryEntry[];assets:Asset[]}
 type OrgPerson={id:string;displayName:string;status:string}
 type OrgAuthorization={id:string;personId:string;scope:string;action:string;status:string}
 type OrgState={people:OrgPerson[];authorizations:OrgAuthorization[]}
@@ -82,6 +84,8 @@ export default function CSSABusinessPage({mode,selectedId,onOpen}:Props){
  const toValidate=vals.filter(v=>v.status==='EN_ATTENTE'||v.status==='HOLD').length
  const blockingRequired=required.filter(r=>r.state!=='SATISFAIT')
  const finalValidation=vals.find(v=>v.type==='REVUE_FINALE')
+ const submissionProof=state?.submissionProofs.find(p=>p.dossierId===selected)||null
+ const dossierOutcome=state?.dossierOutcomes.find(o=>o.dossierId===selected)||null
  const dossierReady=Boolean(dossier)&&required.length>0&&blockingRequired.length===0&&finalValidation?.status==='VALIDE'
  const dossierLate=Boolean(dossier?.deadline)&&new Date(dossier!.deadline).getTime()<Date.now()&&!['DEPOSE','ATTRIBUE','NON_RETENU','ANNULE'].includes(dossier!.status)
  const revenues=state?.revenues||[], expenses=state?.expenses||[]
@@ -98,8 +102,47 @@ export default function CSSABusinessPage({mode,selectedId,onOpen}:Props){
 
  const changeDossierStatus=async(next:DossierStatus)=>{
   if(!dossier)return
-  if(['PRET_A_DEPOSER','DEPOSE'].includes(next)&&!dossierReady)return
+  if(next==='PRET_A_DEPOSER'&&!dossierReady)return
+  if(next==='DEPOSE'&&(!dossierReady||!submissionProof))return
+  if(['ATTRIBUE','NON_RETENU'].includes(next)&&!dossierOutcome)return
   await post({dossierPatch:{...dossier,status:next}})
+ }
+
+ const recordSubmissionProof=async(e:React.FormEvent)=>{
+  e.preventDefault()
+  if(!dossier||!dossierReady||!form.submissionProofRef?.trim()||!form.submissionAt)return
+  const proof:SubmissionProof={
+   id:submissionProof?.id||uid('submission'),
+   dossierId:dossier.id,
+   channel:form.submissionChannel?.trim()||dossier.submissionChannel||'INCONNU',
+   submittedAt:form.submissionAt,
+   externalReference:form.submissionExternalRef?.trim()||'INCONNU',
+   proofRef:form.submissionProofRef.trim(),
+   submittedByPersonId:form.submittedByPersonId||null,
+   status:'CONFIRME',
+   source:form.submissionSource?.trim()||'SAISIE_INTERNE_AVEC_PREUVE'
+  }
+  await post({submissionProofPatch:proof,dossierPatch:{...dossier,status:'DEPOSE'}})
+  setForm({...form,submissionAt:'',submissionExternalRef:'',submissionProofRef:'',submissionSource:''})
+ }
+
+ const recordOutcome=async(e:React.FormEvent)=>{
+  e.preventDefault()
+  if(!dossier||!submissionProof||!form.outcomeResult||!form.outcomeProofRef?.trim())return
+  const result=form.outcomeResult as DossierOutcome['result']
+  const outcome:DossierOutcome={
+   id:dossierOutcome?.id||uid('outcome'),
+   dossierId:dossier.id,
+   result,
+   decidedAt:form.outcomeDate||new Date().toISOString().slice(0,10),
+   externalReference:form.outcomeExternalRef?.trim()||'INCONNU',
+   proofRef:form.outcomeProofRef.trim(),
+   amount:form.outcomeAmount?Number(form.outcomeAmount):null,
+   source:form.outcomeSource?.trim()||'SAISIE_INTERNE_AVEC_PREUVE',
+   note:form.outcomeNote?.trim()||''
+  }
+  await post({dossierOutcomePatch:outcome,dossierPatch:{...dossier,status:result}})
+  setForm({...form,outcomeExternalRef:'',outcomeProofRef:'',outcomeAmount:'',outcomeSource:'',outcomeNote:''})
  }
 
  const createDossier=async(e:React.FormEvent)=>{
@@ -177,13 +220,33 @@ export default function CSSABusinessPage({mode,selectedId,onOpen}:Props){
    <aside className="biz-list"><header><strong>Dossiers</strong><span>{state.dossiers.length}</span></header>{state.dossiers.length?state.dossiers.map(d=><button key={d.id} className={selected===d.id?'active':''} onClick={()=>{setSelected(d.id);setTab('overview')}}><small>{human(d.type)}</small><strong>{d.reference}</strong><span>{d.title}</span><em>{human(d.status)}</em></button>):<div className="biz-empty">Aucun dossier créé. Le système n’invente aucun AO.</div>}</aside>
    <main className="biz-main">{dossier?<><header className="biz-dossier-head"><div><small>{human(dossier.type)}</small><h2>{dossier.reference} · {dossier.title}</h2><p>{dossier.organizationId?externalName(dossier.organizationId):dossier.organization} · {dossier.deadline?new Date(dossier.deadline).toLocaleString('fr-FR'):'Deadline inconnue'} · Responsable : {personName(dossier.ownerPersonId)}</p></div><div className="biz-dossier-actions"><select aria-label="Responsable du dossier" value={dossier.ownerPersonId||''} onChange={e=>post({dossierPatch:{...dossier,ownerPersonId:e.target.value||null,owner:e.target.value?personName(e.target.value):'UNKNOWN / NON ASSIGNÉ'}})}><option value="">Non assigné</option>{activePeople.map(p=><option key={p.id} value={p.id}>{p.displayName}</option>)}</select><span className={'biz-readiness '+(dossierReady?'ready':dossierLate?'late':'hold')}>{dossierReady?'Prêt à déposer':dossierLate?'Échéance dépassée':'Préparation / contrôle'}</span><select aria-label="Statut du dossier" value={dossier.status} onChange={e=>changeDossierStatus(e.target.value as DossierStatus)}>{['BROUILLON','EN_PREPARATION','A_VALIDER','VALIDE','PRET_A_DEPOSER','DEPOSE','ATTRIBUE','NON_RETENU','ANNULE'].map(x=><option key={x} value={x} disabled={['PRET_A_DEPOSER','DEPOSE'].includes(x)&&!dossierReady}>{human(x)}</option>)}</select></div></header>
     <div className="biz-kpis"><article><small>COMPLÉTUDE OBLIGATOIRE</small><strong>{satisfied}/{required.length}</strong><span>{blockingRequired.length} blocage(s)</span></article><article><small>VALIDATION FINALE</small><strong>{finalValidation?.status?human(finalValidation.status):'Non demandée'}</strong><span>{toValidate} validation(s) en attente</span></article><article><small>EXIGENCES</small><strong>{reqs.length}</strong><span>{reqs.filter(r=>r.state==='A_VERIFIER').length} à vérifier</span></article><article><small>DOCUMENTS LIÉS</small><strong>{docs.length}</strong><span>{docs.filter(d=>d.status==='EXPIRE').length} expiré(s)</span></article></div>
-    <nav className="biz-tabs">{[['overview','Vue'],['requirements','Exigences'],['documents','Documents'],['tasks','Tâches'],['relations','Relations'],['validation','Validation'],['sources','Sources']].map(([k,l])=><button key={k} className={tab===k?'active':''} onClick={()=>setTab(k)}>{l}</button>)}</nav>
+    <nav className="biz-tabs">{[['overview','Vue'],['requirements','Exigences'],['documents','Documents'],['tasks','Tâches'],['relations','Relations'],['validation','Validation'],['submission','Dépôt & résultat'],['sources','Sources']].map(([k,l])=><button key={k} className={tab===k?'active':''} onClick={()=>setTab(k)}>{l}</button>)}</nav>
     {tab==='overview'&&<div className="biz-priority"><div className="biz-readiness-card"><strong>{dossierReady?'Dossier gouverné prêt':'Dossier non prêt'}</strong><span>{dossierReady?'Toutes les exigences obligatoires sont satisfaites et la revue finale est validée.':'Le statut Prêt à déposer / Déposé reste bloqué tant qu’une exigence obligatoire ou la validation finale manque.'}</span></div><h3>Priorités</h3>{reqs.filter(r=>['MANQUANT','BLOQUE','A_VERIFIER'].includes(r.state)).slice(0,5).map(r=><article key={r.id}><div><strong>{r.label}</strong><span>{human(r.criticality)} · {human(r.state)}</span></div><button onClick={()=>setTab('requirements')}>Ouvrir →</button></article>)}{!reqs.length&&<p>Ajoutez les exigences du dossier. Aucune exigence n’est déduite sans source.</p>}</div>}
     {tab==='requirements'&&<><form className="biz-create compact" onSubmit={addRequirement}><input required placeholder="Exigence" value={form.reqLabel||''} onChange={e=>setForm({...form,reqLabel:e.target.value})}/><select value={form.reqCriticality||'OBLIGATOIRE'} onChange={e=>setForm({...form,reqCriticality:e.target.value})}><option>OBLIGATOIRE</option><option>RECOMMANDE</option><option>OPTIONNEL</option><option>INCONNU</option></select><input placeholder="Source / clause / page" value={form.reqSource||''} onChange={e=>setForm({...form,reqSource:e.target.value})}/><input type="date" value={form.reqDueAt||''} onChange={e=>setForm({...form,reqDueAt:e.target.value})}/><button>Ajouter</button></form><div className="biz-table">{reqs.map(r=>{const linkedDoc=r.documentRefId?state.documentRefs.find(d=>d.id===r.documentRefId):null;const linkedDocValid=!linkedDoc||linkedDoc.status==='VALIDE';return <article key={r.id}><div><small>{human(r.criticality)} · {r.category}</small><strong>{r.label}</strong><span>{r.source||'Source inconnue'}</span>{linkedDoc&&<span className={linkedDoc.status==='VALIDE'?'biz-proof-ok':'biz-proof-review'}>Pièce liée : {linkedDoc.title} · {human(linkedDoc.status)}</span>}</div><div className="biz-row-actions"><select aria-label="Responsable exigence" value={r.ownerPersonId||''} onChange={e=>post({requirementPatch:{...r,ownerPersonId:e.target.value||null,owner:e.target.value?personName(e.target.value):'UNKNOWN / NON ASSIGNÉ'}})}><option value="">Non assigné</option>{activePeople.map(p=><option key={p.id} value={p.id}>{p.displayName}</option>)}</select><select value={r.state} onChange={e=>post({requirementPatch:{...r,state:e.target.value}})}><option disabled={!linkedDocValid}>SATISFAIT</option><option>MANQUANT</option><option>A_VERIFIER</option><option>EN_COURS</option><option>BLOQUE</option><option>INCONNU</option></select><button disabled={!!r.taskRefId} onClick={()=>createTaskForRequirement(r)}>{r.taskRefId?'Tâche liée':'Créer tâche'}</button></div></article>})}</div></>}
     {tab==='documents'&&<DocumentsPanel docs={docs} requirements={reqs} form={form} setForm={setForm} addDocument={addDocument} post={post}/>}
     {tab==='tasks'&&<section className="biz-info"><h3>Tâches uniques</h3><p>Les tâches créées depuis une exigence sont écrites dans le store Tasks avec le même identifiant. Elles ne sont pas dupliquées dans le dossier.</p><button onClick={()=>onOpen?.('tasks')}>Ouvrir Tasks →</button></section>}
     {tab==='relations'&&<section className="biz-info"><h3>Relation externe</h3>{dossier.organizationId?<><p><strong>Organisme canonique :</strong> {externalName(dossier.organizationId)}</p><div className="biz-relation-timeline">{(crmDirectory?.interactions||[]).filter(i=>i.organizationId===dossier.organizationId).sort((a,b)=>String(b.occurredAt).localeCompare(String(a.occurredAt))).slice(0,12).map(i=><article key={i.id}><div><strong>{i.type} · {i.direction}</strong><span>{i.occurredAt?String(i.occurredAt).slice(0,16).replace('T',' '):'Date inconnue'}</span></div><p>{i.summary}</p><small>Preuve : {i.proof||'NON_RACCORDEE'}{i.followupTaskId?' · relance liée':''}</small></article>)}{!(crmDirectory?.interactions||[]).some(i=>i.organizationId===dossier.organizationId)&&<p>Aucun échange canonique enregistré pour cet organisme.</p>}</div><button onClick={()=>onOpen?.('crm')}>Ouvrir CRM →</button></>:<p>Ce dossier n’est pas encore relié à un organisme canonique du CRM.</p>}</section>}
     {tab==='validation'&&<section className="biz-info"><h3>Validation humaine</h3><p>Complétude ≠ validation ≠ prêt à déposer ≠ déposé. Une validation référence une personne canonique de Organisation.</p>{vals.map(v=><article key={v.id} className="biz-validation-row"><div><strong>{v.type}</strong><span>{v.decidedBy?personName(v.decidedBy):'Décideur non assigné'}</span></div><select aria-label="Décideur" value={v.decidedBy||''} onChange={e=>post({validationPatch:{...v,decidedBy:e.target.value||null,status:e.target.value?v.status:'EN_ATTENTE'}})}><option value="">Non assigné</option>{activePeople.map(p=><option key={p.id} value={p.id}>{p.displayName}</option>)}</select><select aria-label="État validation" value={v.status} onChange={e=>{const next=e.target.value as Validation['status'];if(next==='VALIDE'&&!v.decidedBy)return;void post({validationPatch:{...v,status:next,decidedAt:next==='VALIDE'?new Date().toISOString():v.decidedAt}})}}><option>EN_ATTENTE</option><option>HOLD</option><option>VALIDE</option><option>REFUSE</option></select><em>{v.decidedBy?(hasExplicitAuthorization(v.decidedBy,'AO')?'Habilitation AO explicite':'Habilitation AO non établie'):'Autorité inconnue'}</em></article>)}<button onClick={()=>post({validationPatch:{id:uid('val'),dossierId:selected,type:'REVUE_FINALE',status:'EN_ATTENTE',requiredRole:'PERSONNE_HABILITEE',decidedBy:null,decidedAt:null,comment:''}})}>+ Demander validation</button></section>}
+    {tab==='submission'&&<section className="biz-info biz-submission"><h3>Dépôt, accusé et résultat</h3><p>Un statut « Déposé » n’existe qu’avec une preuve de dépôt. Le résultat du dossier est lui aussi un objet sourcé distinct.</p>
+     {!submissionProof?<form className="biz-create compact" onSubmit={recordSubmissionProof}>
+      <input required type="datetime-local" aria-label="Date et heure du dépôt" value={form.submissionAt||''} onChange={e=>setForm({...form,submissionAt:e.target.value})}/>
+      <input placeholder="Canal de dépôt" value={form.submissionChannel||dossier.submissionChannel||''} onChange={e=>setForm({...form,submissionChannel:e.target.value})}/>
+      <input placeholder="Référence externe / accusé" value={form.submissionExternalRef||''} onChange={e=>setForm({...form,submissionExternalRef:e.target.value})}/>
+      <input required placeholder="Preuve de dépôt / receipt / URL / fichier" value={form.submissionProofRef||''} onChange={e=>setForm({...form,submissionProofRef:e.target.value})}/>
+      <select value={form.submittedByPersonId||''} onChange={e=>setForm({...form,submittedByPersonId:e.target.value})}><option value="">Déposé par : non assigné</option>{activePeople.map(p=><option key={p.id} value={p.id}>{p.displayName}</option>)}</select>
+      <input placeholder="Source" value={form.submissionSource||''} onChange={e=>setForm({...form,submissionSource:e.target.value})}/>
+      <button disabled={!dossierReady}>Enregistrer la preuve de dépôt</button>
+     </form>:<div className="biz-proof-card"><div><small>DÉPÔT CONFIRMÉ</small><strong>{submissionProof.externalReference}</strong><span>{submissionProof.submittedAt} · {submissionProof.channel}</span><span>Déposé par {personName(submissionProof.submittedByPersonId)}</span></div><em>{submissionProof.proofRef}</em></div>}
+     {!dossierReady&&!submissionProof&&<p className="biz-hold-note">HOLD : le dossier doit d’abord être complet et validé avant d’enregistrer un dépôt.</p>}
+     {submissionProof&&<><h3>Résultat externe</h3>{dossierOutcome?<div className="biz-proof-card outcome"><div><small>{human(dossierOutcome.result)}</small><strong>{dossierOutcome.externalReference}</strong><span>{dossierOutcome.decidedAt}{dossierOutcome.amount!=null?' · '+euro(dossierOutcome.amount):''}</span></div><em>{dossierOutcome.proofRef}</em></div>:<form className="biz-create compact" onSubmit={recordOutcome}>
+      <select required value={form.outcomeResult||''} onChange={e=>setForm({...form,outcomeResult:e.target.value})}><option value="">Résultat…</option><option>ATTRIBUE</option><option>NON_RETENU</option><option>ANNULE</option></select>
+      <input type="date" value={form.outcomeDate||''} onChange={e=>setForm({...form,outcomeDate:e.target.value})}/>
+      <input placeholder="Référence décision / notification" value={form.outcomeExternalRef||''} onChange={e=>setForm({...form,outcomeExternalRef:e.target.value})}/>
+      <input required placeholder="Preuve résultat / notification" value={form.outcomeProofRef||''} onChange={e=>setForm({...form,outcomeProofRef:e.target.value})}/>
+      <input type="number" step="0.01" placeholder="Montant attribué (optionnel)" value={form.outcomeAmount||''} onChange={e=>setForm({...form,outcomeAmount:e.target.value})}/>
+      <button>Enregistrer le résultat</button>
+     </form>}</>}
+    </section>}
     {tab==='sources'&&<section className="biz-info"><h3>Sources & preuves</h3><p><strong>Source dossier :</strong> {dossier.source||'INCONNU'}</p><p>Chaque exigence conserve sa source. Les preuves de dépôt seront ajoutées comme objet distinct avant tout passage à DÉPOSÉ.</p></section>}
    </>:<div className="biz-empty big">Créez ou sélectionnez un dossier.</div>}</main>
   </div>
