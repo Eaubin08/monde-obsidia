@@ -13,7 +13,6 @@ type Person={id:string;displayName:string;status:string}
 type OrgState={people:Person[]}
 type Props={onOpen?:(moduleId:string,id?:string)=>void}
 
-function human(v:string){return v.replaceAll('_',' ').toLowerCase().replace(/(^|\s)\S/g,m=>m.toUpperCase())}
 function uid(prefix:string){return prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6)}
 
 export default function CSSAMailPage({onOpen}:Props){
