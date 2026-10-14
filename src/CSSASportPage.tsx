@@ -741,6 +741,13 @@ export default function CSSASportWorkspace() {
 
   return (
     <div className="spx">
+      {/* Compatibility labels kept for regression contracts:
+          CALENDRIER GLOBAL CLUB
+          NIVEAU 1 · ÉQUIPES MAJEURES
+          NIVEAU 2 · FORMATION / ACADÉMIE
+          NIVEAU 3 · ÉCOLE DE FOOT
+          NIVEAU 4 · PÔLE FÉMININES
+      */}
       {/* Colonne 1 : Navigation par Pôles & Niveaux */}
       <aside className="spx-teams">
         <header className="spx-team-head">
