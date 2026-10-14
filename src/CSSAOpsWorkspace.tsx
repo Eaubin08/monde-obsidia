@@ -85,7 +85,8 @@ type OrgPerson = {id:string;displayName:string;status:string}
 type OrgState = {people:OrgPerson[]}
 type ExternalOrganization={id:string;name:string;kind:'COLLECTIVITE'|'CLUB'|'FOURNISSEUR'|'SPONSOR'|'PARTENAIRE'|'FEDERATION_LIGUE'|'ENTREPRISE'|'ASSOCIATION'|'AUTRE';status:'ACTIF'|'INACTIF'|'INCONNU';legalId:string;website:string;email:string;phone:string;address:string;source:string;note:string}
 type ExternalContact={id:string;organizationId:string;displayName:string;role:string;email:string;phone:string;status:'ACTIF'|'INACTIF'|'INCONNU';source:string}
-type CrmDirectoryState={organizations:ExternalOrganization[];contacts:ExternalContact[]}
+type ExternalInteraction={id:string;organizationId:string;contactId:string|null;caseId:string|null;dossierId:string|null;type:'EMAIL'|'APPEL'|'REUNION'|'QUESTION'|'REPONSE'|'RELANCE'|'DOCUMENT_RECU'|'NOTE';direction:'ENTRANT'|'SORTANT'|'INTERNE';channel:string;occurredAt:string;summary:string;proof:string;internalPersonId:string|null;followupTaskId:string|null;source:string}
+type CrmDirectoryState={organizations:ExternalOrganization[];contacts:ExternalContact[];interactions:ExternalInteraction[]}
 
 export type OpsState = {
   version: string
@@ -201,6 +202,55 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
     const id=extUid('org')
     await postDirectory({organizationPatch:{id,name:externalForm.orgName.trim(),kind:externalForm.kind||'AUTRE',status:'ACTIF',legalId:externalForm.legalId?.trim()||'',website:externalForm.website?.trim()||'',email:externalForm.email?.trim()||'',phone:externalForm.phone?.trim()||'',address:externalForm.address?.trim()||'',source:externalForm.source?.trim()||'SAISIE_INTERNE_A_VERIFIER',note:''}})
     setDirectorySelectedId(id);setShowExternalCreate(false);setExternalForm({kind:'AUTRE'})
+  }
+
+  const createExternalInteraction=async(e:React.FormEvent)=>{
+    e.preventDefault()
+    if(!selectedExternal||!externalForm.interactionSummary?.trim())return
+    const id=extUid('interaction')
+    let followupTaskId:string|null=null
+    if(externalForm.followupDueAt){
+      followupTaskId=extUid('task-crm')
+      const task:OpsTask={
+        id:followupTaskId,
+        title:externalForm.followupTitle?.trim()||('Relance '+selectedExternal.name),
+        description:'Suivi créé depuis une interaction CRM',
+        status:'A_FAIRE',
+        priority:'NORMALE',
+        dueAt:externalForm.followupDueAt,
+        origin:'COMMERCIAL',
+        structure:'cssa',
+        team:null,
+        matchRef:null,
+        responsible:externalForm.interactionPersonId?personName(externalForm.interactionPersonId):'UNKNOWN / NON ASSIGNÉ',
+        responsiblePersonId:externalForm.interactionPersonId||null,
+        source:'Journal relationnel CRM',
+        truthClass:'PUBLIC_CONFIRMED',
+        checklist:{},
+        notes:'',
+        history:[{at:new Date().toISOString(),action:'CREATION',note:'Créée depuis interaction CRM '+id}],
+        relations:[{type:'CRM_ORGANIZATION',targetId:selectedExternal.id,label:selectedExternal.name},{type:'CRM_INTERACTION',targetId:id,label:'Interaction CRM'}],
+        caseRef:null
+      }
+      await postPatch({taskPatch:task})
+    }
+    await postDirectory({interactionPatch:{
+      id,
+      organizationId:selectedExternal.id,
+      contactId:externalForm.interactionContactId||null,
+      caseId:externalForm.interactionCaseId||null,
+      dossierId:externalForm.interactionDossierId||null,
+      type:externalForm.interactionType||'NOTE',
+      direction:externalForm.interactionDirection||'INTERNE',
+      channel:externalForm.interactionChannel||'AUTRE',
+      occurredAt:externalForm.interactionOccurredAt||new Date().toISOString(),
+      summary:externalForm.interactionSummary.trim(),
+      proof:externalForm.interactionProof?.trim()||'NON_RACCORDEE',
+      internalPersonId:externalForm.interactionPersonId||null,
+      followupTaskId,
+      source:externalForm.interactionSource?.trim()||'SAISIE_INTERNE_A_VERIFIER'
+    }})
+    setExternalForm({...externalForm,interactionSummary:'',interactionProof:'',interactionSource:'',followupDueAt:'',followupTitle:''})
   }
 
   const createExternalContact=async(e:React.FormEvent)=>{
@@ -1208,7 +1258,33 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
               </form>
               <div className="ops-checklist">{(directory?.contacts||[]).filter(c=>c.organizationId===selectedExternal.id).map(c=><div className="ops-check-row" key={c.id}><span className="badge-origin">{c.role}</span><strong style={{fontSize:'9.5px'}}>{c.displayName}</strong><span style={{fontSize:'8px',marginLeft:'auto',color:'#8299af'}}>{c.email||c.phone||'Coordonnée inconnue'}</span></div>)}</div>
             </div>
-            <div className="ops-panel-box"><div className="ops-panel-box-head"><h4>Principe CRM</h4></div><p className="ops-detail-desc">Cet organisme est l’identité externe canonique. Dossiers, fournisseurs, sponsors ou relations doivent pointer vers cet ID plutôt que recopier son nom.</p></div>
+            <div className="ops-panel-box">
+              <div className="ops-panel-box-head"><h4>Journal relationnel</h4><span>{(directory?.interactions||[]).filter(i=>i.organizationId===selectedExternal.id).length}</span></div>
+              <form className="ops-create-modal" onSubmit={createExternalInteraction}>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px'}}>
+                  <select value={externalForm.interactionType||'NOTE'} onChange={e=>setExternalForm({...externalForm,interactionType:e.target.value})}><option>EMAIL</option><option>APPEL</option><option>REUNION</option><option>QUESTION</option><option>REPONSE</option><option>RELANCE</option><option>DOCUMENT_RECU</option><option>NOTE</option></select>
+                  <select value={externalForm.interactionDirection||'INTERNE'} onChange={e=>setExternalForm({...externalForm,interactionDirection:e.target.value})}><option>ENTRANT</option><option>SORTANT</option><option>INTERNE</option></select>
+                </div>
+                <select value={externalForm.interactionContactId||''} onChange={e=>setExternalForm({...externalForm,interactionContactId:e.target.value})}><option value="">Contact : non précisé</option>{(directory?.contacts||[]).filter(x=>x.organizationId===selectedExternal.id).map(x=><option key={x.id} value={x.id}>{x.displayName}</option>)}</select>
+                <select value={externalForm.interactionPersonId||''} onChange={e=>setExternalForm({...externalForm,interactionPersonId:e.target.value})}><option value="">Personne interne : non assignée</option>{(orgState?.people||[]).filter(p=>p.status==='ACTIF').map(p=><option key={p.id} value={p.id}>{p.displayName}</option>)}</select>
+                <input type="datetime-local" value={externalForm.interactionOccurredAt||''} onChange={e=>setExternalForm({...externalForm,interactionOccurredAt:e.target.value})}/>
+                <textarea required rows={3} placeholder="Résumé factuel de l’échange" value={externalForm.interactionSummary||''} onChange={e=>setExternalForm({...externalForm,interactionSummary:e.target.value})}/>
+                <input placeholder="Preuve / receipt / document / URL" value={externalForm.interactionProof||''} onChange={e=>setExternalForm({...externalForm,interactionProof:e.target.value})}/>
+                <input placeholder="Source" value={externalForm.interactionSource||''} onChange={e=>setExternalForm({...externalForm,interactionSource:e.target.value})}/>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px'}}>
+                  <input type="date" aria-label="Échéance relance" value={externalForm.followupDueAt||''} onChange={e=>setExternalForm({...externalForm,followupDueAt:e.target.value})}/>
+                  <input placeholder="Titre relance (optionnel)" value={externalForm.followupTitle||''} onChange={e=>setExternalForm({...externalForm,followupTitle:e.target.value})}/>
+                </div>
+                <div className="ops-create-modal-actions"><button className="ops-btn-save">Enregistrer l’interaction</button></div>
+              </form>
+              <div className="ops-crm-timeline">{(directory?.interactions||[]).filter(i=>i.organizationId===selectedExternal.id).sort((a,b)=>String(b.occurredAt).localeCompare(String(a.occurredAt))).map(i=><article key={i.id}>
+                <div><span className="badge-origin">{i.type}</span><span className="badge-priority normale">{i.direction}</span><time>{i.occurredAt?String(i.occurredAt).slice(0,16).replace('T',' '):'Date inconnue'}</time></div>
+                <strong>{i.summary}</strong>
+                <small>{i.contactId?((directory?.contacts||[]).find(c=>c.id===i.contactId)?.displayName||'Contact inconnu'):'Contact non précisé'} · {i.internalPersonId?personName(i.internalPersonId):'Interne non assigné'} · {i.channel}</small>
+                <small>Preuve : {i.proof||'NON_RACCORDEE'}{i.followupTaskId?' · relance '+i.followupTaskId:''}</small>
+              </article>)}{!(directory?.interactions||[]).some(i=>i.organizationId===selectedExternal.id)&&<p className="ops-detail-desc">Aucune interaction canonique enregistrée.</p>}</div>
+            </div>
+            <div className="ops-panel-box"><div className="ops-panel-box-head"><h4>Principe CRM</h4></div><p className="ops-detail-desc">Cet organisme est l’identité externe canonique. Le journal conserve appels, mails, réunions, réponses, relances et pièces reçues avec preuve et suivi sans les dupliquer dans chaque dossier.</p></div>
           </div>
         </>}
 

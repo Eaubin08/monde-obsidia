@@ -13,6 +13,7 @@ test('crm directory starts empty and never invents external actors',()=>{
   assert.equal(s.version,'CSSA_CRM_DIRECTORY_V1')
   assert.deepEqual(s.organizations,[])
   assert.deepEqual(s.contacts,[])
+  assert.deepEqual(s.interactions,[])
  }finally{rmSync(dir,{recursive:true,force:true})}
 })
 
@@ -38,5 +39,22 @@ test('deleting an organization also removes orphan contacts',()=>{
   const s=writeCssaCrmDirectory({organizationDeleteId:'org1'},file)
   assert.equal(s.organizations.length,0)
   assert.equal(s.contacts.length,0)
+ }finally{rmSync(dir,{recursive:true,force:true})}
+})
+
+
+test('crm journal persists canonical interactions and follow-up references',()=>{
+ const dir=mkdtempSync(join(tmpdir(),'cssa-crm-journal-'))
+ const file=join(dir,'state.json')
+ try{
+  writeCssaCrmDirectory({organizationPatch:{id:'org1',name:'Organisation test',kind:'COLLECTIVITE'}},file)
+  writeCssaCrmDirectory({contactPatch:{id:'c1',organizationId:'org1',displayName:'Contact test'}},file)
+  writeCssaCrmDirectory({interactionPatch:{id:'it1',organizationId:'org1',contactId:'c1',type:'EMAIL',direction:'ENTRANT',channel:'EMAIL',occurredAt:'2026-10-14T09:00:00',summary:'Réponse reçue',proof:'receipt-1',internalPersonId:'p1',followupTaskId:'task1',source:'TEST'}},file)
+  const s=readCssaCrmDirectory(file)
+  assert.equal(s.interactions.length,1)
+  assert.equal(s.interactions[0].organizationId,'org1')
+  assert.equal(s.interactions[0].contactId,'c1')
+  assert.equal(s.interactions[0].followupTaskId,'task1')
+  assert.equal(s.interactions[0].proof,'receipt-1')
  }finally{rmSync(dir,{recursive:true,force:true})}
 })
