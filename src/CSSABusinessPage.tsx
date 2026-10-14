@@ -67,7 +67,11 @@ export default function CSSABusinessPage({mode,selectedId,onOpen}:Props){
 
  const post=async(patch:Record<string,unknown>)=>{
   const r=await fetch('/obsidia-local/cssa-business-state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)})
-  if(r.ok)setState(await r.json())
+  if(r.ok){
+   const data=await r.json()
+   setState(data)
+   window.dispatchEvent(new CustomEvent('cssa-business-updated',{detail:data}))
+  }
  }
 
  const activePeople=orgState?.people.filter(p=>p.status==='ACTIF')||[]
