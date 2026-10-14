@@ -32,6 +32,8 @@ export type CrmCase = {
   subject: string
   category: string
   relatedOrg: string
+  relatedOrgId?: string | null
+  contactIds?: string[]
   responsible: string
   status: string
   priority: TaskPriority
@@ -81,6 +83,9 @@ export type IntendanceItem = {
 
 type OrgPerson = {id:string;displayName:string;status:string}
 type OrgState = {people:OrgPerson[]}
+type ExternalOrganization={id:string;name:string;kind:'COLLECTIVITE'|'CLUB'|'FOURNISSEUR'|'SPONSOR'|'PARTENAIRE'|'FEDERATION_LIGUE'|'ENTREPRISE'|'ASSOCIATION'|'AUTRE';status:'ACTIF'|'INACTIF'|'INCONNU';legalId:string;website:string;email:string;phone:string;address:string;source:string;note:string}
+type ExternalContact={id:string;organizationId:string;displayName:string;role:string;email:string;phone:string;status:'ACTIF'|'INACTIF'|'INCONNU';source:string}
+type CrmDirectoryState={organizations:ExternalOrganization[];contacts:ExternalContact[]}
 
 export type OpsState = {
   version: string
@@ -99,6 +104,7 @@ type Props = {
 export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: Props) {
   const [state, setState] = useState<OpsState | null>(null)
   const [orgState, setOrgState] = useState<OrgState | null>(null)
+  const [directory, setDirectory] = useState<CrmDirectoryState | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -107,6 +113,10 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
   const [originFilter, setOriginFilter] = useState<string>('TOUS')
   const [priorityFilter, setPriorityFilter] = useState<string>('TOUTES')
   const [crmTypeFilter, setCrmTypeFilter] = useState<string>('TOUT')
+  const [crmMode,setCrmMode]=useState<'cases'|'directory'>('cases')
+  const [directorySelectedId,setDirectorySelectedId]=useState('')
+  const [showExternalCreate,setShowExternalCreate]=useState(false)
+  const [externalForm,setExternalForm]=useState<Record<string,string>>({kind:'AUTRE'})
   const [intendanceCatFilter, setIntendanceCatFilter] = useState<string>('TOUT')
 
   // Formulaire création tâche
@@ -127,15 +137,17 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
   // Fetch state on mount
   const fetchOpsState = useCallback(async () => {
     try {
-      const [res, orgRes] = await Promise.all([
+      const [res, orgRes, directoryRes] = await Promise.all([
         fetch('/obsidia-local/cssa-ops-state', {cache: 'no-store'}),
-        fetch('/obsidia-local/cssa-organisation-state', {cache: 'no-store'})
+        fetch('/obsidia-local/cssa-organisation-state', {cache: 'no-store'}),
+        fetch('/obsidia-local/cssa-crm-directory', {cache: 'no-store'})
       ])
       if (res.ok) {
         const data: OpsState = await res.json()
         setState(data)
       }
       if (orgRes.ok) setOrgState(await orgRes.json())
+      if (directoryRes.ok) setDirectory(await directoryRes.json())
     } catch {}
     finally {
       setLoading(false)
@@ -171,6 +183,31 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
         setState(updated)
       }
     } catch {}
+  }
+
+  const postDirectory = async (patch:Record<string,unknown>) => {
+    try{
+      const res=await fetch('/obsidia-local/cssa-crm-directory',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)})
+      if(res.ok)setDirectory(await res.json())
+    }catch{}
+  }
+
+  const externalName=(id?:string|null)=>id?(directory?.organizations.find(x=>x.id===id)?.name||'ORGANISME INCONNU'):'NON RACCORDE'
+  const extUid=(prefix:string)=>prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6)
+
+  const createExternalOrganization=async(e:React.FormEvent)=>{
+    e.preventDefault()
+    if(!externalForm.orgName?.trim())return
+    const id=extUid('org')
+    await postDirectory({organizationPatch:{id,name:externalForm.orgName.trim(),kind:externalForm.kind||'AUTRE',status:'ACTIF',legalId:externalForm.legalId?.trim()||'',website:externalForm.website?.trim()||'',email:externalForm.email?.trim()||'',phone:externalForm.phone?.trim()||'',address:externalForm.address?.trim()||'',source:externalForm.source?.trim()||'SAISIE_INTERNE_A_VERIFIER',note:''}})
+    setDirectorySelectedId(id);setShowExternalCreate(false);setExternalForm({kind:'AUTRE'})
+  }
+
+  const createExternalContact=async(e:React.FormEvent)=>{
+    e.preventDefault()
+    if(!directorySelectedId||!externalForm.contactName?.trim())return
+    await postDirectory({contactPatch:{id:extUid('contact'),organizationId:directorySelectedId,displayName:externalForm.contactName.trim(),role:externalForm.contactRole?.trim()||'INCONNU',email:externalForm.contactEmail?.trim()||'',phone:externalForm.contactPhone?.trim()||'',status:'ACTIF',source:externalForm.contactSource?.trim()||'SAISIE_INTERNE_A_VERIFIER'}})
+    setExternalForm({...externalForm,contactName:'',contactRole:'',contactEmail:'',contactPhone:'',contactSource:''})
   }
 
   const personName = (personId?: string | null) => {
@@ -384,6 +421,10 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
     if (!state || !state.cases.length) return null
     return state.cases.find(c => c.id === selectedId) || state.cases[0]
   }, [state, selectedId])
+  const selectedExternal=useMemo(()=>{
+    if(!directory?.organizations.length)return null
+    return directory.organizations.find(x=>x.id===directorySelectedId)||directory.organizations[0]
+  },[directory,directorySelectedId])
 
   const selectedIntendance = useMemo(() => {
     if (!state || !state.intendanceItems.length) return null
@@ -498,7 +539,13 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
 
         {/* Filtre CRM */}
         {isCrmView && (
+          <>
           <div className="ops-filter-section">
+            <small>Vue CRM</small>
+            <button className={`ops-filter-link ${crmMode==='cases'?'active':''}`} onClick={()=>setCrmMode('cases')}><span>Dossiers / relations</span><b>{state?.cases.length||0}</b></button>
+            <button className={`ops-filter-link ${crmMode==='directory'?'active':''}`} onClick={()=>setCrmMode('directory')}><span>Répertoire externe</span><b>{directory?.organizations.length||0}</b></button>
+          </div>
+          {crmMode==='cases'&&<div className="ops-filter-section">
             <small>Vérité & Dossiers</small>
             {[
               {id: 'TOUT', label: 'Tous les dossiers'},
@@ -520,7 +567,8 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
                 </b>
               </button>
             ))}
-          </div>
+          </div>}
+          </>
         )}
 
         {/* Filtre Intendance */}
@@ -552,12 +600,12 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
         <header className="ops-col-head">
           <h3>
             {isTaskOrAdminView && (activeModule === 'tasks' ? 'Tâches du Club' : 'Administration & Suivi')}
-            {isCrmView && 'Dossiers CRM & Relations'}
+            {isCrmView && (crmMode==='cases'?'Dossiers CRM & Relations':'Répertoire des acteurs externes')}
             {isIntendanceView && 'Besoins Logistiques & Intendance'}
           </h3>
           <span>
             {isTaskOrAdminView && `${filteredTasks.length} résultats`}
-            {isCrmView && `${filteredCases.length} résultats`}
+            {isCrmView && (crmMode==='cases'?`${filteredCases.length} résultats`:`${directory?.organizations.length||0} organismes`)}
             {isIntendanceView && `${filteredIntendance.length} résultats`}
           </span>
         </header>
@@ -571,6 +619,16 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
             placeholder="Rechercher par titre, mot-clé, match lié..."
           />
         </div>
+        {isCrmView&&crmMode==='directory'&&<button className="ops-btn-new-task" onClick={()=>setShowExternalCreate(v=>!v)}>+ Nouvel organisme</button>}
+        {isCrmView&&crmMode==='directory'&&showExternalCreate&&<form className="ops-create-modal" onSubmit={createExternalOrganization}>
+          <h4>Nouvel acteur externe</h4>
+          <input required placeholder="Nom organisme / club / fournisseur" value={externalForm.orgName||''} onChange={e=>setExternalForm({...externalForm,orgName:e.target.value})}/>
+          <select value={externalForm.kind||'AUTRE'} onChange={e=>setExternalForm({...externalForm,kind:e.target.value})}><option>COLLECTIVITE</option><option>CLUB</option><option>FOURNISSEUR</option><option>SPONSOR</option><option>PARTENAIRE</option><option>FEDERATION_LIGUE</option><option>ENTREPRISE</option><option>ASSOCIATION</option><option>AUTRE</option></select>
+          <input placeholder="Identifiant légal (optionnel)" value={externalForm.legalId||''} onChange={e=>setExternalForm({...externalForm,legalId:e.target.value})}/>
+          <input placeholder="Email" value={externalForm.email||''} onChange={e=>setExternalForm({...externalForm,email:e.target.value})}/>
+          <input placeholder="Source / preuve" value={externalForm.source||''} onChange={e=>setExternalForm({...externalForm,source:e.target.value})}/>
+          <div className="ops-create-modal-actions"><button type="button" className="ops-state-btn" onClick={()=>setShowExternalCreate(false)}>Annuler</button><button className="ops-btn-save">Créer</button></div>
+        </form>}
 
         {/* Modale inline création tâche */}
         {showCreateModal && (
@@ -662,7 +720,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
             ))}
 
           {/* VUE CRM */}
-          {isCrmView &&
+          {isCrmView && crmMode==='cases' &&
             filteredCases.map(c => (
               <div
                 key={c.id}
@@ -682,6 +740,11 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
                 </div>
               </div>
             ))}
+          {isCrmView&&crmMode==='directory'&&(directory?.organizations||[]).filter(o=>!searchQuery.trim()||o.name.toLowerCase().includes(searchQuery.toLowerCase())).map(o=><div key={o.id} className={`ops-row-card ${selectedExternal?.id===o.id?'active':''}`} onClick={()=>setDirectorySelectedId(o.id)}>
+            <div className="ops-row-top"><span className="ops-row-title">{o.name}</span><span className="badge-status">{o.status}</span></div>
+            <div className="ops-row-sub">{o.kind}{o.legalId?' · '+o.legalId:''}</div>
+            <div className="ops-row-tags"><span className="badge-origin">{(directory?.contacts||[]).filter(c=>c.organizationId===o.id).length} contact(s)</span><span className="badge-truth">{o.source||'Source inconnue'}</span></div>
+          </div>)}
 
           {/* VUE INTENDANCE */}
           {isIntendanceView &&
@@ -950,13 +1013,13 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
         )}
 
         {/* DÉTAIL CASE (CRM & Relations) */}
-        {isCrmView && selectedCase && (
+        {isCrmView && crmMode==='cases' && selectedCase && (
           <>
             <header className="ops-detail-header">
               <div className="ops-detail-top-row">
                 <div>
                   <small style={{font: '8px ui-monospace, monospace', color: '#7b95ae'}}>
-                    {selectedCase.category} · {selectedCase.relatedOrg}
+                    {selectedCase.category} · {selectedCase.relatedOrgId?externalName(selectedCase.relatedOrgId):selectedCase.relatedOrg}
                   </small>
                   <h2>{selectedCase.subject}</h2>
                 </div>
@@ -972,6 +1035,10 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
                 </span>
                 <span className="badge-origin">Échéance : {selectedCase.dates.dueAt}</span>
                 <span className="badge-origin">Responsable : {selectedCase.responsible}</span>
+                <select className="ops-person-select" aria-label="Organisme CRM" value={selectedCase.relatedOrgId||''} onChange={e=>postPatch({casePatch:{...selectedCase,relatedOrgId:e.target.value||null,relatedOrg:e.target.value?externalName(e.target.value):selectedCase.relatedOrg}})}>
+                  <option value="">Organisme non raccordé</option>
+                  {(directory?.organizations||[]).map(o=><option key={o.id} value={o.id}>{o.name}</option>)}
+                </select>
               </div>
               <p className="ops-detail-desc">Provenance : {selectedCase.provenance}</p>
             </header>
@@ -1121,6 +1188,29 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
             </div>
           </>
         )}
+
+        {isCrmView&&crmMode==='directory'&&selectedExternal&&<>
+          <header className="ops-detail-header">
+            <div className="ops-detail-top-row"><div><small style={{font:'8px ui-monospace, monospace',color:'#7b95ae'}}>{selectedExternal.kind}</small><h2>{selectedExternal.name}</h2></div><span className="badge-status">{selectedExternal.status}</span></div>
+            <div className="ops-detail-meta-band"><span className="badge-origin">{selectedExternal.legalId||'Identifiant légal inconnu'}</span><span className="badge-truth">{selectedExternal.source||'Source inconnue'}</span></div>
+            <p className="ops-detail-desc">{selectedExternal.email||'Email inconnu'}{selectedExternal.phone?' · '+selectedExternal.phone:''}{selectedExternal.address?' · '+selectedExternal.address:''}</p>
+          </header>
+          <div className="ops-detail-sections">
+            <div className="ops-panel-box">
+              <div className="ops-panel-box-head"><h4>Contacts canoniques</h4><span>{(directory?.contacts||[]).filter(c=>c.organizationId===selectedExternal.id).length}</span></div>
+              <form className="ops-create-modal" onSubmit={createExternalContact}>
+                <input required placeholder="Nom du contact" value={externalForm.contactName||''} onChange={e=>setExternalForm({...externalForm,contactName:e.target.value})}/>
+                <input placeholder="Fonction / rôle" value={externalForm.contactRole||''} onChange={e=>setExternalForm({...externalForm,contactRole:e.target.value})}/>
+                <input placeholder="Email" value={externalForm.contactEmail||''} onChange={e=>setExternalForm({...externalForm,contactEmail:e.target.value})}/>
+                <input placeholder="Téléphone" value={externalForm.contactPhone||''} onChange={e=>setExternalForm({...externalForm,contactPhone:e.target.value})}/>
+                <input placeholder="Source / preuve" value={externalForm.contactSource||''} onChange={e=>setExternalForm({...externalForm,contactSource:e.target.value})}/>
+                <div className="ops-create-modal-actions"><button className="ops-btn-save">Ajouter contact</button></div>
+              </form>
+              <div className="ops-checklist">{(directory?.contacts||[]).filter(c=>c.organizationId===selectedExternal.id).map(c=><div className="ops-check-row" key={c.id}><span className="badge-origin">{c.role}</span><strong style={{fontSize:'9.5px'}}>{c.displayName}</strong><span style={{fontSize:'8px',marginLeft:'auto',color:'#8299af'}}>{c.email||c.phone||'Coordonnée inconnue'}</span></div>)}</div>
+            </div>
+            <div className="ops-panel-box"><div className="ops-panel-box-head"><h4>Principe CRM</h4></div><p className="ops-detail-desc">Cet organisme est l’identité externe canonique. Dossiers, fournisseurs, sponsors ou relations doivent pointer vers cet ID plutôt que recopier son nom.</p></div>
+          </div>
+        </>}
 
         {/* DÉTAIL INTENDANCE */}
         {isIntendanceView && selectedIntendance && (
