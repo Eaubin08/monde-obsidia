@@ -38,7 +38,7 @@ test('UX2 · duplicate global Ops subnavigation is removed',()=>{
 })
 
 test('UX2 · Organisation has human-readable poles and detail navigation',()=>{
-  assert.match(page,/CSSAOrganisationPage/)
+  assert.match(page,/CSSAOrganisationVisualPage/)
   assert.match(org,/Gouvernance & direction/)
   assert.match(org,/Administration & support/)
   assert.match(org,/Formation \/ Académie/)
