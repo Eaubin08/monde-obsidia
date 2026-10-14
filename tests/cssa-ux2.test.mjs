@@ -157,3 +157,15 @@ test('UX10 · Mail documents keep provenance and cannot auto-satisfy dossier req
   assert.match(business,/disabled={!linkedDocValid}/)
   assert.match(business,/originType==='MAIL'/)
 })
+
+
+test('UX11 · deposited and awarded states require first-class evidence objects',()=>{
+  assert.match(business,/submissionProofs/)
+  assert.match(business,/dossierOutcomes/)
+  assert.match(business,/Dépôt & résultat/)
+  assert.match(business,/Un statut « Déposé » n’existe qu’avec une preuve de dépôt/)
+  assert.match(business,/submissionProofRef/)
+  assert.match(business,/Enregistrer la preuve de dépôt/)
+  assert.match(business,/Enregistrer le résultat/)
+  assert.match(business,/next==='DEPOSE'&&\(!dossierReady\|\|!submissionProof\)/)
+})
