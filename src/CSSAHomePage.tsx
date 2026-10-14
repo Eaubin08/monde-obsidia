@@ -1,3 +1,5 @@
+import {deriveCssaDossierAttention} from './cssaDossierAttention'
+import {cssaSourceAvailable} from './cssaLinkedReference'
 import {useEffect,useMemo,useState} from 'react'
 import './CSSAHome.css'
 import {R1_MATCHES,R2_MATCHES,U20_MATCHES,FORMATION_MATCHES,FEMININES_MATCHES,COUPE_DE_FRANCE} from './CSSASportPage'
@@ -6,8 +8,9 @@ type OpsTask={id:string;title:string;status:string;priority?:string;dueAt?:strin
 type OpsCase={id:string;title?:string;subject?:string;status?:string;priority?:string;truthClass?:string;isTestFixture?:boolean}
 type IntendanceRow={id:string;label?:string;title?:string;status:string;matchRef?:string;category?:string;responsiblePersonId?:string|null}
 type OpsState={tasks?:OpsTask[];cases?:OpsCase[];intendanceItems?:IntendanceRow[];updatedAt?:string}
-type DossierRow={id:string;reference:string;type:string;title:string;organization:string;deadline:string;status:string}
-type RequirementRow={id:string;dossierId:string;criticality:string;state:string}
+type DossierRow={id:string;reference:string;type:string;title:string;organization:string;deadline:string;status:string;owner?:string;ownerPersonId?:string|null}
+type RequirementRow={id:string;dossierId:string;label?:string;criticality:string;state:string;source?:string;documentRefId?:string|null;taskRefId?:string|null;owner?:string;ownerPersonId?:string|null}
+type DocumentRow={id:string;title:string;status:string;validUntil?:string}
 type ValidationRow={id:string;dossierId:string;type:string;status:string}
 type SubmissionProofRow={id:string;dossierId:string;submittedAt:string;externalReference:string}
 type OutcomeRow={id:string;dossierId:string;result:string;decidedAt:string;externalReference:string;amount:number|null}
@@ -15,7 +18,7 @@ type InvoiceRow={id:string;number:string;label:string;amount:number;dueAt:string
 type StockRow={id:string;label:string;channel:string;quantity:number;threshold:number|null}
 type ContractRow={id:string;label:string;kind:string;endAt:string;status:string}
 type AssetRow={id:string;label:string;kind:string;maintenanceDueAt:string;status:string}
-type BusinessState={dossiers?:DossierRow[];requirements?:RequirementRow[];validations?:ValidationRow[];submissionProofs?:SubmissionProofRow[];dossierOutcomes?:OutcomeRow[];revenues?:{amount:number}[];expenses?:{amount:number}[];invoices?:InvoiceRow[];stockItems?:StockRow[];contracts?:ContractRow[];assets?:AssetRow[];updatedAt?:string}
+type BusinessState={dossiers?:DossierRow[];requirements?:RequirementRow[];documentRefs?:DocumentRow[];validations?:ValidationRow[];submissionProofs?:SubmissionProofRow[];dossierOutcomes?:OutcomeRow[];revenues?:{amount:number}[];expenses?:{amount:number}[];invoices?:InvoiceRow[];stockItems?:StockRow[];contracts?:ContractRow[];assets?:AssetRow[];updatedAt?:string}
 type MailRow={id:string;subject:string;status:string;receivedAt:string;organizationId:string|null}
 type MailState={messages?:MailRow[];drafts?:{id:string;status:string}[];updatedAt?:string}
 type ClubAttention={id:string;level:'CRITIQUE'|'ACTION'|'INFO';domain:'TASK'|'MATCHDAY'|'DOSSIER'|'FINANCE'|'STOCK'|'CONTRAT'|'MAINTENANCE'|'MAIL';title:string;detail:string;moduleId:string;targetId?:string}
@@ -42,7 +45,7 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
   const refresh=async()=>{
     const sources=[
       {route:'cssa-ops-state',set:setOps,lists:['tasks','cases','intendanceItems']},
-      {route:'cssa-business-state',set:setBusiness,lists:['dossiers','requirements','validations','submissionProofs','dossierOutcomes','invoices','stockItems','contracts','assets','revenues','expenses']},
+      {route:'cssa-business-state',set:setBusiness,lists:['dossiers','requirements','documentRefs','validations','submissionProofs','dossierOutcomes','invoices','stockItems','contracts','assets','revenues','expenses']},
       {route:'cssa-mail-state',set:setMail,lists:['messages','drafts']},
       {route:'cssa-organisation-state',set:setOrganisation,lists:['people','availabilities']}
     ]
@@ -85,13 +88,17 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
   const activeDossiers=dossiers.filter(d=>!['ATTRIBUE','NON_RETENU','ANNULE'].includes(d.status))
   const upcomingDossiers=[...activeDossiers].filter(d=>!['DEPOSE'].includes(d.status)).sort((a,b)=>(a.deadline||'9999').localeCompare(b.deadline||'9999')).slice(0,6)
   const today=new Date().toISOString().slice(0,10)
+  const dossierLinkAttention=deriveCssaDossierAttention({
+    dossiers,requirements,documents:business?.documentRefs??[],tasks,people:organisation?.people??[],
+    businessAvailable:cssaSourceAvailable(business),opsAvailable:cssaSourceAvailable(ops),organisationAvailable:cssaSourceAvailable(organisation),today
+  })
   const attentionDossiers=dossiers.map(d=>{
     const reqs=requirements.filter(r=>r.dossierId===d.id&&r.criticality==='OBLIGATOIRE')
     const blocking=reqs.filter(r=>r.state!=='SATISFAIT').length
     const finalValidation=validations.find(v=>v.dossierId===d.id&&v.type==='REVUE_FINALE')
     const proof=submissionProofs.find(p=>p.dossierId===d.id)
     const outcome=dossierOutcomes.find(o=>o.dossierId===d.id)
-    const ready=reqs.length>0&&blocking===0&&finalValidation?.status==='VALIDE'
+    const ready=reqs.length>0&&blocking===0&&finalValidation?.status==='VALIDE'&&!dossierLinkAttention.some(alert=>alert.targetId===d.id)
     let level:'CRITIQUE'|'ACTION'|'INFO'='INFO'
     let reason=''
     if(d.deadline&&d.deadline.slice(0,10)<today&&!proof&&!['ATTRIBUE','NON_RETENU','ANNULE'].includes(d.status)){level='CRITIQUE';reason='Échéance dépassée sans preuve de dépôt'}
@@ -105,7 +112,7 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
     return rank[a.level]-rank[b.level]||String(a.d.deadline||'9999').localeCompare(String(b.d.deadline||'9999'))
   }).slice(0,8)
   const recentOutcomes=[...dossierOutcomes].sort((a,b)=>String(b.decidedAt||'').localeCompare(String(a.decidedAt||''))).slice(0,6)
-  const unresolvedDossierAttention=attentionDossiers.filter(x=>x.level!=='INFO').length
+  const unresolvedDossierAttention=new Set([...attentionDossiers.filter(x=>x.level!=='INFO').map(x=>x.d.id),...dossierLinkAttention.map(x=>x.targetId)]).size
 
   const invoices=business?.invoices??[]
   const stockItems=business?.stockItems??[]
@@ -121,7 +128,8 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
   const unmatchedMail=mailMessages.filter(x=>x.status==='A_RAPPROCHER')
   const matchdayAttention=intendance.filter(x=>!['TERMINE','FERME','CLOSED','PRÊT','PRET'].includes(String(x.status||'').toUpperCase()))
   const rank={CRITIQUE:0,ACTION:1,INFO:2}
-  const clubAttention=([
+  const allClubAttention=([
+    ...dossierLinkAttention,
     ...tasks.filter(t=>attentionStatuses.has(t.status)).map<ClubAttention>(t=>({
       id:'task:'+t.id,
       level:['CRITIQUE'].includes(String(t.priority||''))?'CRITIQUE':'ACTION',
@@ -190,9 +198,10 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
       moduleId:'mail',
       targetId:x.id
     }))
-  ] as ClubAttention[]).sort((a,b)=>rank[a.level]-rank[b.level]).slice(0,12)
-  const criticalClub=clubAttention.filter(x=>x.level==='CRITIQUE').length
-  const actionClub=clubAttention.filter(x=>x.level==='ACTION').length
+  ] as ClubAttention[]).sort((a,b)=>rank[a.level]-rank[b.level])
+  const clubAttention=allClubAttention.slice(0,12)
+  const criticalClub=allClubAttention.filter(x=>x.level==='CRITIQUE').length
+  const actionClub=allClubAttention.filter(x=>x.level==='ACTION').length
   const horizon7=new Date(Date.now()+7*86400000).toISOString().slice(0,10)
   const people=organisation?.people??[]
   const availabilities=organisation?.availabilities??[]
@@ -248,14 +257,14 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
     {error&&<div className="cssa-home-warning">Sources locales indisponibles · UNKNOWN : {unavailable.join(' · ')}. Les compteurs de ces sources ne constituent pas un état observé.</div>}
 
     <div className="cssa-home-kpis">
-      <button onClick={()=>onOpen('tasks')}><small>ATTENTION CLUB</small><strong>{clubAttention.length}</strong><span>{criticalClub} critique(s) · {actionClub} action(s)</span></button>
-      <button onClick={()=>onOpen('tasks')}><small>TÂCHES OUVERTES</small><strong>{openTasks}</strong><span>{highPriority.length} haute / critique</span></button>
-      <button onClick={()=>onOpen('dossiers')}><small>DOSSIERS À TRAITER</small><strong>{unresolvedDossierAttention}</strong><span>Validation, deadline, dépôt</span></button>
-      <button onClick={()=>onOpen('mail')}><small>MAILS À RAPPROCHER</small><strong>{unmatchedMail.length}</strong><span>CRM / dossier / contact</span></button>
+      <button onClick={()=>onOpen('tasks')}><small>ATTENTION CLUB</small><strong>{allClubAttention.length}</strong><span>{criticalClub} critique(s) · {actionClub} action(s){error?' · vue partielle':''}</span></button>
+      <button onClick={()=>onOpen('tasks')}><small>TÂCHES OUVERTES</small><strong>{ops?openTasks:'UNKNOWN'}</strong><span>{highPriority.length} haute / critique</span></button>
+      <button onClick={()=>onOpen('dossiers')}><small>DOSSIERS À TRAITER</small><strong>{business?unresolvedDossierAttention:'UNKNOWN'}</strong><span>Validation, deadline, dépôt</span></button>
+      <button onClick={()=>onOpen('mail')}><small>MAILS À RAPPROCHER</small><strong>{mail?unmatchedMail.length:'UNKNOWN'}</strong><span>CRM / dossier / contact</span></button>
     </div>
 
     <section className="cssa-home-unified">
-      <header><div><small>PILOTAGE GLOBAL</small><h3>File d’attention du club</h3></div><span>{clubAttention.length}</span></header>
+      <header><div><small>PILOTAGE GLOBAL</small><h3>File d’attention du club</h3></div><span>{clubAttention.length} affichées / {allClubAttention.length} observées</span></header>
       {clubAttention.length?<div className="cssa-home-attention-list">{clubAttention.map(a=><button key={a.id} onClick={()=>onOpen(a.moduleId,a.targetId)}>
         <span className={'cssa-home-level '+a.level.toLowerCase()}>{a.level}</span>
         <div><strong>{a.title}</strong><small>{a.detail}</small></div>
@@ -315,6 +324,11 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
           <div><strong>{d.reference} · {d.title}</strong><small>{reason}</small></div>
           <span className={'cssa-home-level '+level.toLowerCase()}>{level}</span>
         </button>):<p className="cssa-home-empty">Aucune alerte dossier dérivée des données actuelles.</p>}
+      </section>
+
+      <section>
+        <header><h3>Liens dossiers à revoir</h3><button onClick={()=>onOpen('dossiers')}>Dossiers →</button></header>
+        {dossierLinkAttention.length?dossierLinkAttention.slice(0,8).map(alert=><button className="cssa-home-row" key={alert.id} onClick={()=>onOpen('dossiers',alert.targetId)}><div><strong>{alert.title}</strong><small>{alert.detail}</small></div><span>{alert.reasons.length} point(s)</span></button>):<p className="cssa-home-empty">{business?'Aucun écart de lien détecté dans les données disponibles.':'UNKNOWN · source Business indisponible.'}</p>}
       </section>
 
       <section>

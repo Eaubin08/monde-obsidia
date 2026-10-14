@@ -37,7 +37,7 @@ Les réponses Organisation, Business et Ops exposent désormais `_source` : AVAI
 ## Validation
 
 TypeScript : PASS. Build Vite : PASS (avertissement existant de taille du bundle).
-Suite complète après fiabilisation de la création des tâches : 152 tests, 151 PASS, 1 SKIP, 0 échec.
+Suite complète après attention des dossiers sur Accueil : 159 tests, 158 PASS, 1 SKIP, 0 échec.
 Projection et stores ciblés : 19 PASS.
 Diff whitespace et lint des fichiers modifiés : PASS.
 HTTP réel Vite : 6 GET PASS ; 3 cycles POST → GET PASS (Organisation, Business, Ops), répertoire live temporaire isolé.
@@ -97,3 +97,13 @@ Les stores restent séparés : si la tâche existe mais que le lien échoue, la 
 La tâche expose un retour à son dossier depuis sa relation DOSSIER, résolue dans le store Business réel. Une référence cassée ou ambiguë reste UNKNOWN.
 
 Validation : TypeScript, build Vite, lint et diff whitespace PASS ; 151 PASS, 1 SKIP, zéro échec. Scénarios : échec écriture tâche sans lien, succès conservant l’état courant d’exigence, échec lien puis reprise sans doublon et sans remise à zéro, tâche déjà liée sans écritures, ambiguïté, source invalide, référence cassée, dossier supprimé et id occupé non écrasé. Scénario HTTP isolé : création → lien → répétition sans doublon, exigence A_VERIFIER conservée.
+
+## Passe exécutée : attention des dossiers sur Accueil
+
+Accueil dérive une file de liens dossiers à revoir à partir de Business, Ops et Organisation déjà servis : exigences obligatoires non satisfaites, pilote ou responsable sans lien canonique, personne inactive, document lié introuvable/ambigu, pièce expirée, date de validité invalide et tâche référencée introuvable/ambiguë. Une source indisponible produit UNKNOWN source, et non une affirmation que l’objet manque. Les alertes conservent le libellé de l’exigence et sa source ; chaque ligne ouvre le dossier existant.
+
+Une exigence SATISFAIT associée à une pièce expirée demeure SATISFAIT dans le store et produit une alerte. Une tâche TERMINE ne satisfait pas l’exigence. L’indicateur positif de préparation sur Accueil n’est plus présenté quand ces écarts sont détectés ; aucun statut, validation, dépôt ou autorisation n’est modifié.
+
+Le compteur des dossiers à traiter compte les ids uniques sur les alertes existantes et celles de liens. Le compteur d’attention club utilise désormais toute la file, et non sa tranche visible de 12 lignes. Le nombre affiché et le total sont distingués. Les KPIs Tasks, Business et Mail affichent UNKNOWN quand la lecture concernée échoue ; les autres observations restent visibles, avec indication de vue partielle.
+
+Validation : TypeScript, build Vite, lint et diff whitespace PASS ; 158 PASS, 1 SKIP, zéro échec. Sept scénarios ajoutés : liens disponibles sans mutation ; pièce périmée malgré exigence SATISFAIT ; référence supprimée vs source absente vs ambiguïté ; nom déclaré/personne inactive/source Organisation absente ; travail obligatoire incomplet malgré tâche terminée ; date invalide ; source Business absente/dossiers clos/résultats non plafonnés à douze.
