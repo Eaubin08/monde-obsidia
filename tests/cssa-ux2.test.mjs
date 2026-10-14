@@ -17,7 +17,9 @@ const media=readFileSync(new URL('../src/CSSAMediaPage.tsx',import.meta.url),'ut
 test('UX2 · CSSA navigation keeps Mail and uses an action-first Accueil',()=>{
   assert.match(page,/label:'Accueil'/)
   assert.match(page,/moduleIds: \['dossiers', 'admin', 'documents', 'tasks'\]/)
-  assert.match(page,/moduleIds: \['crm', 'mail'\]/)
+  assert.match(page,/moduleIds: \['crm'\]/)
+  assert.match(page,/MÉDIA & COMMUNICATION/)
+  assert.match(page,/moduleIds: \['media', 'mail'\]/)
   assert.match(page,/CSSAHomePage/)
   assert.match(home,/Ce qui demande votre attention/)
   assert.match(home,/onOpen\('mail'\)/)
@@ -237,4 +239,16 @@ test('UX15 · Commerce Finance and Media are distinct visual products, not one r
   assert.match(media,/Instagram CSSA/)
   assert.match(media,/Facebook CSSA/)
   assert.match(media,/PARTENAIRES × MÉDIA/)
+})
+
+
+test('UX16 · visual Finance and Commerce refresh from one shared business state without page duplication',()=>{
+  assert.match(business,/cssa-business-updated/)
+  assert.match(finance,/addEventListener\('cssa-business-updated'/)
+  assert.match(commerce,/addEventListener\('cssa-business-updated'/)
+  assert.match(finance,/Gestion détaillée · saisir \/ modifier les données financières/)
+  assert.match(commerce,/Gestion détaillée · saisir \/ modifier l’activité commerciale/)
+  assert.match(finance,/receivable/)
+  assert.match(finance,/payable/)
+  assert.match(finance,/treasuryEntries/)
 })
