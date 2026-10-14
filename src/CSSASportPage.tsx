@@ -378,6 +378,14 @@ function simulatedCalendar(team: Team): Fixture[] {
   })
 }
 
+function truthLabel(value:string){
+  if(value==='PUBLIC_CONFLICT_REVIEW')return 'Conflit'
+  if(value==='SIMULATED_NOT_OBSERVED')return 'Simulation'
+  if(value==='PUBLIC_CONFIRMED')return 'Confirmé'
+  if(value==='SECONDARY_CORROBORATED'||value==='PUBLIC_CORROBORATED')return 'Corroboré'
+  return value==='UNKNOWN'?'Inconnu':'À vérifier'
+}
+
 function frDate(date: string) {
   return new Date(date + 'T12:00:00').toLocaleDateString('fr-FR', {weekday: 'short', day: '2-digit', month: 'short'})
 }
@@ -1178,7 +1186,7 @@ export default function CSSASportWorkspace() {
                           <span className="spx-comp-badge">{m.competition} · {m.stage}</span>
                           <span className={'spx-venue-badge ' + m.venue?.toLowerCase()}>{m.venue}</span>
                           <span className={'spx-truth ' + (m.simulated ? 'sim' : m.truth === 'PUBLIC_CONFLICT_REVIEW' ? 'warn' : '')}>
-                            {m.truth}
+                            {truthLabel(m.truth)}
                           </span>
                         </div>
                         <time dateTime={m.date}>{frDate(m.date)} {m.time ? '· ' + m.time : ''}</time>
@@ -1201,7 +1209,7 @@ export default function CSSASportWorkspace() {
                       </div>
 
                       <div className="spx-match-foot">
-                        <span className="spx-source-cite">Source : {m.source}</span>
+                        <span className="spx-source-cite">{m.source}</span>
                         {m.pitch && <span className="spx-pitch-tag">🏟 {m.pitch}</span>}
                         {reviewsCount(m.id, reviewed) && (
                           <span className="spx-reviewed-badge">✓ Revu</span>
@@ -1229,7 +1237,7 @@ export default function CSSASportWorkspace() {
                         <span className="spx-comp-badge">{selected.competition} · {selected.stage}</span>
                         <span className={'spx-venue-badge ' + selected.venue?.toLowerCase()}>{selected.venue}</span>
                         <span className={'spx-truth ' + (selected.simulated ? 'sim' : selected.truth === 'PUBLIC_CONFLICT_REVIEW' ? 'warn' : '')}>
-                          {selected.truth}
+                          {truthLabel(selected.truth)}
                         </span>
                       </div>
                       <h3>{selected.home} — {selected.away}</h3>
@@ -1249,7 +1257,7 @@ export default function CSSASportWorkspace() {
                   {/* Alerte Conflit de sources si présent */}
                   {selected.truth === 'PUBLIC_CONFLICT_REVIEW' && (
                     <div className="spx-alert warning">
-                      <strong>⚠️ CONFLIT D'OBSERVATION OU DISCORDANCE ENTRE SOURCES</strong>
+                      <strong>Horaire / donnée à confirmer</strong>
                       <p>{selected.note || 'Des discordances d’horaires subsistent entre sources corroborées. Vérification requise.'}</p>
                     </div>
                   )}
