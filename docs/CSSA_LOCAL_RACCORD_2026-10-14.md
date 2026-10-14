@@ -32,14 +32,24 @@ Une lecture de registre donne OBSERVED, jamais PROVEN. Les capacités historique
 
 Catalogue public des rôles et équipes, sources publiques, fixtures sportives utilisées dans l'agenda Accueil, chiffres historiques de la section Tests, références de profils Trading/GPS. Ces éléments ne sont pas convertis en observations live par cette passe.
 
-Les stores peuvent renvoyer un état vide quand le fichier manque ou est illisible ; le frontend ne peut pas distinguer ces situations à partir des réponses actuelles. OBSERVED signifie uniquement réponse du registre lue, pas fichier live présent ni contenu validé.
+Les réponses Organisation, Business et Ops exposent désormais `_source` : AVAILABLE, MISSING, INVALID ou UNREADABLE. Le fichier source est identifié par son nom uniquement. Le timestamp de lecture est distinct du timestamp conservé du fichier ; une source absente ne reçoit pas de date de modification artificiellement prouvée. Le fallback Ops est explicitement TEMPLATE. Une réponse HTTP réussie avec source manquante, invalide ou illisible ne produit aucune capacité OBSERVED ni preuve live dans le profil. OBSERVED reste une lecture locale, pas une validation métier. Les contenus invalides sont projetés avec des collections vides et une alerte UNKNOWN ; aucun fichier n’est réparé par la lecture. Les mutations existantes des stores restent inchangées.
 
 ## Validation
 
 TypeScript : PASS. Build Vite : PASS (avertissement existant de taille du bundle).
-Suite complète : 134 tests, 133 PASS, 1 SKIP, 0 échec.
+Suite complète après distinction des sources : 138 tests, 137 PASS, 1 SKIP, 0 échec.
 Projection et stores ciblés : 19 PASS.
 Diff whitespace et lint des fichiers modifiés : PASS.
 HTTP réel Vite : 6 GET PASS ; 3 cycles POST → GET PASS (Organisation, Business, Ops), répertoire live temporaire isolé.
 
 Aucune copie de Builder/KX108, aucune mutation ajoutée aux projections. Pas de validation sur les fichiers live du PC utilisateur ; publication sur main du raccord ; aucun déploiement automatique sur le PC utilisateur.
+
+## Plan de reprise CSSA / Monde
+
+1. Cartographie endpoints et statique : faite.
+2. Raccord Organisation, Dossiers, Accueil et Tâches : première passe publiée dans 55935e9.
+3. Distinction disponible / vide / absent / invalide / illisible : cette passe. HTTP isolé vérifié pour les trois stores : MISSING → POST AVAILABLE → GET AVAILABLE → INVALID. Métadonnées jamais persistées dans les fichiers live.
+4. Compléter progressivement les projections métier : ouvert. Conserver les inconnues, contradictions, preuves et provenance. Catalogue public et agenda sportif de référence encore statiques.
+5. Validation des parcours et publication sur main : contrôles automatisés faits pour cette passe ; observation du PC Windows encore non réalisée.
+
+La frontière demeure : les registres décrivent le domaine. Builder/KX108 ne sont pas recopiés dans l’UI et aucune autorisation n’est déduite des observations.

@@ -52,6 +52,7 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
         if(!response.ok)throw new Error('unavailable')
         const data=await response.json()
         if(!data||typeof data!=='object'||Array.isArray(data)||source.lists.some(key=>!Array.isArray(data[key])))throw new Error('invalid state')
+        if(data._source&&data._source.status!=='AVAILABLE')throw new Error('source not available')
         source.set(data)
         return null
       }catch{source.set(null);return source.route}

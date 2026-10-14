@@ -1,3 +1,4 @@
+import CSSAStoreSourceNotice from './CSSAStoreSourceNotice'
 import {useEffect,useMemo,useState} from 'react'
 import CSSAOrganisationPage from './CSSAOrganisationPage'
 import './CSSAOrganisationVisualPage.css'
@@ -38,6 +39,7 @@ export default function CSSAOrganisationVisualPage({items,selectedId,onOpen,onCl
  if(!state)return <section className="orgv"><div className="orgv-empty">Chargement…</div></section>
 
  return <section className="orgv">
+  <CSSAStoreSourceNotice state={state}/>
   <header className="orgv-hero">
    <div><small>ORGANISATION CSSA</small><h2>Qui fait quoi dans le club ?</h2><p>Personnes, rôles, engagements, disponibilités et habilitations dans une carte humaine lisible avant les registres détaillés.</p></div>
    <div className="orgv-people-stack">{view.activePeople.slice(0,5).map(p=><span key={p.id} title={p.displayName}>{p.displayName.slice(0,2).toUpperCase()}</span>)}<b>{view.activePeople.length}</b></div>

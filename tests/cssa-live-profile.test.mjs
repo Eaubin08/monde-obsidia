@@ -30,3 +30,11 @@ test('empty live stores do not erase unresolved historical contradictions or unk
  assert.ok(result.unknowns.includes('REAL_ACCESS_RIGHTS'))
  assert.equal(result.evidence.length,1)
 })
+test('HTTP success with missing or invalid local file never projects live evidence or capabilities',()=>{
+ for(const status of ['MISSING','INVALID','UNREADABLE']){
+  const result=projectCssaProfile(fallback,{ops:{available:true,state:{_source:{status,file:'cssa_ops_state.json'},tasks:[{id:'seed',truthClass:'PUBLIC_CONFLICT_REVIEW'}],cases:[]}}})
+  assert.equal(result.capabilities[0].status,'UNKNOWN')
+  assert.ok(result.unknowns.some(x=>x.includes(status)))
+  assert.ok(!result.contradictions.some(x=>x.includes('seed')))
+ }
+})

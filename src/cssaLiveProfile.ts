@@ -26,6 +26,11 @@ export function projectCssaProfile<T extends SemanticProfile>(fallback:T, observ
   }
   const state = observation.state
   const source = `/obsidia-local/${definition.route}`
+  const metadata=state._source as {status?:string;file?:string}|undefined
+  if(metadata&&metadata.status!=='AVAILABLE') {
+   unknowns.push(`${source} · UNKNOWN · ${metadata.status ?? 'SOURCE_STATUS_UNKNOWN'} · ${metadata.file ?? 'source inconnue'}`)
+   continue
+  }
   for (const key of ['unknowns','contradictions','evidence','risks'] as const) {
    if (Array.isArray(state[key])) {
     const target = {unknowns,contradictions,evidence,risks}[key]

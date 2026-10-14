@@ -1,3 +1,4 @@
+import {observeCssaSource,organisationLists,businessLists,opsLists} from './cssa-source-observation.mjs'
 import {brodyServiceStatus,closeOwnedBrodyApi} from './brody-service.mjs'
 import {readUniversalC5Local} from './universal-c5-local.mjs'
 import {projectC53ObservedEvidence} from './universal-c53-observed.mjs'
@@ -9,9 +10,9 @@ import {buildObsidiaState} from './obsidia-state.mjs'
 import {readNativeEnterpriseView} from './native-enterprise-read.mjs'
 import {readCssaSportWatch} from './cssa-sport-watch.mjs'
 import {readCssaSportState,writeCssaSportState} from './cssa-sport-store.mjs'
-import {readCssaOpsState,writeCssaOpsState} from './cssa-ops-store.mjs'
-import {readCssaBusinessState,writeCssaBusinessState} from './cssa-business-store.mjs'
-import {readCssaOrganisationState,writeCssaOrganisationState} from './cssa-organisation-store.mjs'
+import {readCssaOpsState,writeCssaOpsState,defaultOpsFile} from './cssa-ops-store.mjs'
+import {readCssaBusinessState,writeCssaBusinessState,defaultBusinessFile} from './cssa-business-store.mjs'
+import {readCssaOrganisationState,writeCssaOrganisationState,defaultOrganisationFile} from './cssa-organisation-store.mjs'
 import {readCssaCrmDirectory,writeCssaCrmDirectory} from './cssa-crm-directory-store.mjs'
 import {readCssaMailState,writeCssaMailState,ingestCssaMail} from './cssa-mail-store.mjs'
 import {randomUUID} from 'node:crypto'
@@ -575,12 +576,12 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  if(req.method==='GET'&&url.pathname==='/cssa-sport-watch'){res.end(JSON.stringify(await readCssaSportWatch({force:url.searchParams.get('force')==='1'})));return}
  if(req.method==='GET'&&url.pathname==='/cssa-sport-state'){res.end(JSON.stringify(readCssaSportState()));return}
  if(req.method==='POST'&&url.pathname==='/cssa-sport-state'){const patch=await body(req);res.end(JSON.stringify(writeCssaSportState(patch)));return}
- if(req.method==='GET'&&url.pathname==='/cssa-ops-state'){res.end(JSON.stringify(readCssaOpsState()));return}
- if(req.method==='POST'&&url.pathname==='/cssa-ops-state'){const patch=await body(req);res.end(JSON.stringify(writeCssaOpsState(patch)));return}
- if(req.method==='GET'&&url.pathname==='/cssa-business-state'){res.end(JSON.stringify(readCssaBusinessState()));return}
- if(req.method==='POST'&&url.pathname==='/cssa-business-state'){const patch=await body(req);res.end(JSON.stringify(writeCssaBusinessState(patch)));return}
- if(req.method==='GET'&&url.pathname==='/cssa-organisation-state'){res.end(JSON.stringify(readCssaOrganisationState()));return}
- if(req.method==='POST'&&url.pathname==='/cssa-organisation-state'){const patch=await body(req);res.end(JSON.stringify(writeCssaOrganisationState(patch)));return}
+ if(req.method==='GET'&&url.pathname==='/cssa-ops-state'){res.end(JSON.stringify(observeCssaSource(readCssaOpsState(),defaultOpsFile,opsLists,{fallback:'TEMPLATE'})));return}
+ if(req.method==='POST'&&url.pathname==='/cssa-ops-state'){const patch=await body(req);res.end(JSON.stringify(observeCssaSource(writeCssaOpsState(patch),defaultOpsFile,opsLists,{fallback:'TEMPLATE'})));return}
+ if(req.method==='GET'&&url.pathname==='/cssa-business-state'){res.end(JSON.stringify(observeCssaSource(readCssaBusinessState(),defaultBusinessFile,businessLists)));return}
+ if(req.method==='POST'&&url.pathname==='/cssa-business-state'){const patch=await body(req);res.end(JSON.stringify(observeCssaSource(writeCssaBusinessState(patch),defaultBusinessFile,businessLists)));return}
+ if(req.method==='GET'&&url.pathname==='/cssa-organisation-state'){res.end(JSON.stringify(observeCssaSource(readCssaOrganisationState(),defaultOrganisationFile,organisationLists)));return}
+ if(req.method==='POST'&&url.pathname==='/cssa-organisation-state'){const patch=await body(req);res.end(JSON.stringify(observeCssaSource(writeCssaOrganisationState(patch),defaultOrganisationFile,organisationLists)));return}
  if(req.method==='GET'&&url.pathname==='/cssa-crm-directory'){res.end(JSON.stringify(readCssaCrmDirectory()));return}
  if(req.method==='POST'&&url.pathname==='/cssa-crm-directory'){const patch=await body(req);res.end(JSON.stringify(writeCssaCrmDirectory(patch)));return}
  if(req.method==='GET'&&url.pathname==='/cssa-mail-state'){res.end(JSON.stringify(readCssaMailState()));return}

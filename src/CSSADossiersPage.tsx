@@ -1,3 +1,4 @@
+import CSSAStoreSourceNotice from './CSSAStoreSourceNotice'
 import {useEffect,useMemo,useState} from 'react'
 import CSSABusinessPage from './CSSABusinessPage'
 import './CSSADossiersPage.css'
@@ -54,6 +55,7 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
  if(!state)return <section className="dosv"><div className="dosv-empty">Chargement…</div></section>
 
  return <section className="dosv">
+  <CSSAStoreSourceNotice state={state}/>
   <header className="dosv-hero">
    <div><small>DOSSIERS CSSA</small><h2>Chaque dossier comme une mission à conduire jusqu’à la preuve.</h2><p>Appels d’offres, subventions, conventions et partenariats : échéances, pièces, validation, dépôt et résultat réunis dans une lecture de progression.</p></div>
    <button onClick={()=>onOpen?.('dossiers','')}>+ Nouveau dossier</button>
