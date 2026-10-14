@@ -8,6 +8,7 @@ const pageCss=readFileSync(new URL('../src/CSSAPage.css',import.meta.url),'utf8'
 const sportCss=readFileSync(new URL('../src/CSSASport.css',import.meta.url),'utf8')
 const home=readFileSync(new URL('../src/CSSAHomePage.tsx',import.meta.url),'utf8')
 const org=readFileSync(new URL('../src/CSSAOrganisationPage.tsx',import.meta.url),'utf8')
+const business=readFileSync(new URL('../src/CSSABusinessPage.tsx',import.meta.url),'utf8')
 
 test('UX2 · CSSA navigation keeps Mail and uses an action-first Accueil',()=>{
   assert.match(page,/label:'Accueil'/)
@@ -44,4 +45,24 @@ test('UX2 · responsive gates explicitly cover 1366, 1024 and mobile widths',()=
   assert.match(pageCss,/@media\(max-width:760px\)/)
   assert.match(sportCss,/@media \(max-width: 1366px\)/)
   assert.match(sportCss,/@media \(max-width: 1024px\)/)
+})
+
+
+test('UX3 · CSSA exposes transverse Dossiers and the club economy without duplicating core modules',()=>{
+  assert.match(page,/label:'Dossiers'/)
+  assert.match(page,/label:'Documents'/)
+  assert.match(page,/label:'Commerce'/)
+  assert.match(page,/CSSABusinessPage mode="dossiers"/)
+  assert.match(page,/CSSABusinessPage mode="commerce"/)
+  assert.match(page,/CSSABusinessPage mode="finance"/)
+  assert.match(business,/APPEL_OFFRES/)
+  assert.match(business,/SUBVENTION/)
+  assert.match(business,/PARTENARIAT/)
+  assert.match(business,/Complétude ≠ validation/)
+  assert.match(business,/BILLETTERIE/)
+  assert.match(business,/BUVETTE/)
+  assert.match(business,/BOUTIQUE/)
+  assert.match(business,/SPONSORING/)
+  assert.match(business,/Stocks \/ achats/)
+  assert.match(business,/Contrats \/ fournisseurs/)
 })
