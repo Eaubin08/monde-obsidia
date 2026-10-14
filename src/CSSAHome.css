@@ -15,3 +15,19 @@
 .cssa-home-level.critique{border-color:#7a3b3b;color:#ef9a9a;background:#271111}
 .cssa-home-level.action{border-color:#70552c;color:#e1bd69;background:#21180b}
 .cssa-home-level.info{border-color:#2d5d82;color:#84c0ee;background:#0b1c2b}
+
+.cssa-home-unified{border:1px solid #2b4257;background:#081722;border-radius:11px;overflow:hidden}
+.cssa-home-unified>header{display:flex;justify-content:space-between;align-items:center;padding:12px 13px;border-bottom:1px solid #193247;background:#0a1926}
+.cssa-home-unified>header small{font-size:7px;letter-spacing:.08em;color:#6e879d}
+.cssa-home-unified>header h3{margin:2px 0 0;font-size:13px}
+.cssa-home-unified>header>span{font-size:20px;color:#e5eef7}
+.cssa-home-attention-list{display:flex;flex-direction:column}
+.cssa-home-attention-list>button{display:grid;grid-template-columns:74px minmax(0,1fr) 92px;gap:10px;align-items:center;border:0;border-bottom:1px solid #14293b;background:transparent;color:#dce8f4;padding:10px 12px;text-align:left;cursor:pointer}
+.cssa-home-attention-list>button:last-child{border-bottom:0}
+.cssa-home-attention-list>button:hover{background:#0c2030}
+.cssa-home-attention-list>button div{min-width:0}
+.cssa-home-attention-list strong,.cssa-home-attention-list small{display:block}
+.cssa-home-attention-list strong{font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cssa-home-attention-list small{font-size:8px;color:#7f96aa;margin-top:2px}
+.cssa-home-attention-list em{font-style:normal;font:7.5px ui-monospace,monospace;color:#7ba8ca;text-align:right}
+@media(max-width:760px){.cssa-home-attention-list>button{grid-template-columns:68px minmax(0,1fr)}.cssa-home-attention-list em{display:none}}
