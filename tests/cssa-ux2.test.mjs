@@ -13,6 +13,9 @@ const mail=readFileSync(new URL('../src/CSSAMailPage.tsx',import.meta.url),'utf8
 const finance=readFileSync(new URL('../src/CSSAFinancePage.tsx',import.meta.url),'utf8')
 const commerce=readFileSync(new URL('../src/CSSACommercePage.tsx',import.meta.url),'utf8')
 const media=readFileSync(new URL('../src/CSSAMediaPage.tsx',import.meta.url),'utf8')
+const crmVisual=readFileSync(new URL('../src/CSSACrmPage.tsx',import.meta.url),'utf8')
+const tasksVisual=readFileSync(new URL('../src/CSSATasksPage.tsx',import.meta.url),'utf8')
+const adminVisual=readFileSync(new URL('../src/CSSAAdminPage.tsx',import.meta.url),'utf8')
 
 test('UX2 · CSSA navigation keeps Mail and uses an action-first Accueil',()=>{
   assert.match(page,/label:'Accueil'/)
@@ -251,4 +254,30 @@ test('UX16 · visual Finance and Commerce refresh from one shared business state
   assert.match(finance,/receivable/)
   assert.match(finance,/payable/)
   assert.match(finance,/treasuryEntries/)
+})
+
+
+test('UX17 · CRM Tasks and Administration each answer a different métier question',()=>{
+  assert.match(page,/CSSACrmPage/)
+  assert.match(page,/CSSATasksPage/)
+  assert.match(page,/CSSAAdminPage/)
+  assert.match(crmVisual,/Avec qui le club est-il en relation/)
+  assert.match(crmVisual,/Journal relationnel/)
+  assert.match(crmVisual,/Acteurs & relations/)
+  assert.match(tasksVisual,/Qu’est-ce qu’on doit faire maintenant/)
+  assert.match(tasksVisual,/À traiter en premier/)
+  assert.match(tasksVisual,/Ce qui arrive bientôt/)
+  assert.match(adminVisual,/Qu’est-ce qui doit être complet, valide et à jour/)
+  assert.match(adminVisual,/CONFORMITÉ DOCUMENTAIRE/)
+  assert.match(adminVisual,/ENGAGEMENTS ACTIFS/)
+  assert.match(adminVisual,/HABILITATIONS/)
+})
+
+test('UX18 · old Ops workspace remains available only as detailed management in redesigned pages',()=>{
+  assert.match(crmVisual,/Gestion détaillée du CRM/)
+  assert.match(tasksVisual,/Gestion détaillée des tâches/)
+  assert.match(adminVisual,/Gestion détaillée Administration/)
+  assert.match(crmVisual,/CSSAOpsWorkspace activeModule="crm"/)
+  assert.match(tasksVisual,/CSSAOpsWorkspace activeModule="tasks"/)
+  assert.match(adminVisual,/CSSAOpsWorkspace activeModule="admin"/)
 })
