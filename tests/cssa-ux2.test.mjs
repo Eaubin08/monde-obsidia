@@ -121,3 +121,14 @@ test('UX7 · CRM is the canonical directory for external actors reused by busine
   assert.match(business,/contractOrganizationId/)
   assert.match(business,/invoiceOrganizationId/)
 })
+
+
+test('UX8 · CRM relationship journal captures real exchanges and follow-ups',()=>{
+  assert.match(ops,/Journal relationnel/)
+  assert.match(ops,/Enregistrer l’interaction/)
+  assert.match(ops,/DOCUMENT_RECU/)
+  assert.match(ops,/followupTaskId/)
+  assert.match(ops,/Journal relationnel CRM/)
+  assert.match(business,/Relation externe/)
+  assert.match(business,/Preuve :/)
+})
