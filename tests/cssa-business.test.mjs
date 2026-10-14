@@ -19,6 +19,8 @@ test('cssa business store starts empty and never invents club financial data',()
   assert.deepEqual(s.payments,[])
   assert.deepEqual(s.treasuryEntries,[])
   assert.deepEqual(s.assets,[])
+  assert.deepEqual(s.submissionProofs,[])
+  assert.deepEqual(s.dossierOutcomes,[])
  }finally{rmSync(dir,{recursive:true,force:true})}
 })
 
@@ -108,5 +110,24 @@ test('business documents preserve Mail provenance and requirement links',()=>{
   assert.deepEqual(doc.requirementIds,['r-mail'])
   assert.equal(req.documentRefId,'doc-mail')
   assert.equal(req.state,'A_VERIFIER')
+ }finally{rmSync(dir,{recursive:true,force:true})}
+})
+
+
+test('submission proof and external outcome persist as first-class dossier evidence',()=>{
+ const dir=mkdtempSync(join(tmpdir(),'cssa-business-submission-'))
+ const file=join(dir,'state.json')
+ try{
+  writeCssaBusinessState({dossierPatch:{id:'d-submit',reference:'AO-SUBMIT',title:'Dossier dépôt',status:'PRET_A_DEPOSER'}},file)
+  writeCssaBusinessState({submissionProofPatch:{id:'sp1',dossierId:'d-submit',channel:'PLATEFORME',submittedAt:'2026-10-14T08:00:00',externalReference:'ACK-123',proofRef:'receipt://ack-123',submittedByPersonId:'p1',status:'CONFIRME',source:'TEST'},dossierPatch:{id:'d-submit',status:'DEPOSE'}},file)
+  writeCssaBusinessState({dossierOutcomePatch:{id:'out1',dossierId:'d-submit',result:'ATTRIBUE',decidedAt:'2026-10-20',externalReference:'DEC-9',proofRef:'decision://9',amount:25000,source:'TEST'},dossierPatch:{id:'d-submit',status:'ATTRIBUE'}},file)
+  const s=readCssaBusinessState(file)
+  assert.equal(s.submissionProofs.length,1)
+  assert.equal(s.submissionProofs[0].externalReference,'ACK-123')
+  assert.equal(s.submissionProofs[0].proofRef,'receipt://ack-123')
+  assert.equal(s.dossierOutcomes.length,1)
+  assert.equal(s.dossierOutcomes[0].result,'ATTRIBUE')
+  assert.equal(s.dossierOutcomes[0].amount,25000)
+  assert.equal(s.dossiers.find(x=>x.id==='d-submit').status,'ATTRIBUE')
  }finally{rmSync(dir,{recursive:true,force:true})}
 })
