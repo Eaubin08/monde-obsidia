@@ -3,19 +3,22 @@ import './CSSABusiness.css'
 
 type DossierType='APPEL_OFFRES'|'CONSULTATION'|'SUBVENTION'|'PARTENARIAT'|'CONVENTION'|'DOSSIER_INSTITUTIONNEL'
 type DossierStatus='BROUILLON'|'EN_PREPARATION'|'A_VALIDER'|'VALIDE'|'PRET_A_DEPOSER'|'DEPOSE'|'ATTRIBUE'|'NON_RETENU'|'ANNULE'
-type Dossier={id:string;reference:string;type:DossierType;title:string;organization:string;deadline:string;status:DossierStatus;source:string;owner:string;submissionChannel:string;createdAt:string}
-type Requirement={id:string;dossierId:string;label:string;category:string;criticality:'OBLIGATOIRE'|'RECOMMANDE'|'OPTIONNEL'|'INCONNU';state:'SATISFAIT'|'MANQUANT'|'A_VERIFIER'|'EN_COURS'|'BLOQUE'|'INCONNU';source:string;documentRefId:string|null;taskRefId:string|null;owner:string;dueAt:string;validationRequired:boolean}
+type Dossier={id:string;reference:string;type:DossierType;title:string;organization:string;deadline:string;status:DossierStatus;source:string;owner:string;ownerPersonId?:string|null;submissionChannel:string;createdAt:string}
+type Requirement={id:string;dossierId:string;label:string;category:string;criticality:'OBLIGATOIRE'|'RECOMMANDE'|'OPTIONNEL'|'INCONNU';state:'SATISFAIT'|'MANQUANT'|'A_VERIFIER'|'EN_COURS'|'BLOQUE'|'INCONNU';source:string;documentRefId:string|null;taskRefId:string|null;owner:string;ownerPersonId?:string|null;dueAt:string;validationRequired:boolean}
 type DocumentRef={id:string;dossierId:string|null;type:string;title:string;version:string;status:'VALIDE'|'EXPIRE'|'A_VERIFIER'|'INCONNU';issuedAt:string;validUntil:string;source:string;fileRef:string;usedIn:string[]}
 type Validation={id:string;dossierId:string;type:string;status:'EN_ATTENTE'|'VALIDE'|'REFUSE'|'HOLD';requiredRole:string;decidedBy:string|null;decidedAt:string|null;comment:string}
-type MoneyRow={id:string;category:string;label:string;amount:number;date:string;status:string;matchRef:string|null;source:string;note:string}
+type MoneyRow={id:string;category:string;label:string;amount:number;date:string;status:string;matchRef:string|null;source:string;note:string;recordedByPersonId?:string|null}
 type StockItem={id:string;channel:'BUVETTE'|'BOUTIQUE'|'SPORT'|'AUTRE';label:string;sku:string;quantity:number;unitCost:number|null;salePrice:number|null;threshold:number|null;supplierId:string|null;status:string}
 type Supplier={id:string;name:string;category:string;contact:string;status:string;source:string}
 type Contract={id:string;kind:string;label:string;party:string;startAt:string;endAt:string;amount:number|null;status:string;source:string}
-type Invoice={id:string;direction:'EMISE'|'RECUE';number:string;party:string;label:string;amount:number;issuedAt:string;dueAt:string;status:'A_PAYER'|'A_ENCAISSER'|'PAYEE'|'ENCAISSEE'|'EN_RETARD'|'ANNULEE';dossierId:string|null;source:string}
-type Payment={id:string;invoiceId:string|null;direction:'ENTREE'|'SORTIE';amount:number;date:string;method:string;account:string;status:string;source:string}
-type TreasuryEntry={id:string;account:string;date:string;direction:'ENTREE'|'SORTIE';label:string;amount:number;source:string;paymentId:string|null}
+type Invoice={id:string;direction:'EMISE'|'RECUE';number:string;party:string;label:string;amount:number;issuedAt:string;dueAt:string;status:'A_PAYER'|'A_ENCAISSER'|'PAYEE'|'ENCAISSEE'|'EN_RETARD'|'ANNULEE';dossierId:string|null;source:string;responsiblePersonId?:string|null}
+type Payment={id:string;invoiceId:string|null;direction:'ENTREE'|'SORTIE';amount:number;date:string;method:string;account:string;status:string;source:string;recordedByPersonId?:string|null}
+type TreasuryEntry={id:string;account:string;date:string;direction:'ENTREE'|'SORTIE';label:string;amount:number;source:string;paymentId:string|null;recordedByPersonId?:string|null}
 type Asset={id:string;kind:'VEHICULE'|'MATERIEL_SPORTIF'|'INFORMATIQUE'|'INFRASTRUCTURE'|'AUTRE';label:string;status:string;location:string;acquiredAt:string;maintenanceDueAt:string;value:number|null;source:string}
 type BusinessState={version:string;updatedAt:string;dossiers:Dossier[];requirements:Requirement[];documentRefs:DocumentRef[];validations:Validation[];revenues:MoneyRow[];expenses:MoneyRow[];stockItems:StockItem[];suppliers:Supplier[];contracts:Contract[];invoices:Invoice[];payments:Payment[];treasuryEntries:TreasuryEntry[];assets:Asset[]}
+type OrgPerson={id:string;displayName:string;status:string}
+type OrgAuthorization={id:string;personId:string;scope:string;action:string;status:string}
+type OrgState={people:OrgPerson[];authorizations:OrgAuthorization[]}
 
 type Mode='dossiers'|'documents'|'commerce'|'finance'
 type Props={mode:Mode;selectedId?:string;onOpen?:(moduleId:string,id?:string)=>void}
@@ -30,6 +33,7 @@ function uid(prefix:string){return prefix+'-'+Date.now().toString(36)+'-'+Math.r
 
 export default function CSSABusinessPage({mode,selectedId,onOpen}:Props){
  const [state,setState]=useState<BusinessState|null>(null)
+ const [orgState,setOrgState]=useState<OrgState|null>(null)
  const [error,setError]=useState(false)
  const [selected,setSelected]=useState(selectedId||'')
  const [tab,setTab]=useState('overview')
@@ -39,10 +43,14 @@ export default function CSSABusinessPage({mode,selectedId,onOpen}:Props){
 
  const refresh=async()=>{
   try{
-   const r=await fetch('/obsidia-local/cssa-business-state',{cache:'no-store'})
+   const [r,orgRes]=await Promise.all([
+    fetch('/obsidia-local/cssa-business-state',{cache:'no-store'}),
+    fetch('/obsidia-local/cssa-organisation-state',{cache:'no-store'})
+   ])
    if(!r.ok)throw new Error('business state unavailable')
    const data=await r.json()
    setState(data);setError(false)
+   if(orgRes.ok)setOrgState(await orgRes.json())
    if(!selected&&data.dossiers?.length)setSelected(data.dossiers[0].id)
   }catch{setError(true)}
  }
@@ -53,6 +61,10 @@ export default function CSSABusinessPage({mode,selectedId,onOpen}:Props){
   const r=await fetch('/obsidia-local/cssa-business-state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)})
   if(r.ok)setState(await r.json())
  }
+
+ const activePeople=orgState?.people.filter(p=>p.status==='ACTIF')||[]
+ const personName=(id?:string|null)=>id?(orgState?.people.find(p=>p.id===id)?.displayName||'PERSONNE INCONNUE'):'NON ASSIGNÉ'
+ const hasExplicitAuthorization=(personId?:string|null,scope='DOSSIER')=>Boolean(personId&&orgState?.authorizations.some(a=>a.personId===personId&&a.status==='ACCORDEE'&&(a.scope.toUpperCase()===scope||a.scope.toUpperCase()==='TOUT')))
 
  const dossier=state?.dossiers.find(d=>d.id===selected)||null
  const reqs=useMemo(()=>state?.requirements.filter(r=>r.dossierId===selected)||[],[state,selected])
@@ -87,18 +99,18 @@ export default function CSSABusinessPage({mode,selectedId,onOpen}:Props){
   e.preventDefault()
   if(!form.title?.trim())return
   const id=uid('dossier')
-  const d:Dossier={id,reference:form.reference?.trim()||id.toUpperCase(),type:(form.type||'APPEL_OFFRES') as DossierType,title:form.title.trim(),organization:form.organization?.trim()||'INCONNU',deadline:form.deadline||'',status:'BROUILLON',source:form.source?.trim()||'INCONNU',owner:'UNKNOWN / NON ASSIGNÉ',submissionChannel:form.submissionChannel?.trim()||'INCONNU',createdAt:new Date().toISOString()}
+  const d:Dossier={id,reference:form.reference?.trim()||id.toUpperCase(),type:(form.type||'APPEL_OFFRES') as DossierType,title:form.title.trim(),organization:form.organization?.trim()||'INCONNU',deadline:form.deadline||'',status:'BROUILLON',source:form.source?.trim()||'INCONNU',owner:form.ownerPersonId?personName(form.ownerPersonId):'UNKNOWN / NON ASSIGNÉ',ownerPersonId:form.ownerPersonId||null,submissionChannel:form.submissionChannel?.trim()||'INCONNU',createdAt:new Date().toISOString()}
   await post({dossierPatch:d});setSelected(id);setShowCreate(false);setForm({type:'APPEL_OFFRES',status:'BROUILLON'});setTab('overview')
  }
  const addRequirement=async(e:React.FormEvent)=>{
   e.preventDefault();if(!dossier||!form.reqLabel?.trim())return
-  const r:Requirement={id:uid('req'),dossierId:dossier.id,label:form.reqLabel.trim(),category:form.reqCategory||'ADMINISTRATIF',criticality:(form.reqCriticality||'OBLIGATOIRE') as any,state:'A_VERIFIER',source:form.reqSource?.trim()||'INCONNU',documentRefId:null,taskRefId:null,owner:'UNKNOWN / NON ASSIGNÉ',dueAt:form.reqDueAt||dossier.deadline,validationRequired:true}
+  const r:Requirement={id:uid('req'),dossierId:dossier.id,label:form.reqLabel.trim(),category:form.reqCategory||'ADMINISTRATIF',criticality:(form.reqCriticality||'OBLIGATOIRE') as any,state:'A_VERIFIER',source:form.reqSource?.trim()||'INCONNU',documentRefId:null,taskRefId:null,owner:dossier.ownerPersonId?personName(dossier.ownerPersonId):'UNKNOWN / NON ASSIGNÉ',ownerPersonId:dossier.ownerPersonId||null,dueAt:form.reqDueAt||dossier.deadline,validationRequired:true}
   await post({requirementPatch:r});setForm({...form,reqLabel:'',reqSource:'',reqDueAt:''})
  }
  const createTaskForRequirement=async(r:Requirement)=>{
   if(r.taskRefId)return
   const taskId=uid('task-dossier')
-  const task={id:taskId,title:r.label,description:'Action liée au dossier '+(dossier?.reference||selected),status:'A_FAIRE',priority:r.criticality==='OBLIGATOIRE'?'HAUTE':'NORMALE',dueAt:r.dueAt||dossier?.deadline||'',origin:'ADMINISTRATION',structure:'cssa',team:null,matchRef:null,responsible:'UNKNOWN / NON ASSIGNÉ',source:r.source||'Dossier CSSA',truthClass:'UNKNOWN',checklist:{},notes:'',history:[{at:new Date().toISOString(),action:'CREATION',note:'Créée depuis une exigence dossier'}],relations:[{type:'DOSSIER',targetId:selected,label:dossier?.reference||selected},{type:'REQUIREMENT',targetId:r.id,label:r.label}],caseRef:null}
+  const task={id:taskId,title:r.label,description:'Action liée au dossier '+(dossier?.reference||selected),status:'A_FAIRE',priority:r.criticality==='OBLIGATOIRE'?'HAUTE':'NORMALE',dueAt:r.dueAt||dossier?.deadline||'',origin:'ADMINISTRATION',structure:'cssa',team:null,matchRef:null,responsible:r.ownerPersonId?personName(r.ownerPersonId):'UNKNOWN / NON ASSIGNÉ',responsiblePersonId:r.ownerPersonId||null,source:r.source||'Dossier CSSA',truthClass:'UNKNOWN',checklist:{},notes:'',history:[{at:new Date().toISOString(),action:'CREATION',note:'Créée depuis une exigence dossier'}],relations:[{type:'DOSSIER',targetId:selected,label:dossier?.reference||selected},{type:'REQUIREMENT',targetId:r.id,label:r.label}],caseRef:null}
   await fetch('/obsidia-local/cssa-ops-state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({taskPatch:task})})
   await post({requirementPatch:{...r,taskRefId:taskId}})
  }
@@ -109,7 +121,7 @@ export default function CSSABusinessPage({mode,selectedId,onOpen}:Props){
  }
  const addMoney=async(e:React.FormEvent)=>{
   e.preventDefault();if(!form.moneyLabel?.trim())return
-  const row:MoneyRow={id:uid(moneyKind==='revenue'?'rev':'exp'),category:form.moneyCategory||'AUTRE',label:form.moneyLabel.trim(),amount:Number(form.moneyAmount||0),date:form.moneyDate||new Date().toISOString().slice(0,10),status:'OBSERVE_SAISI',matchRef:form.moneyMatchRef?.trim()||null,source:form.moneySource?.trim()||'SAISIE_INTERNE_A_VERIFIER',note:form.moneyNote?.trim()||''}
+  const row:MoneyRow={id:uid(moneyKind==='revenue'?'rev':'exp'),category:form.moneyCategory||'AUTRE',label:form.moneyLabel.trim(),amount:Number(form.moneyAmount||0),date:form.moneyDate||new Date().toISOString().slice(0,10),status:'OBSERVE_SAISI',matchRef:form.moneyMatchRef?.trim()||null,source:form.moneySource?.trim()||'SAISIE_INTERNE_A_VERIFIER',note:form.moneyNote?.trim()||'',recordedByPersonId:form.moneyPersonId||null}
   await post({[moneyKind==='revenue'?'revenuePatch':'expensePatch']:row});setForm({...form,moneyLabel:'',moneyAmount:'',moneyMatchRef:'',moneySource:'',moneyNote:''})
  }
  const addStock=async(e:React.FormEvent)=>{
@@ -130,17 +142,17 @@ export default function CSSABusinessPage({mode,selectedId,onOpen}:Props){
  const addInvoice=async(e:React.FormEvent)=>{
   e.preventDefault();if(!form.invoiceLabel?.trim())return
   const direction=(form.invoiceDirection||'RECUE') as 'EMISE'|'RECUE'
-  const row:Invoice={id:uid('invoice'),direction,number:form.invoiceNumber?.trim()||'SANS_REFERENCE',party:form.invoiceParty?.trim()||'INCONNU',label:form.invoiceLabel.trim(),amount:Number(form.invoiceAmount||0),issuedAt:form.invoiceIssuedAt||new Date().toISOString().slice(0,10),dueAt:form.invoiceDueAt||'',status:(direction==='EMISE'?'A_ENCAISSER':'A_PAYER'),dossierId:form.invoiceDossier?.trim()||null,source:form.invoiceSource?.trim()||'SAISIE_INTERNE_A_VERIFIER'}
+  const row:Invoice={id:uid('invoice'),direction,number:form.invoiceNumber?.trim()||'SANS_REFERENCE',party:form.invoiceParty?.trim()||'INCONNU',label:form.invoiceLabel.trim(),amount:Number(form.invoiceAmount||0),issuedAt:form.invoiceIssuedAt||new Date().toISOString().slice(0,10),dueAt:form.invoiceDueAt||'',status:(direction==='EMISE'?'A_ENCAISSER':'A_PAYER'),dossierId:form.invoiceDossier?.trim()||null,source:form.invoiceSource?.trim()||'SAISIE_INTERNE_A_VERIFIER',responsiblePersonId:form.invoicePersonId||null}
   await post({invoicePatch:row});setForm({...form,invoiceNumber:'',invoiceParty:'',invoiceLabel:'',invoiceAmount:'',invoiceDossier:'',invoiceSource:''})
  }
  const addPayment=async(e:React.FormEvent)=>{
   e.preventDefault();if(!form.paymentAmount)return
-  const row:Payment={id:uid('payment'),invoiceId:form.paymentInvoice?.trim()||null,direction:(form.paymentDirection||'SORTIE') as 'ENTREE'|'SORTIE',amount:Number(form.paymentAmount),date:form.paymentDate||new Date().toISOString().slice(0,10),method:form.paymentMethod||'INCONNU',account:form.paymentAccount?.trim()||'INCONNU',status:'A_VERIFIER',source:form.paymentSource?.trim()||'SAISIE_INTERNE_A_VERIFIER'}
+  const row:Payment={id:uid('payment'),invoiceId:form.paymentInvoice?.trim()||null,direction:(form.paymentDirection||'SORTIE') as 'ENTREE'|'SORTIE',amount:Number(form.paymentAmount),date:form.paymentDate||new Date().toISOString().slice(0,10),method:form.paymentMethod||'INCONNU',account:form.paymentAccount?.trim()||'INCONNU',status:'A_VERIFIER',source:form.paymentSource?.trim()||'SAISIE_INTERNE_A_VERIFIER',recordedByPersonId:form.paymentPersonId||null}
   await post({paymentPatch:row});setForm({...form,paymentAmount:'',paymentInvoice:'',paymentSource:''})
  }
  const addTreasury=async(e:React.FormEvent)=>{
   e.preventDefault();if(!form.treasuryLabel?.trim())return
-  const row:TreasuryEntry={id:uid('treasury'),account:form.treasuryAccount?.trim()||'CAISSE_INCONNUE',date:form.treasuryDate||new Date().toISOString().slice(0,10),direction:(form.treasuryDirection||'ENTREE') as 'ENTREE'|'SORTIE',label:form.treasuryLabel.trim(),amount:Number(form.treasuryAmount||0),source:form.treasurySource?.trim()||'SAISIE_INTERNE_A_VERIFIER',paymentId:null}
+  const row:TreasuryEntry={id:uid('treasury'),account:form.treasuryAccount?.trim()||'CAISSE_INCONNUE',date:form.treasuryDate||new Date().toISOString().slice(0,10),direction:(form.treasuryDirection||'ENTREE') as 'ENTREE'|'SORTIE',label:form.treasuryLabel.trim(),amount:Number(form.treasuryAmount||0),source:form.treasurySource?.trim()||'SAISIE_INTERNE_A_VERIFIER',paymentId:null,recordedByPersonId:form.treasuryPersonId||null}
   await post({treasuryPatch:row});setForm({...form,treasuryLabel:'',treasuryAmount:'',treasurySource:''})
  }
  const addAsset=async(e:React.FormEvent)=>{
