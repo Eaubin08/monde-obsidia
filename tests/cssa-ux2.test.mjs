@@ -198,3 +198,17 @@ test('UX13 · Accueil has one unified club attention queue across domains',()=>{
   assert.match(home,/domain:'MATCHDAY'/)
   assert.match(home,/domain:'DOSSIER'/)
 })
+
+
+test('UX14 · Accueil consolidates today and the next seven days across club operations',()=>{
+  assert.match(home,/Aujourd’hui & 7 prochains jours/)
+  assert.match(home,/Agenda dérivé uniquement des dates déjà présentes/)
+  assert.match(home,/R1_MATCHES/)
+  assert.match(home,/activeDossiers/)
+  assert.match(home,/invoices/)
+  assert.match(home,/contracts/)
+  assert.match(home,/assets/)
+  assert.match(home,/availabilities/)
+  assert.match(home,/domain:'MATCH'/)
+  assert.match(home,/domain:'HUMAIN'/)
+})
