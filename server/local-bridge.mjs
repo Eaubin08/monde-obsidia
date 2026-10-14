@@ -13,6 +13,7 @@ import {readCssaOpsState,writeCssaOpsState} from './cssa-ops-store.mjs'
 import {readCssaBusinessState,writeCssaBusinessState} from './cssa-business-store.mjs'
 import {readCssaOrganisationState,writeCssaOrganisationState} from './cssa-organisation-store.mjs'
 import {readCssaCrmDirectory,writeCssaCrmDirectory} from './cssa-crm-directory-store.mjs'
+import {readCssaMailState,writeCssaMailState,ingestCssaMail} from './cssa-mail-store.mjs'
 import {randomUUID} from 'node:crypto'
 import {execFileSync,spawn} from 'node:child_process'
 import {existsSync,realpathSync,readFileSync,readdirSync,statSync,appendFileSync,mkdirSync} from 'node:fs'
@@ -582,6 +583,9 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  if(req.method==='POST'&&url.pathname==='/cssa-organisation-state'){const patch=await body(req);res.end(JSON.stringify(writeCssaOrganisationState(patch)));return}
  if(req.method==='GET'&&url.pathname==='/cssa-crm-directory'){res.end(JSON.stringify(readCssaCrmDirectory()));return}
  if(req.method==='POST'&&url.pathname==='/cssa-crm-directory'){const patch=await body(req);res.end(JSON.stringify(writeCssaCrmDirectory(patch)));return}
+ if(req.method==='GET'&&url.pathname==='/cssa-mail-state'){res.end(JSON.stringify(readCssaMailState()));return}
+ if(req.method==='POST'&&url.pathname==='/cssa-mail-state'){const patch=await body(req);res.end(JSON.stringify(writeCssaMailState(patch)));return}
+ if(req.method==='POST'&&url.pathname==='/cssa-mail-ingest'){const data=await body(req);res.end(JSON.stringify(ingestCssaMail(data)));return}
  if(req.method==='GET'&&url.pathname==='/state'){
  const snap=snapshot(),live=liveSnapshot()
  live.sessions=(live.sessions||[]).map(s=>{
