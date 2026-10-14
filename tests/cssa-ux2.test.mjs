@@ -84,3 +84,15 @@ test('UX4 · dossiers are gated by readiness and economy surfaces derived attent
   assert.match(business,/maintenanceDue/)
   assert.match(business,/Ce qui demande une action/)
 })
+
+
+test('UX5 · Organisation is the canonical people, availability and authority surface',()=>{
+  assert.match(org,/Personnes, rôles et responsabilités/)
+  assert.match(org,/Personnes & engagements/)
+  assert.match(org,/Disponibilités/)
+  assert.match(org,/Habilitations/)
+  assert.match(org,/Une personne existe une seule fois/)
+  assert.match(org,/Aucun occupant n’est déduit automatiquement/)
+  assert.match(org,/roleAssignments/)
+  assert.match(org,/authorizations/)
+})
