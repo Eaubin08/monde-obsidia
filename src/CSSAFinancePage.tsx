@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useState} from 'react'
 import './CSSAFinancePage.css'
+import CSSABusinessPage from './CSSABusinessPage'
 
 type Revenue={id:string;category:string;label:string;amount:number;date:string;status:string;matchRef:string|null;source:string}
 type Expense={id:string;category:string;label:string;amount:number;date:string;status:string;matchRef:string|null;source:string}
@@ -25,6 +26,7 @@ export default function CSSAFinancePage({onOpen}:Props){
   }catch{setError(true)}
  }
  useEffect(()=>{void refresh()},[])
+ useEffect(()=>{const h=(e:Event)=>setState((e as CustomEvent<BusinessState>).detail);window.addEventListener('cssa-business-updated',h);return()=>window.removeEventListener('cssa-business-updated',h)},[])
 
  const projection=useMemo(()=>{
   const revenues=state?.revenues||[]
@@ -95,5 +97,6 @@ export default function CSSAFinancePage({onOpen}:Props){
   {tab==='invoices'&&<section className="finx-panel"><header><div><small>FACTURES</small><h3>À encaisser / à payer</h3></div></header>{state.invoices.length?state.invoices.map(x=><div className="finx-row" key={x.id}><div><strong>{x.number} · {x.label}</strong><small>{x.party} · échéance {x.dueAt||'inconnue'} · {human(x.status)}</small></div><b>{euro(x.amount)}</b></div>):<p>Aucune facture saisie.</p>}</section>}
 
   {tab==='treasury'&&<section className="finx-panel"><header><div><small>TRÉSORERIE</small><h3>Mouvements enregistrés</h3></div></header>{state.treasuryEntries.length?state.treasuryEntries.map(x=><div className="finx-row" key={x.id}><div><strong>{x.label}</strong><small>{x.account} · {x.date} · {x.source}</small></div><b>{x.direction==='ENTREE'?'+':'−'} {euro(x.amount)}</b></div>):<p>Aucun mouvement de trésorerie enregistré.</p>}</section>}
+  <details className="finx-tools"><summary>Gestion détaillée · saisir / modifier les données financières</summary><CSSABusinessPage mode="finance" onOpen={onOpen}/></details>
  </section>
 }
