@@ -10,7 +10,8 @@ function emptyState(){
   version:'CSSA_CRM_DIRECTORY_V1',
   updatedAt:now(),
   organizations:[],
-  contacts:[]
+  contacts:[],
+  interactions:[]
  }
 }
 function load(file){
@@ -36,7 +37,9 @@ export function writeCssaCrmDirectory(patch={},file=defaultCrmDirectoryFile){
  let state=load(file)
  if(patch.organizationPatch?.id)state={...state,organizations:upsert(state.organizations||[],patch.organizationPatch)}
  if(patch.contactPatch?.id)state={...state,contacts:upsert(state.contacts||[],patch.contactPatch)}
- if(patch.organizationDeleteId)state={...state,organizations:remove(state.organizations||[],patch.organizationDeleteId),contacts:(state.contacts||[]).filter(x=>x.organizationId!==patch.organizationDeleteId)}
- if(patch.contactDeleteId)state={...state,contacts:remove(state.contacts||[],patch.contactDeleteId)}
+ if(patch.interactionPatch?.id)state={...state,interactions:upsert(state.interactions||[],patch.interactionPatch)}
+ if(patch.organizationDeleteId)state={...state,organizations:remove(state.organizations||[],patch.organizationDeleteId),contacts:(state.contacts||[]).filter(x=>x.organizationId!==patch.organizationDeleteId),interactions:(state.interactions||[]).filter(x=>x.organizationId!==patch.organizationDeleteId)}
+ if(patch.contactDeleteId)state={...state,contacts:remove(state.contacts||[],patch.contactDeleteId),interactions:(state.interactions||[]).map(x=>x.contactId===patch.contactDeleteId?{...x,contactId:null}:x)}
+ if(patch.interactionDeleteId)state={...state,interactions:remove(state.interactions||[],patch.interactionDeleteId)}
  return save(state,file)
 }
