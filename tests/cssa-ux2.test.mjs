@@ -228,7 +228,7 @@ test('UX15 · Commerce Finance and Media are distinct visual products, not one r
   assert.doesNotMatch(page,/CSSABusinessPage mode="commerce"/)
   assert.doesNotMatch(page,/CSSABusinessPage mode="finance"/)
   assert.match(commerce,/Canaux commerciaux/)
-  assert.match(commerce,/Partenaires & Sponsors/)
+  assert.match(commerce,/PARTENAIRES & SPONSORS/)
   assert.match(commerce,/Écosystème commercial/)
   assert.match(finance,/Où est l’argent du club/)
   assert.match(finance,/Factures émises ouvertes/)
