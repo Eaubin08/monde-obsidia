@@ -10,6 +10,9 @@ import CSSAMailPage from './CSSAMailPage'
 import CSSACommercePage from './CSSACommercePage'
 import CSSAFinancePage from './CSSAFinancePage'
 import CSSAMediaPage from './CSSAMediaPage'
+import CSSACrmPage from './CSSACrmPage'
+import CSSATasksPage from './CSSATasksPage'
+import CSSAAdminPage from './CSSAAdminPage'
 
 type Semantic={purpose:string;context:string;observes:string;feeds:string;impact:string;limits:string}
 type SourceItem={id:string;title:string;url:string;truthClass:string;cadence:string;criticality:string;semantic:Semantic}
@@ -736,12 +739,14 @@ export default function CSSAPage(){
     <CSSAMediaPage onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):moduleId==='mail'&&structureId==='cssa'?(
     <CSSAMailPage onOpen={(mod,id)=>openModule(mod,id||'')}/>
-   ):['admin','crm','tasks','matchday'].includes(moduleId)&&structureId==='cssa'?(
-    <CSSAOpsWorkspace
-      activeModule={moduleId as any}
-      selectedId={selectedId}
-      onSelect={(mod, id)=>openModule(mod, id)}
-    />
+   ):moduleId==='crm'&&structureId==='cssa'?(
+    <CSSACrmPage selectedId={selectedId} onSelect={(mod,id)=>openModule(mod,id)}/>
+   ):moduleId==='tasks'&&structureId==='cssa'?(
+    <CSSATasksPage selectedId={selectedId} onSelect={(mod,id)=>openModule(mod,id)}/>
+   ):moduleId==='admin'&&structureId==='cssa'?(
+    <CSSAAdminPage selectedId={selectedId} onSelect={(mod,id)=>openModule(mod,id)}/>
+   ):moduleId==='matchday'&&structureId==='cssa'?(
+    <CSSAOpsWorkspace activeModule="matchday" selectedId={selectedId} onSelect={(mod,id)=>openModule(mod,id)}/>
    ):moduleId==='dashboard'?<div className="u-dashboard-grid">
     <section className="u-dashboard-summary">
      <div className="u-summary-cards">
