@@ -1,0 +1,37 @@
+
+.comx{display:flex;flex-direction:column;gap:18px;color:#e7eef5;max-width:1480px;margin:0 auto;padding:6px 0 28px}
+.comx-hero{display:grid;grid-template-columns:1.4fr .6fr;gap:18px;padding:30px;border-radius:20px;background:radial-gradient(circle at 18% 10%,rgba(41,184,134,.17),transparent 30%),linear-gradient(135deg,#0a1b1a,#0a111b 72%);border:1px solid #1d3e39}
+.comx-hero small,.comx-channels small,.comx-partners small,.comx-panel small,.comx-feed small{font-size:10px;letter-spacing:.1em;color:#7ba79b}
+.comx-hero h2{font-size:34px;margin:6px 0 6px;letter-spacing:-.03em}
+.comx-hero p{margin:0;color:#91aaa5;font-size:13px;max-width:760px;line-height:1.55}
+.comx-hero-actions{display:flex;gap:8px;margin-top:16px}
+.comx-hero-actions button,.comx-partners header button,.comx-feed header button{border:1px solid #327560;background:#103b32;color:#e6fff6;border-radius:10px;padding:10px 14px;cursor:pointer}
+.comx-hero-actions button.ghost{background:transparent;border-color:#29465a;color:#a8c2d4}
+.comx-hero-number{border-left:1px solid #24433e;padding-left:26px;display:flex;flex-direction:column;justify-content:center}
+.comx-hero-number strong{font-size:34px;margin:7px 0}
+.comx-hero-number span{font-size:11px;color:#83a096}
+.comx-channels,.comx-partners,.comx-panel,.comx-feed{border:1px solid #1b3448;background:#08151f;border-radius:16px;overflow:hidden}
+.comx-channels>header,.comx-partners>header,.comx-panel>header,.comx-feed>header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 16px;border-bottom:1px solid #183045}
+.comx-channels h3,.comx-partners h3,.comx-panel h3,.comx-feed h3{margin:3px 0 0;font-size:16px}
+.comx-card-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;padding:14px}
+.comx-card-grid article{min-height:150px;border:1px solid #1a3448;border-radius:14px;padding:16px;background:linear-gradient(180deg,#0b1b28,#09131c)}
+.comx-card-icon{width:42px;height:42px;border-radius:12px;background:#102c2a;border:1px solid #27594e;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:14px}
+.comx-card-grid h4{margin:4px 0 12px;font-size:13px}
+.comx-card-grid strong{font-size:20px;display:block}
+.comx-card-grid span{font-size:9px;color:#748ca0}
+.comx-partner-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:14px}
+.comx-partner-grid article{display:flex;align-items:center;gap:12px;border:1px solid #1a3448;border-radius:14px;padding:14px;background:#0a1722}
+.comx-logo{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#16413c,#16314b);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+.comx-partner-grid strong,.comx-partner-grid small{display:block}
+.comx-partner-grid strong{font-size:12px}
+.comx-partner-grid small{margin-top:3px}
+.comx-split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.comx-panel>p{padding:14px;color:#8197a9}
+.comx-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 14px;border-bottom:1px solid #142b3d}
+.comx-row strong,.comx-row small{display:block}.comx-row strong{font-size:11px}.comx-row small{font-size:9px;color:#748ca0;margin-top:3px}.comx-row b{font-size:11px}
+.comx-feed>div>article{display:grid;grid-template-columns:130px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 14px;border-bottom:1px solid #142b3d}
+.comx-feed>div>article>span{font-size:8px;color:#6fb69d}.comx-feed strong,.comx-feed small{display:block}.comx-feed strong{font-size:11px}.comx-feed small{font-size:9px;color:#748ca0;margin-top:2px}.comx-feed b{font-size:12px}
+.comx-empty{padding:24px;color:#8197a9}
+@media(max-width:1100px){.comx-card-grid{grid-template-columns:repeat(3,1fr)}.comx-partner-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){.comx-hero{grid-template-columns:1fr}.comx-hero-number{border-left:0;border-top:1px solid #24433e;padding-left:0;padding-top:18px}.comx-split{grid-template-columns:1fr}}
+@media(max-width:600px){.comx-card-grid,.comx-partner-grid{grid-template-columns:1fr}.comx-feed>div>article{grid-template-columns:1fr auto}.comx-feed>div>article>span{grid-column:1/-1}.comx-hero h2{font-size:27px}}
