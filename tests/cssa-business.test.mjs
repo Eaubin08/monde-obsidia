@@ -89,3 +89,24 @@ test('business state preserves Organisation person references across dossiers an
   assert.equal(s.treasuryEntries.find(x=>x.id==='tre-person').recordedByPersonId,'p1')
  }finally{rmSync(dir,{recursive:true,force:true})}
 })
+
+
+test('business documents preserve Mail provenance and requirement links',()=>{
+ const dir=mkdtempSync(join(tmpdir(),'cssa-business-mail-doc-'))
+ const file=join(dir,'state.json')
+ try{
+  writeCssaBusinessState({dossierPatch:{id:'d-mail',reference:'AO-MAIL',title:'Dossier mail'}},file)
+  writeCssaBusinessState({requirementPatch:{id:'r-mail',dossierId:'d-mail',label:'Attestation requise',state:'A_VERIFIER',documentRefId:null}},file)
+  writeCssaBusinessState({documentRefPatch:{id:'doc-mail',dossierId:'d-mail',type:'ATTESTATION',title:'Attestation reçue',version:'1',status:'A_VERIFIER',source:'MAIL:m1',fileRef:'msg-1',usedIn:['d-mail'],originType:'MAIL',originMailId:'m1',requirementIds:['r-mail'],receivedAt:'2026-10-14T10:00:00',proof:'msg-1'}},file)
+  writeCssaBusinessState({requirementPatch:{id:'r-mail',documentRefId:'doc-mail',state:'A_VERIFIER'}},file)
+  const s=readCssaBusinessState(file)
+  const doc=s.documentRefs.find(x=>x.id==='doc-mail')
+  const req=s.requirements.find(x=>x.id==='r-mail')
+  assert.equal(doc.originType,'MAIL')
+  assert.equal(doc.originMailId,'m1')
+  assert.equal(doc.proof,'msg-1')
+  assert.deepEqual(doc.requirementIds,['r-mail'])
+  assert.equal(req.documentRefId,'doc-mail')
+  assert.equal(req.state,'A_VERIFIER')
+ }finally{rmSync(dir,{recursive:true,force:true})}
+})
