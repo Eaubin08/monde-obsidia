@@ -6,6 +6,7 @@ import CSSAOpsWorkspace from './CSSAOpsWorkspace'
 import CSSAHomePage from './CSSAHomePage'
 import CSSAOrganisationPage from './CSSAOrganisationPage'
 import CSSABusinessPage from './CSSABusinessPage'
+import CSSAMailPage from './CSSAMailPage'
 
 type Semantic={purpose:string;context:string;observes:string;feeds:string;impact:string;limits:string}
 type SourceItem={id:string;title:string;url:string;truthClass:string;cadence:string;criticality:string;semantic:Semantic}
@@ -726,6 +727,8 @@ export default function CSSAPage(){
     <CSSABusinessPage mode="commerce" selectedId={selectedId} onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):moduleId==='finance'&&structureId==='cssa'?(
     <CSSABusinessPage mode="finance" selectedId={selectedId} onOpen={(mod,id)=>openModule(mod,id||'')}/>
+   ):moduleId==='mail'&&structureId==='cssa'?(
+    <CSSAMailPage onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):['admin','crm','tasks','matchday'].includes(moduleId)&&structureId==='cssa'?(
     <CSSAOpsWorkspace
       activeModule={moduleId as any}
