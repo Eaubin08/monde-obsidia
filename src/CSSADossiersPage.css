@@ -29,3 +29,7 @@
 .dosv-empty{padding:24px;color:#8197a9}
 @media(max-width:1100px){.dosv-board{grid-template-columns:repeat(2,1fr)}.dosv-kpis{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){.dosv-hero{align-items:flex-start;flex-direction:column}.dosv-hero h2{font-size:27px}.dosv-board,.dosv-kpis{grid-template-columns:1fr}.dosv-tabs{overflow:auto}.dosv-focus{align-items:flex-start;flex-direction:column}}
+
+.dosv-provenance{padding:16px;border:1px solid #30475b;border-radius:12px;background:#0a1722;color:#a9bbcc;overflow-wrap:anywhere}
+.dosv-provenance h3{color:#edf4fa;margin:0 0 10px;font-size:15px}
+.dosv-provenance p{font-size:12px;line-height:1.5;margin:6px 0}

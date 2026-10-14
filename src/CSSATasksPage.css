@@ -12,3 +12,7 @@
 .taskx-empty{padding:20px;color:#7e93a5}
 @media(max-width:1100px){.taskx-board{grid-template-columns:repeat(2,1fr)}.taskx-hero{align-items:flex-start;flex-direction:column}}
 @media(max-width:680px){.taskx-board{grid-template-columns:1fr}.taskx-hero h2{font-size:27px}.taskx-stats{width:100%;display:grid;grid-template-columns:repeat(3,1fr)}.taskx-stats span{min-width:0}.taskx-priority>div>button,.taskx-due>div>button{grid-template-columns:80px minmax(0,1fr)}.taskx-priority b,.taskx-due>div>button>span{display:none}}
+
+.taskx-provenance{padding:16px;border:1px solid #30475b;border-radius:12px;background:#0a1722;color:#a9bbcc;overflow-wrap:anywhere}
+.taskx-provenance h3{color:#edf4fa;margin:0 0 10px;font-size:15px}
+.taskx-provenance p{font-size:12px;line-height:1.5;margin:6px 0}

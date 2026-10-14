@@ -37,7 +37,7 @@ Les réponses Organisation, Business et Ops exposent désormais `_source` : AVAI
 ## Validation
 
 TypeScript : PASS. Build Vite : PASS (avertissement existant de taille du bundle).
-Suite complète après distinction des sources : 138 tests, 137 PASS, 1 SKIP, 0 échec.
+Suite complète après raccord des personnes : 141 tests, 140 PASS, 1 SKIP, 0 échec.
 Projection et stores ciblés : 19 PASS.
 Diff whitespace et lint des fichiers modifiés : PASS.
 HTTP réel Vite : 6 GET PASS ; 3 cycles POST → GET PASS (Organisation, Business, Ops), répertoire live temporaire isolé.
@@ -53,3 +53,23 @@ Aucune copie de Builder/KX108, aucune mutation ajoutée aux projections. Pas de 
 5. Validation des parcours et publication sur main : contrôles automatisés faits pour cette passe ; observation du PC Windows encore non réalisée.
 
 La frontière demeure : les registres décrivent le domaine. Builder/KX108 ne sont pas recopiés dans l’UI et aucune autorisation n’est déduite des observations.
+
+## Passe suivante exécutée : personnes et provenance
+
+Tâches et Dossiers lisent le store Organisation pour résoudre respectivement `responsiblePersonId` et `ownerPersonId`. Seul l’identifiant explicite relie un objet métier à une personne ; aucun rapprochement par nom, poste ou rôle public. La lecture est actualisée toutes les 15 secondes et après une modification d’Organisation. Une réponse antérieure ne peut pas remplacer une lecture plus récente dans ce raccord.
+
+Référence absente, ambiguë, source indisponible ou nom absent : UNKNOWN. Un nom historique sans lien canonique reste signalé comme déclaré. Une personne inactive garde son statut visible ; le raccord ne lui confère aucune habilitation.
+
+Les cartes des dossiers montrent leur pilote et source. Le dossier sélectionné expose les références de validation, dépôt, pièce justificative, résultat externe et documents liés. La tâche sélectionnée expose sa source, classe de vérité et références CRM / match. Aucune mutation métier ni autorisation n’est ajoutée.
+
+Validation réutilisée : TypeScript, build Vite et lint PASS ; 140 PASS / 1 SKIP / 0 échec. Cas couverts : nom canonique actualisé, personne inactive, référence supprimée, doublon ambigu, source indisponible et absence d’inférence depuis un rôle ou un nom déclaré.
+
+## Position dans le plan directeur
+
+Cette séquence est un raccord de projections CSSA / Monde, pas le plan directeur complet ni un nouveau chantier Builder.
+
+Référence de direction : `OBSIDIA_PLAN_MAITRE_MONDE_V01_BUILDER_UNIVERSALITE_2026-10-14.md`, ajouté le 14 octobre à 13 h 19 (Europe/Paris), après le mail de direction UX DVCR de 8 h 55. Forge privée, Builder entreprise, Monde, Workspace et Pokémon restent distincts. La Company Baseline précède la reconstruction ; les agents sont générés selon les besoins réels, et les templates accélèrent la forme sans imposer la vérité.
+
+Correction de reprise issue de `Texte collé(20261014-192844).txt` (audit sémantique, passe 2) : composer `NonSovereignAgentSpec`, `AgentResult`, `ContextPacket`, contrats providers et leases existants. FunctionContract ne se reconstruit pas de zéro. OrganizationBaseline ne remplace pas DomainState. UNKNOWN conduit à HOLD DESIGN, pas à la création automatique d’un agent. Les patterns de promotion mémoire ne constituent pas un lifecycle d’organe.
+
+Instruction de reprise de l’utilisateur : audits terminés, continuer leur exécution sans rouvrir une campagne d’audit. Les futurs raccords s’appuient sur ces conclusions et préservent les responsabilités des dépôts.

@@ -1,3 +1,5 @@
+import useCssaPeople from './useCssaPeople'
+import {resolveCssaPerson} from './cssaPeopleProjection'
 import CSSAStoreSourceNotice from './CSSAStoreSourceNotice'
 import {useEffect,useMemo,useState} from 'react'
 import CSSABusinessPage from './CSSABusinessPage'
@@ -7,13 +9,14 @@ type Dossier={id:string;reference:string;type:string;title:string;organization:s
 type Requirement={id:string;dossierId:string;label:string;criticality:string;state:string;documentRefId:string|null;taskRefId:string|null;dueAt:string}
 type DocumentRef={id:string;dossierId:string|null;title:string;status:string;validUntil:string;usedIn:string[]}
 type Validation={id:string;dossierId:string;type:string;status:string}
-type SubmissionProof={id:string;dossierId:string;submittedAt:string;externalReference:string;proofRef:string}
-type DossierOutcome={id:string;dossierId:string;result:string;decidedAt:string;externalReference:string;amount:number|null}
+type SubmissionProof={id:string;dossierId:string;submittedAt:string;externalReference:string;proofRef:string;source?:string}
+type DossierOutcome={id:string;dossierId:string;result:string;decidedAt:string;externalReference:string;amount:number|null;source?:string;proofRef?:string}
 type BusinessState={dossiers:Dossier[];requirements:Requirement[];documentRefs:DocumentRef[];validations:Validation[];submissionProofs:SubmissionProof[];dossierOutcomes:DossierOutcome[];updatedAt:string}
 type Props={selectedId?:string;onOpen?:(moduleId:string,id?:string)=>void}
 const human=(v:string)=>String(v||'').replaceAll('_',' ').toLowerCase().replace(/(^|\s)\S/g,m=>m.toUpperCase())
 
 export default function CSSADossiersPage({selectedId,onOpen}:Props){
+ const organisation=useCssaPeople()
  const [state,setState]=useState<BusinessState|null>(null)
  const [filter,setFilter]=useState<'ACTIFS'|'PRETS'|'DEPOSES'|'CLOTURES'|'TOUS'>('ACTIFS')
  const [error,setError]=useState(false)
@@ -76,7 +79,7 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
     return <article key={x.d.id} className={x.late?'late':''} onClick={()=>onOpen?.('dossiers',x.d.id)}>
      <header><div><small>{human(x.d.type)}</small><h3>{x.d.reference}</h3></div><span>{human(x.d.status)}</span></header>
      <h4>{x.d.title}</h4>
-     <p>{x.d.organization||'Organisme inconnu'}</p>
+     <p>{x.d.organization||'Organisme inconnu'}</p><p>Pilote : {resolveCssaPerson(x.d.ownerPersonId,x.d.owner,organisation)}</p><p>Source : {x.d.source||'UNKNOWN'}</p>
      <div className="dosv-progress"><div><span style={{width:pct+'%'}}></span></div><strong>{x.satisfied}/{x.required.length}</strong></div>
      <div className="dosv-meta"><span>{x.d.deadline?new Date(x.d.deadline).toLocaleDateString('fr-FR'):'Échéance inconnue'}</span><span>{x.docs.length} doc.</span><span>{x.blocking.length} blocage(s)</span></div>
      <footer>{x.outcome?<b className="result">{human(x.outcome.result)}</b>:x.proof?<b className="info">Déposé · résultat attendu</b>:x.ready?<b className="ready">Prêt à déposer</b>:x.late?<b className="latepill">Échéance dépassée</b>:<b>En préparation</b>}<em>Ouvrir →</em></footer>
@@ -89,6 +92,16 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
    <button onClick={()=>onOpen?.('dossiers',selected.d.id)}>Piloter ce dossier →</button>
   </section>}
 
+  {selected&&<section className="dosv-provenance">
+   <h3>Sources et références du dossier</h3>
+   <p>Pilote : {resolveCssaPerson(selected.d.ownerPersonId,selected.d.owner,organisation)}</p>
+   <p>Source : {selected.d.source||'UNKNOWN'} · dossier {selected.d.id}</p>
+   <p>Validation enregistrée : {selected.validation?`${selected.validation.id} · ${selected.validation.status}`:'UNKNOWN'}</p>
+   <p>Preuve de dépôt enregistrée : {selected.proof?`${selected.proof.id} · ${selected.proof.submittedAt||'UNKNOWN'}`:'UNKNOWN'}</p>
+   <p>Référence externe de dépôt : {selected.proof?.externalReference||'UNKNOWN'} · pièce : {selected.proof?.proofRef||'UNKNOWN'} · source : {selected.proof?.source||'UNKNOWN'}</p>
+   <p>Résultat enregistré : {selected.outcome?`${selected.outcome.id} · ${selected.outcome.result}`:'UNKNOWN'} · référence externe : {selected.outcome?.externalReference||'UNKNOWN'} · source : {selected.outcome?.source||'UNKNOWN'}</p>
+   <p>Documents liés : {selected.docs.length?selected.docs.map(doc=>`${doc.id} · ${doc.title} · ${doc.status}`).join(' ; '):'Aucun lien document renseigné'}</p>
+  </section>}
   <details className="dosv-tools" open={Boolean(selectedId)}>
    <summary>{selectedId?'Pilotage détaillé du dossier':'Gestion détaillée · créer / piloter un dossier'}</summary>
    <CSSABusinessPage mode="dossiers" selectedId={selectedId} onOpen={onOpen}/>
