@@ -86,12 +86,12 @@ const structures:StructureDef[]=[
 
 const cssaNavSections: {title: string; moduleIds: string[]}[] = [
   {title: 'ACCUEIL', moduleIds: ['dashboard']},
-  {title: 'SPORTIF & TERRAIN', moduleIds: ['sportif', 'matchday']},
-  {title: 'DOSSIERS & ADMIN', moduleIds: ['dossiers', 'admin', 'documents', 'tasks']},
-  {title: 'RELATIONS', moduleIds: ['crm']},
-  {title: 'MÉDIA & COMMUNICATION', moduleIds: ['media', 'mail']},
-  {title: 'ÉCONOMIE DU CLUB', moduleIds: ['commercial', 'finance']},
-  {title: 'LE CLUB', moduleIds: ['organisation']},
+  {title: 'SPORT', moduleIds: ['sportif', 'matchday']},
+  {title: 'TRAVAIL', moduleIds: ['tasks', 'dossiers']},
+  {title: 'ADMIN & DOCUMENTS', moduleIds: ['admin', 'documents']},
+  {title: 'RELATIONS & COMMUNICATION', moduleIds: ['crm', 'mail', 'media']},
+  {title: 'ÉCONOMIE', moduleIds: ['commercial', 'finance']},
+  {title: 'CLUB', moduleIds: ['organisation']},
   {title: 'SOURCES', moduleIds: ['sources']}
 ]
 const cssaAdvancedModuleIds=['tests','field','governance','projects','reporting']
@@ -659,7 +659,7 @@ export default function CSSAPage(){
         const secModules = structure.modules.filter(m => sec.moduleIds.includes(m.id))
         if (!secModules.length) return null
         return (
-          <div key={sec.title} className="u-nav-group">
+          <div key={sec.title} className={'u-nav-group '+(sec.moduleIds.includes(moduleId)?'active-group':'')}>
             <div className="u-nav-group-title">{sec.title}</div>
             {secModules.map(m => (
               <a
@@ -704,8 +704,11 @@ export default function CSSAPage(){
   </aside>
 
   <section className="u-main">
-   <header className="u-top">
-    <div><div className="u-breadcrumb"><a href="#cssa/dashboard">CSSA</a><span>›</span>{deepCrumbs.length?<a href={'#cssa/'+moduleId}>{moduleLabel}</a>:<strong>{moduleLabel}</strong>}{deepCrumbs.map((part,index)=><span className="u-breadcrumb-deep" key={part+index}><span>›</span>{index===deepCrumbs.length-1?<strong>{crumbLabel(part)}</strong>:<a href={'#cssa/'+moduleId+'/'+deepCrumbs.slice(0,index+1).map(encodeURIComponent).join('/')}>{crumbLabel(part)}</a>}</span>)}</div><h1>{moduleId==='dashboard'&&structureId!=='cssa'?'Dashboard ':''}{structure.name}</h1><p>{structure.subtitle}</p></div>
+   <header className={'u-top '+(structureId==='cssa'?'u-top-cssa':'')}>
+    <div className="u-top-context">
+     <div className="u-breadcrumb"><a href="#cssa/dashboard">{structureId==='cssa'?'CSSA':structure.name}</a><span>›</span>{deepCrumbs.length?<a href={'#cssa/'+moduleId}>{moduleLabel}</a>:<strong>{moduleLabel}</strong>}{deepCrumbs.map((part,index)=><span className="u-breadcrumb-deep" key={part+index}><span>›</span>{index===deepCrumbs.length-1?<strong>{crumbLabel(part)}</strong>:<a href={'#cssa/'+moduleId+'/'+deepCrumbs.slice(0,index+1).map(encodeURIComponent).join('/')}>{crumbLabel(part)}</a>}</span>)}</div>
+     {structureId!=='cssa'&&<><h1>{moduleId==='dashboard'?'Dashboard ':''}{structure.name}</h1><p>{structure.subtitle}</p></>}
+    </div>
     <div className="u-top-actions">
       <span className="u-badge">{structure.badge}</span>
       <button type="button" className="u-btn-tech-toggle" onClick={()=>setShowTechDetails(prev=>!prev)} title="Afficher/masquer les métriques techniques">
@@ -850,7 +853,7 @@ export default function CSSAPage(){
     </aside>
    </div>}
 
-   <footer className="u-governance-footer"><span>Domain state</span><b>→</b><span>Governance payload</span><b>→</b><span>KX108</span><b>→</b><span>Decision</span><b>→</b><span>Execution gate</span><b>→</b><span>Receipt</span></footer>
+   {(structureId!=='cssa'||showTechDetails)&&<footer className="u-governance-footer"><span>Domain state</span><b>→</b><span>Governance payload</span><b>→</b><span>KX108</span><b>→</b><span>Decision</span><b>→</b><span>Execution gate</span><b>→</b><span>Receipt</span></footer>}
   </section>
  </main>
 }
