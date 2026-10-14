@@ -7,6 +7,9 @@ import CSSAHomePage from './CSSAHomePage'
 import CSSAOrganisationPage from './CSSAOrganisationPage'
 import CSSABusinessPage from './CSSABusinessPage'
 import CSSAMailPage from './CSSAMailPage'
+import CSSACommercePage from './CSSACommercePage'
+import CSSAFinancePage from './CSSAFinancePage'
+import CSSAMediaPage from './CSSAMediaPage'
 
 type Semantic={purpose:string;context:string;observes:string;feeds:string;impact:string;limits:string}
 type SourceItem={id:string;title:string;url:string;truthClass:string;cadence:string;criticality:string;semantic:Semantic}
@@ -37,6 +40,7 @@ function UiIcon({name}:{name:string}){
   reporting:'M5 20V10M12 20V4M19 20v-7',
   matchday:'M12 3v18M3 12h18M5 5l14 14M19 5 5 19',
   finance:'M12 3v18M16 7h-6a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H8',
+  media:'M4 5h16v14H4zM9 9l6 3-6 3z',
   governance:'M12 3l8 4v5c0 5-3.4 8-8 9-4.6-1-8-4-8-9V7l8-4Z',
   projects:'M4 7h6l2 2h8v10H4z',
   field:'M12 21s7-5 7-11a7 7 0 1 0-14 0c0 6 7 11 7 11Zm0-8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
@@ -70,7 +74,7 @@ const cssaSources:SourceItem[]=[
 
 const structures:StructureDef[]=[
 {id:'cssa',name:'CSSA',subtitle:'Club Sportif Sedan Ardennes',badge:'KX108_ONLY',modules:[
-{id:'dashboard',label:'Accueil',icon:'dashboard'},{id:'organisation',label:'Organisation',icon:'organisation'},{id:'sportif',label:'Sportif',icon:'sportif'},{id:'academy',label:'Académie',icon:'academy'},{id:'dossiers',label:'Dossiers',icon:'projects'},{id:'documents',label:'Documents',icon:'source'},{id:'commercial',label:'Commerce',icon:'commercial'},{id:'tests',label:'Tests / Simulation',icon:'governance'},{id:'sources',label:'Sources',icon:'source'},{id:'crm',label:'CRM',icon:'crm',kindFilter:['case','interaction','followup','relationship']},{id:'tasks',label:'Tâches',icon:'task',kindFilter:['task']},{id:'admin',label:'Administration',icon:'admin'},{id:'mail',label:'Mail',icon:'mail'},{id:'reporting',label:'Reporting',icon:'reporting'},{id:'matchday',label:'Matchday',icon:'matchday'},{id:'finance',label:'Finance',icon:'finance'},{id:'governance',label:'Gouvernance',icon:'governance',kindFilter:['decision','receipt']},{id:'projects',label:'Projets',icon:'projects'},{id:'field',label:'Réalité terrain',icon:'field'}]},
+{id:'dashboard',label:'Accueil',icon:'dashboard'},{id:'organisation',label:'Organisation',icon:'organisation'},{id:'sportif',label:'Sportif',icon:'sportif'},{id:'academy',label:'Académie',icon:'academy'},{id:'dossiers',label:'Dossiers',icon:'projects'},{id:'documents',label:'Documents',icon:'source'},{id:'commercial',label:'Commerce',icon:'commercial'},{id:'tests',label:'Tests / Simulation',icon:'governance'},{id:'sources',label:'Sources',icon:'source'},{id:'crm',label:'CRM',icon:'crm',kindFilter:['case','interaction','followup','relationship']},{id:'tasks',label:'Tâches',icon:'task',kindFilter:['task']},{id:'admin',label:'Administration',icon:'admin'},{id:'mail',label:'Mail',icon:'mail'},{id:'media',label:'Média',icon:'media'},{id:'reporting',label:'Reporting',icon:'reporting'},{id:'matchday',label:'Matchday',icon:'matchday'},{id:'finance',label:'Finance',icon:'finance'},{id:'governance',label:'Gouvernance',icon:'governance',kindFilter:['decision','receipt']},{id:'projects',label:'Projets',icon:'projects'},{id:'field',label:'Réalité terrain',icon:'field'}]},
 {id:'trading',name:'Trading',subtitle:'Domaine trading gouverné',badge:'PAPER ONLY',modules:[
 {id:'dashboard',label:'Dashboard',icon:'dashboard'},{id:'market',label:'Market data',icon:'◉'},{id:'signals',label:'Signaux',icon:'⌁'},{id:'strategies',label:'Stratégies',icon:'◇'},{id:'risk',label:'Risk',icon:'△'},{id:'paper',label:'Paper execution',icon:'↗'},{id:'reporting',label:'Reporting',icon:'reporting'},{id:'governance',label:'Gouvernance',icon:'governance'},{id:'proof',label:'Proof / receipts',icon:'▣'},{id:'projects',label:'Projets',icon:'projects'}]},
 {id:'gps',name:'GPS / Défense',subtitle:'GNSS · RF · aviation',badge:'RECORDED REAL',modules:[
@@ -80,7 +84,8 @@ const cssaNavSections: {title: string; moduleIds: string[]}[] = [
   {title: 'ACCUEIL', moduleIds: ['dashboard']},
   {title: 'SPORTIF & TERRAIN', moduleIds: ['sportif', 'matchday']},
   {title: 'DOSSIERS & ADMIN', moduleIds: ['dossiers', 'admin', 'documents', 'tasks']},
-  {title: 'RELATIONS', moduleIds: ['crm', 'mail']},
+  {title: 'RELATIONS', moduleIds: ['crm']},
+  {title: 'MÉDIA & COMMUNICATION', moduleIds: ['media', 'mail']},
   {title: 'ÉCONOMIE DU CLUB', moduleIds: ['commercial', 'finance']},
   {title: 'LE CLUB', moduleIds: ['organisation']},
   {title: 'SOURCES', moduleIds: ['sources']}
@@ -724,9 +729,11 @@ export default function CSSAPage(){
    ):moduleId==='documents'&&structureId==='cssa'?(
     <CSSABusinessPage mode="documents" selectedId={selectedId} onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):moduleId==='commercial'&&structureId==='cssa'?(
-    <CSSABusinessPage mode="commerce" selectedId={selectedId} onOpen={(mod,id)=>openModule(mod,id||'')}/>
+    <CSSACommercePage onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):moduleId==='finance'&&structureId==='cssa'?(
-    <CSSABusinessPage mode="finance" selectedId={selectedId} onOpen={(mod,id)=>openModule(mod,id||'')}/>
+    <CSSAFinancePage onOpen={(mod,id)=>openModule(mod,id||'')}/>
+   ):moduleId==='media'&&structureId==='cssa'?(
+    <CSSAMediaPage onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):moduleId==='mail'&&structureId==='cssa'?(
     <CSSAMailPage onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):['admin','crm','tasks','matchday'].includes(moduleId)&&structureId==='cssa'?(

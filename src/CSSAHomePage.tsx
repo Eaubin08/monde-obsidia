@@ -332,6 +332,7 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
       <button onClick={()=>onOpen('admin')}>Administration</button>
       <button onClick={()=>onOpen('commercial')}>Commerce</button>
       <button onClick={()=>onOpen('finance')}>Finance</button>
+      <button onClick={()=>onOpen('media')}>Média</button>
       <button onClick={()=>onOpen('mail')}>Mail</button>
     </nav>
   </section>
