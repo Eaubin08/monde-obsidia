@@ -19,6 +19,7 @@ const adminVisual=readFileSync(new URL('../src/CSSAAdminPage.tsx',import.meta.ur
 const docsVisual=readFileSync(new URL('../src/CSSADocumentsPage.tsx',import.meta.url),'utf8')
 const orgVisual=readFileSync(new URL('../src/CSSAOrganisationVisualPage.tsx',import.meta.url),'utf8')
 const matchdayVisual=readFileSync(new URL('../src/CSSAMatchdayPage.tsx',import.meta.url),'utf8')
+const dossiersVisual=readFileSync(new URL('../src/CSSADossiersPage.tsx',import.meta.url),'utf8')
 
 test('UX2 · CSSA navigation keeps Mail and uses an action-first Accueil',()=>{
   assert.match(page,/label:'Accueil'/)
@@ -65,7 +66,7 @@ test('UX3 · CSSA exposes transverse Dossiers and the club economy without dupli
   assert.match(page,/label:'Dossiers'/)
   assert.match(page,/label:'Documents'/)
   assert.match(page,/label:'Commerce'/)
-  assert.match(page,/CSSABusinessPage mode="dossiers"/)
+  assert.match(page,/CSSADossiersPage/)
   assert.match(page,/CSSACommercePage/)
   assert.match(page,/CSSAFinancePage/)
   assert.match(business,/APPEL_OFFRES/)
@@ -320,4 +321,23 @@ test('UX21 · CSSA shell reduces navigation friction and keeps technical chrome 
   assert.match(pageCss,/Visual shell V1/)
   assert.match(pageCss,/\.u-nav-group\.active-group/)
   assert.match(pageCss,/\.u-top-cssa/)
+})
+
+
+test('UX22 · Dossiers becomes mission-first instead of another technical registry',()=>{
+  assert.match(page,/CSSADossiersPage/)
+  assert.match(dossiersVisual,/Chaque dossier comme une mission à conduire jusqu’à la preuve/)
+  assert.match(dossiersVisual,/PRÊTS À DÉPOSER/)
+  assert.match(dossiersVisual,/RÉSULTAT ATTENDU/)
+  assert.match(dossiersVisual,/dépôt prouvé/)
+  assert.match(dossiersVisual,/satisfied/)
+  assert.match(dossiersVisual,/blocking/)
+  assert.match(dossiersVisual,/validation/)
+  assert.match(dossiersVisual,/submissionProofs/)
+  assert.match(dossiersVisual,/dossierOutcomes/)
+})
+
+test('UX23 · detailed dossier editing stays available behind the visual mission surface',()=>{
+  assert.match(dossiersVisual,/Gestion détaillée · créer \/ piloter un dossier/)
+  assert.match(dossiersVisual,/CSSABusinessPage mode="dossiers"/)
 })
