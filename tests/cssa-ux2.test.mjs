@@ -9,6 +9,7 @@ const sportCss=readFileSync(new URL('../src/CSSASport.css',import.meta.url),'utf
 const home=readFileSync(new URL('../src/CSSAHomePage.tsx',import.meta.url),'utf8')
 const org=readFileSync(new URL('../src/CSSAOrganisationPage.tsx',import.meta.url),'utf8')
 const business=readFileSync(new URL('../src/CSSABusinessPage.tsx',import.meta.url),'utf8')
+const mail=readFileSync(new URL('../src/CSSAMailPage.tsx',import.meta.url),'utf8')
 
 test('UX2 · CSSA navigation keeps Mail and uses an action-first Accueil',()=>{
   assert.match(page,/label:'Accueil'/)
@@ -131,4 +132,15 @@ test('UX8 · CRM relationship journal captures real exchanges and follow-ups',()
   assert.match(ops,/Journal relationnel CRM/)
   assert.match(business,/Relation externe/)
   assert.match(business,/Preuve :/)
+})
+
+
+test('UX9 · Mail is governed and deterministically bridges messages into CRM',()=>{
+  assert.match(page,/CSSAMailPage/)
+  assert.match(mail,/Boîte gouvernée & journal CRM/)
+  assert.match(mail,/ENVOI EXTERNE · HOLD/)
+  assert.match(mail,/cssa-mail-ingest/)
+  assert.match(mail,/Importer & rapprocher CRM/)
+  assert.match(mail,/Rapprochement automatique uniquement par adresse email exacte/)
+  assert.match(mail,/BROUILLON_LOCAL_NON_ENVOYE/)
 })
