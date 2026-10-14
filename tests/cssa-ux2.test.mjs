@@ -66,4 +66,8 @@ test('UX3 · CSSA exposes transverse Dossiers and the club economy without dupli
   assert.match(business,/SPONSORING/)
   assert.match(business,/Stocks \/ achats/)
   assert.match(business,/Contrats \/ fournisseurs/)
+  assert.match(business,/Factures \/ paiements/)
+  assert.match(business,/Trésorerie/)
+  assert.match(business,/Patrimoine/)
+  assert.match(business,/Ajouter fournisseur/)
 })
