@@ -11,6 +11,10 @@ type ExternalContact={id:string;organizationId:string;displayName:string;role:st
 type Directory={organizations:ExternalOrganization[];contacts:ExternalContact[]}
 type Person={id:string;displayName:string;status:string}
 type OrgState={people:Person[]}
+type Dossier={id:string;reference:string;title:string;organizationId?:string|null}
+type Requirement={id:string;dossierId:string;label:string;state:string;documentRefId:string|null}
+type DocumentRef={id:string;dossierId:string|null;type:string;title:string;version:string;status:string;issuedAt:string;validUntil:string;source:string;fileRef:string;usedIn:string[];originType?:string;originMailId?:string|null;requirementIds?:string[];receivedAt?:string;proof?:string}
+type BusinessState={dossiers:Dossier[];requirements:Requirement[];documentRefs:DocumentRef[]}
 type Props={onOpen?:(moduleId:string,id?:string)=>void}
 
 function uid(prefix:string){return prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6)}
@@ -19,6 +23,7 @@ export default function CSSAMailPage({onOpen}:Props){
  const [state,setState]=useState<MailState|null>(null)
  const [directory,setDirectory]=useState<Directory|null>(null)
  const [orgState,setOrgState]=useState<OrgState|null>(null)
+ const [business,setBusiness]=useState<BusinessState|null>(null)
  const [selectedId,setSelectedId]=useState('')
  const [mode,setMode]=useState<'inbox'|'import'|'drafts'>('inbox')
  const [query,setQuery]=useState('')
@@ -27,16 +32,18 @@ export default function CSSAMailPage({onOpen}:Props){
 
  const refresh=async()=>{
   try{
-   const [mailRes,crmRes,orgRes]=await Promise.all([
+   const [mailRes,crmRes,orgRes,businessRes]=await Promise.all([
     fetch('/obsidia-local/cssa-mail-state',{cache:'no-store'}),
     fetch('/obsidia-local/cssa-crm-directory',{cache:'no-store'}),
-    fetch('/obsidia-local/cssa-organisation-state',{cache:'no-store'})
+    fetch('/obsidia-local/cssa-organisation-state',{cache:'no-store'}),
+    fetch('/obsidia-local/cssa-business-state',{cache:'no-store'})
    ])
    if(!mailRes.ok)throw new Error('mail unavailable')
    const mail=await mailRes.json()
    setState(mail)
    if(crmRes.ok)setDirectory(await crmRes.json())
    if(orgRes.ok)setOrgState(await orgRes.json())
+   if(businessRes.ok)setBusiness(await businessRes.json())
    if(!selectedId&&mail.messages?.length)setSelectedId(mail.messages[0].id)
    setError(false)
   }catch{setError(true)}
@@ -73,6 +80,45 @@ export default function CSSAMailPage({onOpen}:Props){
   }
  }
 
+ const promoteMailToDocument=async(e:React.FormEvent)=>{
+  e.preventDefault()
+  if(!selected||!form.docTitle?.trim())return
+  const docId=uid('doc-mail')
+  const dossierId=form.docDossierId||null
+  const requirementId=form.docRequirementId||null
+  const document:DocumentRef={
+   id:docId,
+   dossierId,
+   type:form.docType?.trim()||'PIECE_RECUE_PAR_MAIL',
+   title:form.docTitle.trim(),
+   version:form.docVersion?.trim()||'1',
+   status:'A_VERIFIER',
+   issuedAt:'',
+   validUntil:form.docValidUntil||'',
+   source:'MAIL:'+selected.id,
+   fileRef:selected.proof||selected.externalMessageId||'MAIL_RECEIPT_NON_RACCORDE',
+   usedIn:dossierId?[dossierId]:[],
+   originType:'MAIL',
+   originMailId:selected.id,
+   requirementIds:requirementId?[requirementId]:[],
+   receivedAt:selected.receivedAt,
+   proof:selected.proof
+  }
+  const r=await fetch('/obsidia-local/cssa-business-state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({documentRefPatch:document})})
+  if(!r.ok)return
+  let next:BusinessState=await r.json()
+  if(requirementId){
+   const req=next.requirements.find(x=>x.id===requirementId)
+   if(req){
+    const rr=await fetch('/obsidia-local/cssa-business-state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requirementPatch:{...req,documentRefId:docId,state:'A_VERIFIER'}})})
+    if(rr.ok)next=await rr.json()
+   }
+  }
+  setBusiness(next)
+  await post({messagePatch:{...selected,dossierId}})
+  setForm({...form,docTitle:'',docType:'',docVersion:'',docValidUntil:'',docDossierId:'',docRequirementId:''})
+ }
+
  const createDraft=async(e:React.FormEvent)=>{
   e.preventDefault()
   if(!form.draftTo?.trim()||!form.draftSubject?.trim())return
@@ -102,6 +148,10 @@ export default function CSSAMailPage({onOpen}:Props){
  const orgName=(id:string|null)=>id?(directory?.organizations.find(o=>o.id===id)?.name||'Organisme inconnu'):'Non raccordé'
  const contactName=(id:string|null)=>id?(directory?.contacts.find(c=>c.id===id)?.displayName||'Contact inconnu'):'Contact non identifié'
  const personName=(id:string|null)=>id?(orgState?.people.find(p=>p.id===id)?.displayName||'Personne inconnue'):'Non assigné'
+ const dossierName=(id:string|null)=>id?(business?.dossiers.find(d=>d.id===id)?.reference||'Dossier inconnu'):'Non lié'
+ const linkedDocument=selected?business?.documentRefs.find(d=>d.originMailId===selected.id):null
+ const candidateRequirements=(business?.requirements||[]).filter(r=>!form.docDossierId||r.dossierId===form.docDossierId)
+
 
  if(error)return <section className="mailx"><div className="mailx-empty">Mail indisponible. Aucun message n’est inventé.</div></section>
  if(!state)return <section className="mailx"><div className="mailx-empty">Chargement…</div></section>
@@ -149,8 +199,22 @@ export default function CSSAMailPage({onOpen}:Props){
      <div><small>Interaction CRM</small><strong>{selected.crmInteractionId||'Aucune'}</strong></div>
      <div><small>Preuve</small><strong>{selected.proof||'NON_RACCORDEE'}</strong></div>
      <div><small>Source</small><strong>{selected.source}</strong></div>
+     <div><small>Dossier</small><strong>{dossierName(selected.dossierId)}</strong></div>
+     <div><small>Document canonique</small><strong>{linkedDocument?linkedDocument.title:'Aucun'}</strong></div>
     </section>
-    {selected.organizationId&&<div className="mailx-actions"><button onClick={()=>onOpen?.('crm')}>Ouvrir CRM →</button>{selected.dossierId&&<button onClick={()=>onOpen?.('dossiers',selected.dossierId!)}>Ouvrir dossier →</button>}</div>}
+    {selected.organizationId&&<div className="mailx-actions"><button onClick={()=>onOpen?.('crm')}>Ouvrir CRM →</button>{selected.dossierId&&<button onClick={()=>onOpen?.('dossiers',selected.dossierId!)}>Ouvrir dossier →</button>}{linkedDocument&&<button onClick={()=>onOpen?.('documents',linkedDocument.id)}>Ouvrir document →</button>}</div>}
+    <section className="mailx-document-link">
+     <header><div><small>DOCUMENTS</small><h4>Transformer une pièce reçue en document canonique</h4></div><span>{linkedDocument?'Déjà créé':'Revue humaine requise'}</span></header>
+     {linkedDocument?<p><strong>{linkedDocument.title}</strong> est déjà relié à ce mail. Son statut reste {linkedDocument.status} tant qu’il n’est pas vérifié.</p>:<form onSubmit={promoteMailToDocument}>
+      <input required placeholder="Titre du document" value={form.docTitle||''} onChange={e=>setForm({...form,docTitle:e.target.value})}/>
+      <input placeholder="Type (attestation, RIB, convention…)" value={form.docType||''} onChange={e=>setForm({...form,docType:e.target.value})}/>
+      <select value={form.docDossierId||''} onChange={e=>setForm({...form,docDossierId:e.target.value,docRequirementId:''})}><option value="">Dossier : non lié</option>{(business?.dossiers||[]).map(d=><option key={d.id} value={d.id}>{d.reference} · {d.title}</option>)}</select>
+      <select value={form.docRequirementId||''} onChange={e=>setForm({...form,docRequirementId:e.target.value})}><option value="">Exigence : aucune</option>{candidateRequirements.map(r=><option key={r.id} value={r.id}>{r.label}</option>)}</select>
+      <input type="date" aria-label="Validité du document" value={form.docValidUntil||''} onChange={e=>setForm({...form,docValidUntil:e.target.value})}/>
+      <button>Créer le document</button>
+      <p>Le lien mail → document → exigence est créé, mais l’exigence reste <strong>À vérifier</strong>. Le système ne considère jamais automatiquement qu’une pièce satisfait une exigence.</p>
+     </form>}
+    </section>
    </>:<div className="mailx-empty">Sélectionnez un message.</div>}</main>
   </div>}
 

@@ -144,3 +144,16 @@ test('UX9 · Mail is governed and deterministically bridges messages into CRM',(
   assert.match(mail,/Rapprochement automatique uniquement par adresse email exacte/)
   assert.match(mail,/BROUILLON_LOCAL_NON_ENVOYE/)
 })
+
+
+test('UX10 · Mail documents keep provenance and cannot auto-satisfy dossier requirements',()=>{
+  assert.match(mail,/Transformer une pièce reçue en document canonique/)
+  assert.match(mail,/originMailId/)
+  assert.match(mail,/requirementIds/)
+  assert.match(mail,/l’exigence reste/)
+  assert.match(mail,/À vérifier/)
+  assert.match(business,/Mail source :/)
+  assert.match(business,/Pièce liée :/)
+  assert.match(business,/disabled={!linkedDocValid}/)
+  assert.match(business,/originType==='MAIL'/)
+})
