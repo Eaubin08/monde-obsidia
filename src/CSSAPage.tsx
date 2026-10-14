@@ -2,9 +2,7 @@ import {useEffect,useMemo,useState} from 'react'
 import './CSSAPage.css'
 import './CSSASport.css'
 import CSSASportWorkspace from './CSSASportPage'
-import CSSAOpsWorkspace from './CSSAOpsWorkspace'
 import CSSAHomePage from './CSSAHomePage'
-import CSSAOrganisationPage from './CSSAOrganisationPage'
 import CSSABusinessPage from './CSSABusinessPage'
 import CSSAMailPage from './CSSAMailPage'
 import CSSACommercePage from './CSSACommercePage'
@@ -13,6 +11,9 @@ import CSSAMediaPage from './CSSAMediaPage'
 import CSSACrmPage from './CSSACrmPage'
 import CSSATasksPage from './CSSATasksPage'
 import CSSAAdminPage from './CSSAAdminPage'
+import CSSADocumentsPage from './CSSADocumentsPage'
+import CSSAOrganisationVisualPage from './CSSAOrganisationVisualPage'
+import CSSAMatchdayPage from './CSSAMatchdayPage'
 
 type Semantic={purpose:string;context:string;observes:string;feeds:string;impact:string;limits:string}
 type SourceItem={id:string;title:string;url:string;truthClass:string;cadence:string;criticality:string;semantic:Semantic}
@@ -726,11 +727,11 @@ export default function CSSAPage(){
    ):moduleId==='sportif'&&structureId==='cssa'?(
     <CSSASportWorkspace/>
    ):moduleId==='organisation'&&structureId==='cssa'?(
-    <CSSAOrganisationPage items={items} selectedId={selectedId} onOpen={openItem} onClear={()=>openModule('organisation')}/>
+    <CSSAOrganisationVisualPage items={items} selectedId={selectedId} onOpen={openItem} onClear={()=>openModule('organisation')}/>
    ):moduleId==='dossiers'&&structureId==='cssa'?(
     <CSSABusinessPage mode="dossiers" selectedId={selectedId} onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):moduleId==='documents'&&structureId==='cssa'?(
-    <CSSABusinessPage mode="documents" selectedId={selectedId} onOpen={(mod,id)=>openModule(mod,id||'')}/>
+    <CSSADocumentsPage selectedId={selectedId} onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):moduleId==='commercial'&&structureId==='cssa'?(
     <CSSACommercePage onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):moduleId==='finance'&&structureId==='cssa'?(
@@ -746,7 +747,7 @@ export default function CSSAPage(){
    ):moduleId==='admin'&&structureId==='cssa'?(
     <CSSAAdminPage selectedId={selectedId} onSelect={(mod,id)=>openModule(mod,id)}/>
    ):moduleId==='matchday'&&structureId==='cssa'?(
-    <CSSAOpsWorkspace activeModule="matchday" selectedId={selectedId} onSelect={(mod,id)=>openModule(mod,id)}/>
+    <CSSAMatchdayPage selectedId={selectedId} onSelect={(mod,id)=>openModule(mod,id)}/>
    ):moduleId==='dashboard'?<div className="u-dashboard-grid">
     <section className="u-dashboard-summary">
      <div className="u-summary-cards">
