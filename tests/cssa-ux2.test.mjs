@@ -22,10 +22,10 @@ const matchdayVisual=readFileSync(new URL('../src/CSSAMatchdayPage.tsx',import.m
 
 test('UX2 · CSSA navigation keeps Mail and uses an action-first Accueil',()=>{
   assert.match(page,/label:'Accueil'/)
-  assert.match(page,/moduleIds: \['dossiers', 'admin', 'documents', 'tasks'\]/)
-  assert.match(page,/moduleIds: \['crm'\]/)
-  assert.match(page,/MÉDIA & COMMUNICATION/)
-  assert.match(page,/moduleIds: \['media', 'mail'\]/)
+  assert.match(page,/title: 'TRAVAIL', moduleIds: \['tasks', 'dossiers'\]/)
+  assert.match(page,/title: 'ADMIN & DOCUMENTS', moduleIds: \['admin', 'documents'\]/)
+  assert.match(page,/RELATIONS & COMMUNICATION/)
+  assert.match(page,/moduleIds: \['crm', 'mail', 'media'\]/)
   assert.match(page,/CSSAHomePage/)
   assert.match(home,/Ce qui demande votre attention/)
   assert.match(home,/onOpen\('mail'\)/)
@@ -308,4 +308,16 @@ test('UX20 · detailed legacy management stays collapsed behind visual Documents
   assert.match(orgVisual,/CSSAOrganisationPage/)
   assert.match(matchdayVisual,/Gestion détaillée Matchday \/ intendance/)
   assert.match(matchdayVisual,/CSSAOpsWorkspace activeModule="matchday"/)
+})
+
+
+test('UX21 · CSSA shell reduces navigation friction and keeps technical chrome opt-in',()=>{
+  assert.match(page,/active-group/)
+  assert.match(page,/u-top-cssa/)
+  assert.match(page,/structureId!=='cssa'\|\|showTechDetails/)
+  assert.match(page,/title: 'SPORT', moduleIds: \['sportif', 'matchday'\]/)
+  assert.match(page,/title: 'ÉCONOMIE', moduleIds: \['commercial', 'finance'\]/)
+  assert.match(pageCss,/Visual shell V1/)
+  assert.match(pageCss,/\.u-nav-group\.active-group/)
+  assert.match(pageCss,/\.u-top-cssa/)
 })
