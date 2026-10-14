@@ -168,6 +168,39 @@ export const R1_MATCHES: Fixture[] = [
   {id:'r1-j26',teamId:'SENIORS_R1',competition:'RÉGIONAL 1',date:'2027-05-23',time:'15:00',home:'CS Sedan Ardennes',away:'Marnaval SC',stage:'J26',venue:'DOMICILE',pitch:'Stade Louis-Dugauguez (Sedan)',truth:'SECONDARY_CORROBORATED',source:'SportCorico',sourceUrl:'https://www.sportcorico.com/clubs/cs-sedan-ardennes/cs-sedan-ardennes-2?season=2026-2027'}
 ]
 
+
+export type StandingRow = {
+  rank:number
+  club:string
+  pts:number
+  played:number
+  wins:number
+  draws:number
+  losses:number
+  gf:number
+  ga:number
+  diff:number
+}
+
+export const R1_STANDINGS_2026_10_14: StandingRow[] = [
+  {rank:1,club:'Stade de Reims 2',pts:18,played:6,wins:6,draws:0,losses:0,gf:29,ga:1,diff:28},
+  {rank:2,club:'Sedan',pts:18,played:6,wins:6,draws:0,losses:0,gf:20,ga:4,diff:16},
+  {rank:3,club:'Epernay',pts:13,played:6,wins:4,draws:1,losses:1,gf:12,ga:8,diff:4},
+  {rank:4,club:'Charleville/Prix 2',pts:9,played:6,wins:3,draws:0,losses:3,gf:7,ga:10,diff:-3},
+  {rank:5,club:'Cormontreuil',pts:9,played:6,wins:3,draws:0,losses:3,gf:14,ga:12,diff:2},
+  {rank:6,club:'Uckange',pts:8,played:6,wins:2,draws:2,losses:2,gf:6,ga:5,diff:1},
+  {rank:7,club:'Hettange',pts:7,played:6,wins:2,draws:1,losses:3,gf:7,ga:9,diff:-2},
+  {rank:8,club:'Neuvillette Jamin',pts:7,played:6,wins:2,draws:1,losses:3,gf:8,ga:15,diff:-7},
+  {rank:9,club:'Bogny',pts:7,played:6,wins:2,draws:1,losses:3,gf:7,ga:14,diff:-7},
+  {rank:10,club:'Villerupt/Thil',pts:6,played:6,wins:1,draws:3,losses:2,gf:6,ga:7,diff:-1},
+  {rank:11,club:'Marnaval',pts:5,played:6,wins:1,draws:2,losses:3,gf:12,ga:16,diff:-4},
+  {rank:12,club:'Amnéville',pts:5,played:6,wins:1,draws:2,losses:3,gf:5,ga:12,diff:-7},
+  {rank:13,club:'Thionville Lusit. 2',pts:4,played:6,wins:1,draws:1,losses:4,gf:10,ga:16,diff:-6},
+  {rank:14,club:'St-Méziéry',pts:3,played:6,wins:1,draws:0,losses:5,gf:5,ga:19,diff:-14}
+]
+
+const R1_STANDINGS_SOURCE = 'https://www.estrepublicain.fr/sport/classement/football/regional-ligue-grand-est-regional-1-poule-a'
+
 // FIXTURES SENIORS R2 (RÉSERVE)
 // VÉRITÉ SPORTIVE : 1 seul match réellement observé (J6 Rethel 1–1 Sedan 2 au 04/10/2026).
 // Les 21 autres journées sont des reconstitutions synthétiques issues du groupe de 12 clubs R2_A.
@@ -379,12 +412,13 @@ export default function CSSASportWorkspace() {
   const initialRoute = parseHash()
   const [activeView, setActiveView] = useState<string>(initialRoute.activeView || 'SENIORS_R1')
   const [selectedId, setSelectedId] = useState<string>(initialRoute.matchId || '')
-  const [filter, setFilter] = useState<'all' | 'seniors' | 'formation' | 'feminines' | 'ecole_foot' | 'home' | 'away' | 'confirmed' | 'to_verify' | 'weekend_cur' | 'weekend_prev'>('all')
+  const [filter, setFilter] = useState<'all' | 'seniors' | 'formation' | 'feminines' | 'ecole_foot' | 'home' | 'away' | 'confirmed' | 'to_verify' | 'weekend_cur' | 'weekend_prev' | 'finished' | 'upcoming'>('all')
   const [formationFilter, setFormationFilter] = useState<string>('ALL')
   const [feminineFilter, setFeminineFilter] = useState<string>('ALL')
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'dossier' | 'preparation' | 'media' | 'sources'>('dossier')
   const [showSimulated, setShowSimulated] = useState(false)
+  const [sportMode, setSportMode] = useState<'overview' | 'standings' | 'calendar' | 'results'>('overview')
 
   // Watch state
   const [watch, setWatch] = useState<SportWatch | null>(null)
@@ -571,6 +605,8 @@ export default function CSSASportWorkspace() {
       if (filter === 'to_verify' && f.truth !== 'PUBLIC_CONFLICT_REVIEW') return false
       if (filter === 'weekend_cur' && f.date !== '2026-10-17' && f.date !== '2026-10-18') return false
       if (filter === 'weekend_prev' && f.date !== '2026-10-03' && f.date !== '2026-10-04') return false
+      if (filter === 'finished' && !f.score) return false
+      if (filter === 'upcoming' && f.score) return false
       return true
     }).sort((a, b) => a.date.localeCompare(b.date))
   }, [currentViewMatches, query, filter])
@@ -609,6 +645,8 @@ export default function CSSASportWorkspace() {
   }, [currentViewMatches, now])
 
   const isSeniorMajor = ['SENIORS_R1', 'SENIORS_R2', 'U20_R1'].includes(selected?.teamId || activeView)
+  const r1Standing = R1_STANDINGS_2026_10_14.find(row => row.club === 'Sedan')
+  const lastResult = useMemo(() => currentViewMatches.filter(f => f.score).sort((a,b)=>b.date.localeCompare(a.date))[0], [currentViewMatches])
 
   const checklistItems = [
     {key: 'convocation', label: 'Convocations envoyées & confirmées aux joueurs'},
@@ -620,6 +658,8 @@ export default function CSSASportWorkspace() {
   ]
 
   const handleNavigateView = (view: string) => {
+    setSportMode('overview')
+    setFilter('all')
     navigateTo(view, '')
   }
 
@@ -717,7 +757,7 @@ export default function CSSASportWorkspace() {
           onClick={() => handleNavigateView('CALENDRIER_GLOBAL')}
         >
           <div>
-            <strong>📅 CALENDRIER GLOBAL CLUB</strong>
+            <strong>Calendrier global</strong>
             <span>Vue transversale multi-équipes</span>
           </div>
           <span className="spx-team-pill count">{allClubFixtures.length}</span>
@@ -725,7 +765,7 @@ export default function CSSASportWorkspace() {
 
         <nav className="spx-team-list">
           {/* NIVEAU 1 : ÉQUIPES MAJEURES */}
-          <div className="spx-nav-tier-title">NIVEAU 1 · ÉQUIPES MAJEURES</div>
+          <div className="spx-nav-tier-title">ÉQUIPES MAJEURES</div>
           {['SENIORS_R1', 'SENIORS_R2', 'U20_R1'].map(id => {
             const t = TEAMS.find(x => x.id === id)!
             return (
@@ -738,45 +778,45 @@ export default function CSSASportWorkspace() {
                   <strong>{t.label}</strong>
                   <span>{t.competition}</span>
                 </div>
-                <span className="spx-team-pill real">Profondeur</span>
+                <span className="spx-team-pill real">Équipe</span>
               </button>
             )
           })}
 
           {/* NIVEAU 2 : FORMATION / ACADÉMIE */}
-          <div className="spx-nav-tier-title">NIVEAU 2 · FORMATION / ACADÉMIE</div>
+          <div className="spx-nav-tier-title">FORMATION / ACADÉMIE</div>
           <button
             className={(activeView === 'FORMATION') ? 'active' : ''}
             onClick={() => handleNavigateView('FORMATION')}
           >
             <div>
-              <strong>🎓 Supervision Formation</strong>
+              <strong>Formation / Académie</strong>
               <span>U17, U16, U15, U13, U12 (7 cat.)</span>
             </div>
             <span className="spx-team-pill real">{FORMATION_MATCHES.length} matchs</span>
           </button>
 
           {/* NIVEAU 3 : ÉCOLE DE FOOT */}
-          <div className="spx-nav-tier-title">NIVEAU 3 · ÉCOLE DE FOOT</div>
+          <div className="spx-nav-tier-title">ÉCOLE DE FOOT</div>
           <button
             className={(activeView === 'ECOLE_FOOT') ? 'active' : ''}
             onClick={() => handleNavigateView('ECOLE_FOOT')}
           >
             <div>
-              <strong>⚽ Programme Plateaux</strong>
+              <strong>École de foot</strong>
               <span>U11, U10, U9, U8, U7, U6</span>
             </div>
             <span className="spx-team-pill real">{ECOLE_FOOT_PLATEAUX.length} plateaux</span>
           </button>
 
           {/* NIVEAU 4 : PÔLE FÉMININES */}
-          <div className="spx-nav-tier-title">NIVEAU 4 · PÔLE FÉMININES</div>
+          <div className="spx-nav-tier-title">PÔLE FÉMININ</div>
           <button
             className={(activeView === 'FEMININES') ? 'active' : ''}
             onClick={() => handleNavigateView('FEMININES')}
           >
             <div>
-              <strong>♀ Pôle Féminin</strong>
+              <strong>Pôle féminin</strong>
               <span>Seniors F & U18F R2</span>
             </div>
             <span className="spx-team-pill real">{FEMININES_MATCHES.length} matchs</span>
@@ -845,6 +885,42 @@ export default function CSSASportWorkspace() {
             </span>
           </div>
         </header>
+
+        {['SENIORS_R1','SENIORS_R2','U20_R1'].includes(activeView) && (
+          <nav className="spx-sport-tabs" aria-label="Navigation sportive">
+            <button className={sportMode==='overview'?'active':''} onClick={()=>{setSportMode('overview');setFilter('all')}}>Vue d’ensemble</button>
+            {activeView==='SENIORS_R1' && <button className={sportMode==='standings'?'active':''} onClick={()=>setSportMode('standings')}>Classement</button>}
+            <button className={sportMode==='calendar'?'active':''} onClick={()=>{setSportMode('calendar');setFilter('all')}}>Calendrier</button>
+            <button className={sportMode==='results'?'active':''} onClick={()=>{setSportMode('results');setFilter('finished')}}>Résultats</button>
+          </nav>
+        )}
+
+        {activeView==='SENIORS_R1' && sportMode==='overview' && (
+          <div className="spx-overview-strip">
+            <article className="spx-overview-card next">
+              <small>PROCHAIN MATCH</small>
+              <strong>{nextMatch ? nextMatch.home+' — '+nextMatch.away : 'Aucun match à venir'}</strong>
+              <span>{nextMatch ? fullFrDate(nextMatch.date)+' · '+(nextMatch.time||'Horaire à confirmer') : '—'}</span>
+              {nextMatch?.truth==='PUBLIC_CONFLICT_REVIEW' && <em>Horaire à confirmer</em>}
+            </article>
+            <article className="spx-overview-card">
+              <small>DERNIER RÉSULTAT</small>
+              <strong>{lastResult ? lastResult.home+' '+lastResult.score+' '+lastResult.away : 'Aucun résultat observé'}</strong>
+              <span>{lastResult ? fullFrDate(lastResult.date) : '—'}</span>
+            </article>
+            <article className="spx-overview-card standing">
+              <small>CLASSEMENT R1</small>
+              <strong>{r1Standing ? r1Standing.rank+'e / '+R1_STANDINGS_2026_10_14.length : '—'}</strong>
+              <span>{r1Standing ? r1Standing.pts+' pts · '+r1Standing.played+' matchs' : 'Classement non disponible'}</span>
+              <button onClick={()=>setSportMode('standings')}>Voir le classement →</button>
+            </article>
+            <article className="spx-overview-card attention">
+              <small>PRÉPARATION</small>
+              <strong>{selected ? Object.values(checks[selected.id] || {}).filter(Boolean).length+'/'+checklistItems.length : '—'}</strong>
+              <span>{selected ? (tasks[selected.id] || []).length+' tâche(s) liée(s)' : 'Sélectionnez un match'}</span>
+            </article>
+          </div>
+        )}
 
         {/* Toolbar & Filtres */}
         <div className="spx-controls">
@@ -984,6 +1060,36 @@ export default function CSSASportWorkspace() {
           </div>
         )}
 
+        {activeView === 'SENIORS_R1' && sportMode === 'standings' ? (
+          <section className="spx-standings">
+            <header>
+              <div>
+                <small>RÉGIONAL 1 · POULE A</small>
+                <h3>Classement</h3>
+                <p>Snapshot public observé le 14 octobre 2026 · source secondaire corroborée.</p>
+              </div>
+              <a href={R1_STANDINGS_SOURCE} target="_blank" rel="noreferrer">Ouvrir la source ↗</a>
+            </header>
+            <div className="spx-standings-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Club</th><th>Pts</th><th>J</th><th>G</th><th>N</th><th>P</th><th>BP</th><th>BC</th><th>Diff</th></tr></thead>
+                <tbody>
+                  {R1_STANDINGS_2026_10_14.map(row=>(
+                    <tr key={row.club} className={row.club==='Sedan'?'cssa':''}>
+                      <td>{row.rank}</td>
+                      <td><strong>{row.club}</strong></td>
+                      <td><b>{row.pts}</b></td>
+                      <td>{row.played}</td><td>{row.wins}</td><td>{row.draws}</td><td>{row.losses}</td><td>{row.gf}</td><td>{row.ga}</td>
+                      <td className={row.diff>0?'positive':row.diff<0?'negative':''}>{row.diff>0?'+':''}{row.diff}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <footer><span>SECONDARY_CORROBORATED</span><p>Le classement est un snapshot public sourcé ; aucune donnée absente n’est reconstruite localement.</p></footer>
+          </section>
+        ) : (
+          <>
         {/* NIVEAU 3 : AFFICHAGE SPÉCIFIQUE ÉCOLE DE FOOT (PLATEAUX) */}
         {activeView === 'ECOLE_FOOT' ? (
           <div className="spx-plateaux-container">
@@ -1401,6 +1507,9 @@ export default function CSSASportWorkspace() {
               )}
             </aside>
           </div>
+        )}
+
+          </>
         )}
 
         {/* Panneau rétractable d'état de veille */}
