@@ -71,3 +71,16 @@ test('UX3 · CSSA exposes transverse Dossiers and the club economy without dupli
   assert.match(business,/Patrimoine/)
   assert.match(business,/Ajouter fournisseur/)
 })
+
+
+test('UX4 · dossiers are gated by readiness and economy surfaces derived attention',()=>{
+  assert.match(business,/dossierReady/)
+  assert.match(business,/PRET_A_DEPOSER/)
+  assert.match(business,/DEPOSE/)
+  assert.match(business,/Le statut Prêt à déposer \/ Déposé reste bloqué/)
+  assert.match(business,/overdueInvoices/)
+  assert.match(business,/lowStock/)
+  assert.match(business,/expiringContracts/)
+  assert.match(business,/maintenanceDue/)
+  assert.match(business,/Ce qui demande une action/)
+})

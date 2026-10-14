@@ -75,3 +75,30 @@
  .biz-kpis{grid-template-columns:1fr}
  .biz-table article{align-items:flex-start;flex-direction:column}
 }
+
+.biz-dossier-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.biz-dossier-actions select{background:#07131e;border:1px solid #24435a;color:#dce8f4;border-radius:7px;padding:7px 9px;font-size:8px}
+.biz-readiness{border:1px solid #3a4653;border-radius:999px;padding:5px 8px;font-size:7px}
+.biz-readiness.ready{border-color:#2c765a;background:#0b2e23;color:#72e1ae}
+.biz-readiness.hold{border-color:#705a2c;background:#2a210d;color:#e5c36e}
+.biz-readiness.late{border-color:#7a3c3c;background:#2a1111;color:#f39b9b}
+.biz-readiness-card{display:flex;flex-direction:column;gap:4px;border:1px solid #28445d;background:#0a1d2d;border-radius:8px;padding:10px 11px;margin-bottom:10px}
+.biz-readiness-card strong{font-size:10px;color:#eef6fd}
+.biz-readiness-card span{font-size:8px;line-height:1.5;color:#86a1b8}
+.biz-kpis article.attention{border-color:#6d4f23;background:#1a150c}
+.biz-kpis article.attention strong{color:#f2c66e}
+.biz-attention{border:1px solid #20384f;background:#081722;border-radius:9px;margin-bottom:10px;overflow:hidden}
+.biz-attention header{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid #173047;background:#0a1926}
+.biz-attention header small{font-size:7px;color:#6d879d}
+.biz-attention header h3{margin:2px 0 0;font-size:12px}
+.biz-attention header>strong{font-size:20px;color:#e9c36d}
+.biz-attention button{width:100%;display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:10px;align-items:center;border:0;border-bottom:1px solid #142a3b;background:transparent;color:#dce8f4;text-align:left;padding:10px 12px;cursor:pointer}
+.biz-attention button:hover{background:#0b1e2d}
+.biz-attention button span{font-size:8px;color:#e1b763}
+.biz-attention button b{font-size:9px}
+.biz-attention button em{font-size:8px;font-style:normal;color:#8ca4b8}
+.biz-attention>p{margin:0;padding:14px;color:#70889b;font-size:9px}
+@media(max-width:760px){
+ .biz-dossier-actions{justify-content:flex-start}
+ .biz-attention button{grid-template-columns:1fr}
+}
