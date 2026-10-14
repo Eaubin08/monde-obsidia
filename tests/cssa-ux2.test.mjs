@@ -182,3 +182,19 @@ test('UX12 · Accueil surfaces dossier deadlines validation submission waits and
   assert.match(home,/submissionProofs/)
   assert.match(home,/dossierOutcomes/)
 })
+
+
+test('UX13 · Accueil has one unified club attention queue across domains',()=>{
+  assert.match(home,/File d’attention du club/)
+  assert.match(home,/ATTENTION CLUB/)
+  assert.match(home,/MAILS À RAPPROCHER/)
+  assert.match(home,/overdueInvoices/)
+  assert.match(home,/lowStock/)
+  assert.match(home,/contractsDue/)
+  assert.match(home,/maintenanceDue/)
+  assert.match(home,/matchdayAttention/)
+  assert.match(home,/unmatchedMail/)
+  assert.match(home,/domain:'FINANCE'/)
+  assert.match(home,/domain:'MATCHDAY'/)
+  assert.match(home,/domain:'DOSSIER'/)
+})
