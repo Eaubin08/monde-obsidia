@@ -17,7 +17,11 @@ function emptyState(){
     expenses:[],
     stockItems:[],
     suppliers:[],
-    contracts:[]
+    contracts:[],
+    invoices:[],
+    payments:[],
+    treasuryEntries:[],
+    assets:[]
   }
 }
 function load(file){
@@ -57,7 +61,11 @@ export function writeCssaBusinessState(patch={},file=defaultBusinessFile){
     ['expensePatch','expenses'],
     ['stockPatch','stockItems'],
     ['supplierPatch','suppliers'],
-    ['contractPatch','contracts']
+    ['contractPatch','contracts'],
+    ['invoicePatch','invoices'],
+    ['paymentPatch','payments'],
+    ['treasuryPatch','treasuryEntries'],
+    ['assetPatch','assets']
   ]
   for(const [key,listKey] of mappings){
     if(patch[key]?.id)state={...state,[listKey]:upsert(state[listKey]||[],patch[key])}
@@ -71,7 +79,11 @@ export function writeCssaBusinessState(patch={},file=defaultBusinessFile){
     ['expenseDeleteId','expenses'],
     ['stockDeleteId','stockItems'],
     ['supplierDeleteId','suppliers'],
-    ['contractDeleteId','contracts']
+    ['contractDeleteId','contracts'],
+    ['invoiceDeleteId','invoices'],
+    ['paymentDeleteId','payments'],
+    ['treasuryDeleteId','treasuryEntries'],
+    ['assetDeleteId','assets']
   ]
   for(const [key,listKey] of deletions){
     if(patch[key])state={...state,[listKey]:remove(state[listKey]||[],patch[key])}
