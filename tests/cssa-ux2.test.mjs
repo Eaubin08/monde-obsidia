@@ -108,3 +108,16 @@ test('UX6 · canonical Organisation people are referenced by Tasks, Matchday, Do
   assert.match(business,/Décideur/)
   assert.match(business,/Habilitation AO/)
 })
+
+
+test('UX7 · CRM is the canonical directory for external actors reused by business flows',()=>{
+  assert.match(ops,/Répertoire externe/)
+  assert.match(ops,/cssa-crm-directory/)
+  assert.match(ops,/Nouvel acteur externe/)
+  assert.match(ops,/Contacts canoniques/)
+  assert.match(ops,/relatedOrgId/)
+  assert.match(business,/organizationId/)
+  assert.match(business,/supplierOrganizationId/)
+  assert.match(business,/contractOrganizationId/)
+  assert.match(business,/invoiceOrganizationId/)
+})
