@@ -87,3 +87,34 @@
   .u-top-actions{flex-wrap:wrap}
   .u-breadcrumb{flex-wrap:wrap}
 }
+
+
+/* Visual shell V1 — navigation orientée métier, chrome technique discret */
+.u-shell{grid-template-columns:264px minmax(0,1fr)}
+.u-sidebar{padding:16px 12px 14px;gap:12px;background:linear-gradient(180deg,#07111b,#07101a 72%,#08131e)}
+.u-context-card{border-color:#1c3448;background:linear-gradient(145deg,#0b1b28,#0a1622);padding:12px 13px}
+.u-context-card small{font-size:8px}
+.u-context-card strong{font-size:14px}
+.u-context-card span{font-size:9px}
+.u-nav{gap:2px}
+.u-nav-group{margin-bottom:7px;border-radius:11px;padding:4px 4px 5px;border:1px solid transparent}
+.u-nav-group.active-group{background:#0a1824;border-color:#182f43}
+.u-nav-group-title{padding:7px 9px 4px;font-size:7.5px;letter-spacing:1.05px;color:#5f7890}
+.u-nav-group.active-group .u-nav-group-title{color:#89a8c2}
+.u-nav a{min-height:38px;border-radius:9px;padding:8px 9px;grid-template-columns:27px minmax(0,1fr) auto}
+.u-nav a strong{font-size:10.5px}
+.u-nav a.active{background:linear-gradient(90deg,#123a65,#102d4e);border-color:#32649a;box-shadow:inset 3px 0 0 #5fb2ff}
+.u-nav a.active strong{font-weight:700}
+.u-nav a b{font-size:7.5px;padding:2px 5px;background:#15283a}
+.u-switch{padding-top:10px}
+.u-main{padding:14px 20px 28px}
+.u-top-cssa{min-height:34px;align-items:center;margin-bottom:8px;padding:0 2px}
+.u-top-cssa .u-top-context{min-width:0}
+.u-top-cssa .u-breadcrumb{margin:0;font-size:8.5px}
+.u-top-cssa .u-top-actions{gap:6px}
+.u-top-cssa .u-badge{padding:4px 7px;font-size:7.5px}
+.u-top-cssa .u-top-actions button{padding:6px 9px;font-size:9px;background:#091724;border-color:#20384e}
+.u-top-cssa .u-btn-tech-toggle{font-size:8.5px!important;padding:5px 8px!important}
+.u-top-cssa+.u-tech-details-container{margin-top:4px}
+@media(max-width:1366px){.u-shell{grid-template-columns:238px minmax(0,1fr)}.u-sidebar{padding-left:9px;padding-right:9px}.u-main{padding-left:14px;padding-right:14px}}
+@media(max-width:1024px){.u-nav-group-title{font-size:7px}.u-nav a{min-height:36px;padding:7px}.u-main{padding:12px}}
