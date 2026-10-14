@@ -35,3 +35,9 @@
 @media(max-width:1100px){.comx-card-grid{grid-template-columns:repeat(3,1fr)}.comx-partner-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:800px){.comx-hero{grid-template-columns:1fr}.comx-hero-number{border-left:0;border-top:1px solid #24433e;padding-left:0;padding-top:18px}.comx-split{grid-template-columns:1fr}}
 @media(max-width:600px){.comx-card-grid,.comx-partner-grid{grid-template-columns:1fr}.comx-feed>div>article{grid-template-columns:1fr auto}.comx-feed>div>article>span{grid-column:1/-1}.comx-hero h2{font-size:27px}}
+
+.comx-tools{border:1px solid #1b3448;border-radius:14px;background:#07131d;overflow:hidden}
+.comx-tools>summary{cursor:pointer;list-style:none;padding:13px 15px;color:#9bb0c0;font-size:10px;background:#0a1823}
+.comx-tools>summary::-webkit-details-marker{display:none}
+.comx-tools[open]>summary{border-bottom:1px solid #1b3448;color:#e5eef5}
+.comx-tools>.biz{padding:12px}
