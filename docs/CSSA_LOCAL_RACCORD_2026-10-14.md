@@ -245,3 +245,25 @@ Validation : 52 tests ciblés PASS (task-update, tasks-read, requirement-task, p
 - Raccord prioritaire Organisation → Dossiers → Accueil → Tâches : projections et liens présents, lectures renforcées, confirmations Organisation/Dossiers/Documents et modifications des tâches livrées ; ensemble encore ouvert.
 - Reste CSSA : raccords Administration / Intendance / CRM et confirmations des autres modifications ; profondeur Sportif et calendrier transversal ; pages métier avant copilote.
 - Cadre global maintenu : V0.1 entreprise, Forge privée distincte du Builder entreprise, agents générés selon les besoins, universalité et synchronisation Monde / Workspace / Pokémon. Position actuelle OBSERVER → RECONSTRUIRE → PROJETER ; KX108_ONLY conservé.
+
+## Passe exécutée : création manuelle et suppression des tâches confirmées
+
+La création manuelle ne préajoute plus la tâche à l’écran et ne ferme ni ne vide son formulaire avant confirmation. L’id de création est conservé dans l’instance ouverte pour une reprise. Le raccord relit Ops, refuse INVALID/UNREADABLE et les ids ambigus, puis vérifie l’objet renvoyé par le POST. MISSING permet l’initialisation explicite via le store existant, qui conserve son mécanisme de valeurs initiales ; aucun second registre n’est créé.
+
+Si une réponse a été perdue après création et que la même tâche est déjà présente, la reprise la retourne sans nouvelle écriture. Elle compare les champs d’identité de la création (titre, description, source, origine, structure et références métier) et ne remet pas à zéro statut, priorité, notes ou affectation intervenus depuis. Une collision avec une tâche différente est refusée au lieu de l’écraser. La garantie d’id stable reste limitée à la page montée, sans reprise durable après rechargement.
+
+La nouvelle tâche manuelle conserve truthClass UNKNOWN : une saisie ne prouve pas une confirmation publique. Une référence de match ne sert plus à déduire une équipe ; team reste null. L’affectation explicite relit une personne unique dans Organisation AVAILABLE et utilise son nom courant. La date vide utilise la date de création, en cohérence avec le comportement du store. L’historique de création est confirmé tel que produit par le store et n’est pas imposé depuis l’UI.
+
+La suppression ne retire plus la tâche avant confirmation. Elle exige Ops AVAILABLE et refuse un id ambigu. Une réponse avec la tâche encore présente est un échec ; une reprise qui constate déjà son absence réussit sans deuxième POST. Cases, intendance et objets Business ne sont pas nettoyés en cascade : leurs références restent conservées et peuvent apparaître comme liens cassés dans les projections existantes.
+
+Ces deux parcours partagent le verrou des modifications de tâches et leurs messages visibles. Une lecture ancienne ne remplace pas leur résultat ; le formulaire reste présent sur erreur. Le parcours de création d’une relance depuis CRM reste distinct et n’est pas déclaré confirmé par cette passe.
+
+Validation : 53 tests ciblés PASS (task-lifecycle, task-update, tasks-read, requirement-task, UX CSSA), TypeScript, build Vite, lint et diff whitespace PASS. Sept scénarios ajoutés : initialisation MISSING avec UNKNOWN, réponse de création perdue puis progression préservée sans duplication, collision refusée, suppression avec réponse perdue et reprise sans deuxième POST préservant les autres objets Ops, sources invalides/templates, réponses HTTP ou objets non confirmés, responsable canonique actualisé. Les scénarios de persistance utilisent le vrai store dans un répertoire temporaire isolé. Suite globale non relancée.
+
+### État du plan après cette passe
+
+- Livré : création manuelle et suppression confirmées, en complément du statut/priorité/checklist/notes/responsable déjà contrôlés. La création depuis une exigence est également contrôlée. Le parcours CRM reste séparé.
+- Prochaine passe locale : Intendance / Matchday, confirmations du statut, des notes et du responsable, sans réécrire les autres champs ni confondre état logistique déclaré et autorisation.
+- Raccord prioritaire Organisation → Dossiers → Accueil → Tâches : projections, liens, lectures renforcées et principales confirmations livrés ; clôture globale non revendiquée.
+- Reste CSSA : Intendance / Administration / CRM, parcours de relance CRM et autres confirmations métier, profondeur Sportif et calendrier transversal ; pages métier avant copilote.
+- Cadre global maintenu : V0.1 entreprise, Forge privée distincte du Builder entreprise, agents selon les besoins, universalité et synchronisation Monde / Workspace / Pokémon. Position actuelle OBSERVER → RECONSTRUIRE → PROJETER ; KX108_ONLY, UNKNOWN, contradictions, sources et preuves conservés.

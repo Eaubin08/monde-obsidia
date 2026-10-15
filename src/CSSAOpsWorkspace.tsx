@@ -1,3 +1,4 @@
+import {createCssaManualTask,deleteCssaTask} from './cssaTaskLifecycle'
 import {updateCssaTask,type TaskChange} from './cssaTaskUpdate'
 import {useEffect, useState, useMemo, useCallback, useRef} from 'react'
 import './CSSAOps.css'
@@ -135,6 +136,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
   const [draftNote, setDraftNote] = useState('')
   const draftDirty=useRef(false)
   const draftSelection=useRef('')
+  const pendingTaskId=useRef<string|null>(null)
   const taskEditing=useRef(false)
   const mounted=useRef(true)
   const readGeneration=useRef(0)
@@ -325,14 +327,25 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
     finally{if(mounted.current)setSavingNote(false)}
   }
 
-  // Tâche : suppression
-  const handleTaskDelete = (taskId: string) => {
-    if (!state) return
-    setState(prev => prev ? {
-      ...prev,
-      tasks: prev.tasks.filter(t => t.id !== taskId)
-    } : null)
-    void postPatch({taskDeleteId: taskId})
+  const runTaskLifecycle=async(operation:()=>Promise<OpsState>)=>{
+    if(taskEditing.current)return null
+    taskEditing.current=true;readGeneration.current++
+    setTaskEditingBusy(true);setTaskEditMessage('Enregistrement de l’opération…');setTaskEditFailed(false);setSaveSuccess(false)
+    try{
+      const updated=await operation()
+      if(mounted.current){setState(updated);setTaskEditMessage('Opération confirmée dans le registre local.')}
+      window.dispatchEvent(new CustomEvent('cssa-ops-updated',{detail:updated}))
+      return mounted.current?updated:null
+    }catch(cause){
+      if(mounted.current){setTaskEditFailed(true);setTaskEditMessage(`${cause instanceof Error?cause.message:'Opération non confirmée.'} Le formulaire et la tâche affichée sont conservés. Réessayez sans recharger la page.`)}
+      window.dispatchEvent(new Event('cssa-ops-updated'))
+      return null
+    }finally{taskEditing.current=false;if(mounted.current)setTaskEditingBusy(false)}
+  }
+
+  const handleTaskDelete = async(taskId:string)=>{
+    const result=await runTaskLifecycle(()=>deleteCssaTask<OpsState>(taskId))
+    if(result)onSelect(activeModule,'')
   }
 
   // Intendance : changement de statut
@@ -362,24 +375,24 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
   }
 
   // Création d'une nouvelle tâche
-  const handleCreateTaskSubmit = (e: React.FormEvent) => {
+  const handleCreateTaskSubmit = async(e: React.FormEvent) => {
     e.preventDefault()
-    if (!newTitle.trim() || !state) return
+    if (!newTitle.trim() || !state || taskEditing.current) return
     const newTask: OpsTask = {
-      id: `task-${Date.now()}`,
+      id: pendingTaskId.current??(pendingTaskId.current=`task-${Date.now()}-${Math.random().toString(36).slice(2,8)}`),
       title: newTitle.trim(),
       description: newDesc.trim() || 'Création manuelle boîte de travail',
       status: 'A_FAIRE',
       priority: newPriority,
-      dueAt: newDueAt,
+      dueAt: newDueAt||new Date().toISOString().slice(0,10),
       origin: newOrigin,
       structure: 'cssa',
-      team: newMatchRef ? (newMatchRef.startsWith('r1-') ? 'SENIORS_R1' : newMatchRef.startsWith('r2-') ? 'SENIORS_R2' : 'U20_R1') : null,
+      team: null,
       matchRef: newMatchRef.trim() || null,
       responsible: newResponsiblePersonId ? personName(newResponsiblePersonId) : 'UNKNOWN / NON ASSIGNÉ',
       responsiblePersonId: newResponsiblePersonId || null,
       source: 'Boîte de travail Administration CSSA',
-      truthClass: 'PUBLIC_CONFIRMED',
+      truthClass: 'UNKNOWN',
       checklist: {},
       notes: '',
       history: [{at: new Date().toISOString(), action: 'CREATION', note: 'Création manuelle'}],
@@ -387,11 +400,9 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
       caseRef: null
     }
 
-    setState(prev => prev ? {
-      ...prev,
-      tasks: [newTask, ...prev.tasks]
-    } : null)
-    void postPatch({taskPatch: newTask})
+    const result=await runTaskLifecycle(()=>createCssaManualTask<OpsState>(newTask))
+    if(!result)return
+    pendingTaskId.current=null
 
     setNewTitle('')
     setNewDesc('')
