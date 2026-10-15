@@ -1,9 +1,10 @@
+import useCssaOrganisationRead from './useCssaOrganisationRead'
 import useCssaLinkedTasks from './useCssaLinkedTasks'
 import useCssaLinkedDossiers from './useCssaLinkedDossiers'
 import {projectCssaPersonWork} from './cssaPersonWork'
 import {cssaSourceAvailable,resolveCssaReference,referenceLabels} from './cssaLinkedReference'
 import CSSAStoreSourceNotice from './CSSAStoreSourceNotice'
-import {useEffect,useMemo,useState} from 'react'
+import {useMemo,useState} from 'react'
 import CSSAOrganisationPage from './CSSAOrganisationPage'
 import './CSSAOrganisationVisualPage.css'
 
@@ -22,17 +23,15 @@ export default function CSSAOrganisationVisualPage({items,selectedId,onOpen,onCl
  const tasks=useCssaLinkedTasks()
  const business=useCssaLinkedDossiers()
  const [peopleFilter,setPeopleFilter]=useState<'ACTIF'|'TOUS'>('ACTIF')
- const [state,setState]=useState<OrgState|null>(null)
- const [error,setError]=useState(false)
- const refresh=async()=>{try{const r=await fetch('/obsidia-local/cssa-organisation-state',{cache:'no-store'});if(!r.ok)throw new Error();setState(await r.json());setError(false)}catch{setError(true)}}
- useEffect(()=>{void refresh();const timer=window.setInterval(refresh,15000);const changed=()=>{void refresh()};window.addEventListener('cssa-organisation-updated',changed);return()=>{window.clearInterval(timer);window.removeEventListener('cssa-organisation-updated',changed)}},[])
+ const {state,error}=useCssaOrganisationRead<OrgState>()
+ const organisationAvailable=cssaSourceAvailable(state)
 
  const view=useMemo(()=>{
-  const people=state?.people||[]
-  const assignments=state?.roleAssignments||[]
-  const availability=state?.availabilities||[]
-  const engagements=state?.engagements||[]
-  const auth=state?.authorizations||[]
+  const people=organisationAvailable?state?.people||[]:[]
+  const assignments=organisationAvailable?state?.roleAssignments||[]:[]
+  const availability=organisationAvailable?state?.availabilities||[]:[]
+  const engagements=organisationAvailable?state?.engagements||[]:[]
+  const auth=organisationAvailable?state?.authorizations||[]:[]
   const today=new Date().toISOString().slice(0,10)
   const unavailable=availability.filter(a=>a.status==='INDISPONIBLE'&&(!a.to||a.to.slice(0,10)>=today))
   const activePeople=people.filter(p=>p.status==='ACTIF')
@@ -40,12 +39,11 @@ export default function CSSAOrganisationVisualPage({items,selectedId,onOpen,onCl
   const pendingAuth=auth.filter(a=>['EN_ATTENTE','INCONNUE'].includes(a.status))
   const activeEngagements=engagements.filter(e=>!['TERMINE','ANNULE'].includes(e.status))
   return {people,activePeople,activeAssignments,unavailable,pendingAuth,activeEngagements}
- },[state])
+ },[state,organisationAvailable])
 
- if(error)return <section className="orgv"><div className="orgv-empty">Organisation indisponible.</div></section>
+ if(error)return <section className="orgv"><div className="orgv-empty">UNKNOWN · source Organisation indisponible ou invalide.</div></section>
  if(!state)return <section className="orgv"><div className="orgv-empty">Chargement…</div></section>
 
- const organisationAvailable=cssaSourceAvailable(state)
  const personId=selectedId?.startsWith('person:')?selectedId.slice(7):''
  const personWork=personId?projectCssaPersonWork(personId,state.people,tasks.rows,business.rows,business.requirements,{organisation:organisationAvailable,ops:tasks.available,business:business.available}):null
  const selectedPerson=personWork?.person
@@ -54,7 +52,7 @@ export default function CSSAOrganisationVisualPage({items,selectedId,onOpen,onCl
   <CSSAStoreSourceNotice state={state}/>
   <header className="orgv-hero">
    <div><small>ORGANISATION CSSA</small><h2>Qui fait quoi dans le club ?</h2><p>Personnes, rôles, engagements, disponibilités et habilitations dans une carte humaine lisible avant les registres détaillés.</p></div>
-   <div className="orgv-people-stack">{view.activePeople.slice(0,5).map(p=><span key={p.id} title={p.displayName}>{(p.displayName||'UNKNOWN').slice(0,2).toUpperCase()}</span>)}<b>{view.activePeople.length}</b></div>
+   <div className="orgv-people-stack">{view.activePeople.slice(0,5).map(p=><span key={p.id} title={p.displayName}>{(p.displayName||'UNKNOWN').slice(0,2).toUpperCase()}</span>)}<b>{organisationAvailable?view.activePeople.length:'UNKNOWN'}</b></div>
   </header>
 
   <section className="orgv-kpis">
@@ -71,7 +69,7 @@ export default function CSSAOrganisationVisualPage({items,selectedId,onOpen,onCl
      const roles=view.activeAssignments.filter(a=>a.personId===p.id)
      const engagement=view.activeEngagements.find(e=>e.personId===p.id)
      const unavailable=view.unavailable.some(a=>a.personId===p.id)
-     return <article key={p.id}><div className="orgv-avatar">{(p.displayName||'UNKNOWN').slice(0,2).toUpperCase()}</div><div><strong>{p.displayName||'UNKNOWN'}</strong><small>{roles.length?roles.map(r=>human(r.roleSlot)).join(' · '):'Aucun rôle actif'}</small><span>{engagement?human(engagement.type):'Engagement non renseigné'}</span></div>{unavailable&&<em>Indisponible</em>}<button className="orgv-open-person" onClick={()=>onOpen('person:'+p.id)}>Fiche & travail lié · {human(p.status)}</button></article>})}</div>:<p>Aucune personne interne enregistrée.</p>}
+     return <article key={p.id}><div className="orgv-avatar">{(p.displayName||'UNKNOWN').slice(0,2).toUpperCase()}</div><div><strong>{p.displayName||'UNKNOWN'}</strong><small>{roles.length?roles.map(r=>human(r.roleSlot)).join(' · '):'Aucun rôle actif'}</small><span>{engagement?human(engagement.type):'Engagement non renseigné'}</span></div>{unavailable&&<em>Indisponible</em>}<button className="orgv-open-person" onClick={()=>onOpen('person:'+p.id)}>Fiche & travail lié · {human(p.status)}</button></article>})}</div>:<p>{organisationAvailable?'Aucune personne dans ce filtre.':'UNKNOWN · source Organisation indisponible ; aucune personne réelle ne peut être déduite du modèle de secours.'}</p>}
    </article>
 
    <article className="orgv-panel">
@@ -98,7 +96,7 @@ export default function CSSAOrganisationVisualPage({items,selectedId,onOpen,onCl
    </>:<p>La personne ne peut pas être résolue depuis la source Organisation actuelle · {personId}.</p>}
   </section>}
   <section className="orgv-strip">
-   <div><small>ENGAGEMENTS ACTIFS</small><strong>{view.activeEngagements.length}</strong></div>
+   <div><small>ENGAGEMENTS ACTIFS</small><strong>{organisationAvailable?view.activeEngagements.length:'UNKNOWN'}</strong></div>
    <div><small>FRONTIÈRE DE VÉRITÉ</small><span>Aucun occupant réel n’est déduit d’un rôle public. Les personnes viennent uniquement du store Organisation.</span></div>
   </section>
 

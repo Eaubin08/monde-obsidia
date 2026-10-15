@@ -162,3 +162,20 @@ Cette carte suit l’implémentation ; elle ne remplace pas le plan maître et n
 Boucle directrice inchangée : BRANCHER → OBSERVER → RECONSTRUIRE → PROJETER → COPILOTER → CONSTRUIRE → GÉNÉRER LES AGENTS → GOUVERNER → UTILISER → PROUVER → APPRENDRE → FAIRE ÉVOLUER. Le travail courant porte sur les projections Monde. UNKNOWN, contradictions, sources et preuves restent conservés ; KX108_ONLY, séparation comprendre/proposer/autoriser/exécuter/prouver et absence d’autorité déduite d’une tâche demeurent les frontières.
 
 Consigne de restitution de l’utilisateur : en fin de chaque passe, donner le livré, la prochaine étape locale, le reste CSSA et la position dans le plan global.
+
+## Passe exécutée : lecture Organisation et responsables cohérente
+
+La page visuelle Organisation et les raccords de responsables (`useCssaPeople`, utilisés notamment par Tâches / Dossiers) utilisent désormais une même fonction de lecture du registre Organisation existant. Elle contrôle les cinq collections et les champs nécessaires aux projections humaines, sans normaliser ni réécrire les lignes. Timeout quatre secondes, absence de cache, événements de modification et lecture périodique restent en place. Les réponses dépassées et les lectures terminées après démontage ne remplacent pas l’état courant ; un échec retire l’ancien état affiché.
+
+La page ne projette plus des personnes ou engagements de secours comme des éléments réels. Le compteur d’avatars et celui des engagements actifs rejoignent les autres indicateurs en UNKNOWN quand la source n’est pas AVAILABLE. Le message de liste distingue une source indisponible d’un filtre sans personne. La structure publique reste consultable séparément ; aucune personne n’en est déduite.
+
+Le raccord des responsables continue de refuser une identité issue d’une source indisponible. Les ids dupliqués restent présents pour être signalés comme ambigus par la résolution existante ; les personnes inactives, contradictions et habilitations déclarées ne sont ni supprimées ni promues. Le formulaire détaillé et son protocole d’écriture ne sont pas modifiés dans cette passe.
+
+Validation : 51 tests ciblés PASS (organisation-read, Organisation store, people-projection, person-work, linked-reference, navigation-counts et UX CSSA), TypeScript, build Vite, lint et diff whitespace PASS. Cinq scénarios de lecture ajoutés : disponibilité et métadonnées, collections/champs illisibles, conservation personnes inactives/doublons/habilitations/contradictions, erreurs transport/HTTP/JSON, endpoint local et timeout. Suite globale non relancée.
+
+### État du plan après cette passe
+
+- Livré : cohérence de disponibilité et protection des lectures de la vue Organisation et des responsables liés. Dossiers, Documents et Tâches disposent déjà de leurs protections de lecture ; Accueil expose les alertes et inconnues des sources.
+- Prochaine passe locale : confirmations des écritures du formulaire Organisation (erreur explicite, ne pas effacer une saisie non enregistrée), en conservant les stores et opérations existants. Le raccord n’est pas déclaré entièrement clos.
+- Reste CSSA : poursuivre les modifications et confirmations des parcours liés, puis les raccords Administration / Intendance / CRM ; direction Sportif et calendrier transversal maintenue ; pages métier alimentées avant copilote.
+- Cadre global inchangé : V0.1 entreprise, Forge privée distincte du Builder entreprise, agents générés selon les besoins, universalité au-delà de CSSA et vues Monde / Workspace / Pokémon synchronisées. Les raccords courants restent dans OBSERVER → RECONSTRUIRE → PROJETER, sans démontrer la boucle entière.
