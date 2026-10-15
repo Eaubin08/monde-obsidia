@@ -1,4 +1,10 @@
-import {useEffect, useMemo, useState, useCallback} from 'react'
+import {readCssaSportLocal,writeCssaSportLocal,readCssaTasks,projectSportOpsTasks,sportWeekendRanges,type SportLocalState,type SportPatch} from './cssaSportLocal'
+import type {CssaTasksState} from './cssaTasksRead'
+import {createCssaManualTask,deleteCssaTask} from './cssaTaskLifecycle'
+import {updateCssaTask} from './cssaTaskUpdate'
+import {cssaSourceAvailable} from './cssaLinkedReference'
+import CSSAStoreSourceNotice from './CSSAStoreSourceNotice'
+import {useEffect, useMemo, useState, useCallback, useRef} from 'react'
 import './CSSASport.css'
 
 export type WatchSource = {
@@ -437,33 +443,42 @@ export default function CSSASportWorkspace() {
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [checks, setChecks] = useState<Record<string, Record<string, boolean>>>({})
   const [reviewed, setReviewed] = useState<Record<string, boolean>>({})
-  const [tasks, setTasks] = useState<Record<string, MatchTask[]>>({})
+  const [opsState,setOpsState]=useState<CssaTasksState|null>(null)
+  const [sportState,setSportState]=useState<SportLocalState|null>(null)
+  const {tasks,available:tasksAvailable}=useMemo(()=>projectSportOpsTasks(opsState),[opsState])
+  const sportAvailable=cssaSourceAvailable(sportState)
+  const active=useRef(true)
+  const generation=useRef(0)
+  const writing=useRef(false)
+  const dirtyNotes=useRef(new Set<string>())
+  const pendingTaskIds=useRef<Record<string,string>>({})
+  const [localBusy,setLocalBusy]=useState(false)
+  const [localMessage,setLocalMessage]=useState('')
   const [newTaskText, setNewTaskText] = useState('')
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'offline'>('saved')
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'offline'>('offline')
 
-  // Load persistent state from server
-  const loadServerState = useCallback(async () => {
-    try {
-      const r = await fetch('/obsidia-local/cssa-sport-state', {cache: 'no-store'})
-      if (r.ok) {
-        const data = await r.json()
-        if (data.notes) setNotes(data.notes)
-        if (data.checks) setChecks(data.checks)
-        if (data.reviewed) setReviewed(data.reviewed)
-        if (data.tasks) setTasks(data.tasks)
-        setSaveStatus('saved')
-        return
-      }
-    } catch {}
-    // Fallback localStorage
-    try {
-      setNotes(JSON.parse(localStorage.getItem('cssa:sport:notes') || '{}'))
-      setChecks(JSON.parse(localStorage.getItem('cssa:sport:checks') || '{}'))
-      setReviewed(JSON.parse(localStorage.getItem('cssa:sport:reviewed') || '{}'))
-      setTasks(JSON.parse(localStorage.getItem('cssa:sport:tasks') || '{}'))
-    } catch {}
-    setSaveStatus('offline')
-  }, [])
+  const applySport=useCallback((data:SportLocalState)=>{
+    setSportState(data);setChecks(data.checks);setReviewed(data.reviewed)
+    setNotes(previous=>({...data.notes,...Object.fromEntries([...dirtyNotes.current].map(id=>[id,previous[id]||'']))}))
+  },[])
+  const loadServerState=useCallback(async()=>{
+    if(writing.current)return
+    const request=++generation.current
+    const [sport,ops]=await Promise.allSettled([readCssaSportLocal(),readCssaTasks()])
+    if(!active.current||request!==generation.current)return
+    setOpsState(ops.status==='fulfilled'?ops.value:null)
+    if(sport.status==='fulfilled'&&cssaSourceAvailable(sport.value)){
+      applySport(sport.value);setSaveStatus(dirtyNotes.current.size?'offline':'saved')
+    }else{
+      setSportState(sport.status==='fulfilled'?sport.value:null);setSaveStatus('offline')
+      // Browser records remain declared fallback, never confirmed server observations.
+      try{
+        setNotes(previous=>({...JSON.parse(localStorage.getItem('cssa:sport:notes')||'{}'),...previous}))
+        setChecks(JSON.parse(localStorage.getItem('cssa:sport:checks')||'{}'))
+        setReviewed(JSON.parse(localStorage.getItem('cssa:sport:reviewed')||'{}'))
+      }catch{}
+    }
+  },[applySport])
 
   // Hash route synchronization
   useEffect(() => {
@@ -486,36 +501,31 @@ export default function CSSASportWorkspace() {
     }
   }, [])
 
-  useEffect(() => {
-    loadServerState()
-  }, [loadServerState])
+  useEffect(()=>{
+    active.current=true;void loadServerState()
+    const timer=window.setInterval(loadServerState,15000)
+    const events=['cssa-sport-updated','cssa-ops-updated']
+    events.forEach(event=>window.addEventListener(event,loadServerState))
+    return()=>{active.current=false;generation.current++;window.clearInterval(timer);events.forEach(event=>window.removeEventListener(event,loadServerState))}
+  },[loadServerState])
 
-  // Save persistent state to server with fallback
-  const persistState = useCallback(async (patch: {
-    notes?: Record<string, string>
-    checks?: Record<string, Record<string, boolean>>
-    reviewed?: Record<string, boolean>
-    tasks?: Record<string, MatchTask[]>
-  }) => {
-    setSaveStatus('saving')
-    try {
-      const r = await fetch('/obsidia-local/cssa-sport-state', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(patch)
-      })
-      if (r.ok) {
-        setSaveStatus('saved')
-        return
+  const persistState=useCallback(async(patch:SportPatch)=>{
+    if(writing.current)return false
+    writing.current=true;generation.current++;setLocalBusy(true);setSaveStatus('saving');setLocalMessage('Enregistrement sportif en cours…')
+    try{
+      const data=await writeCssaSportLocal(patch)
+      if(active.current){
+        for(const id of Object.keys(patch.notes||{}))dirtyNotes.current.delete(id)
+        applySport(data);setSaveStatus(dirtyNotes.current.size?'offline':'saved');setLocalMessage('Déclaration sportive confirmée dans le registre local.')
       }
-    } catch {}
-    // Fallback localStorage
-    if (patch.notes) localStorage.setItem('cssa:sport:notes', JSON.stringify(patch.notes))
-    if (patch.checks) localStorage.setItem('cssa:sport:checks', JSON.stringify(patch.checks))
-    if (patch.reviewed) localStorage.setItem('cssa:sport:reviewed', JSON.stringify(patch.reviewed))
-    if (patch.tasks) localStorage.setItem('cssa:sport:tasks', JSON.stringify(patch.tasks))
-    setSaveStatus('offline')
-  }, [])
+      window.dispatchEvent(new Event('cssa-sport-updated'))
+      return true
+    }catch(cause){
+      if(active.current){setSaveStatus('offline');setLocalMessage(`${cause instanceof Error?cause.message:'Enregistrement non confirmé.'} Le brouillon est conservé ; réessayez.`)}
+      try{if(patch.notes)localStorage.setItem('cssa:sport:notes',JSON.stringify({...JSON.parse(localStorage.getItem('cssa:sport:notes')||'{}'),...patch.notes}))}catch{}
+      return false
+    }finally{writing.current=false;if(active.current)setLocalBusy(false)}
+  },[applySport])
 
   // Watch refresh
   const loadWatch = useCallback(async (force = false) => {
@@ -596,7 +606,9 @@ export default function CSSASportWorkspace() {
     return []
   }, [activeView, allClubFixtures, formationFilter, feminineFilter, showSimulated])
 
-  const now = new Date('2026-10-13T12:00:00')
+  const now = new Date()
+  const dayKey=now.toLocaleDateString('sv-SE')
+  const weekends=useMemo(()=>sportWeekendRanges(dayKey),[dayKey])
 
   // Filtered visible matches
   const visible = useMemo(() => {
@@ -611,13 +623,13 @@ export default function CSSASportWorkspace() {
       if (filter === 'away' && f.venue !== 'EXTERIEUR') return false
       if (filter === 'confirmed' && (f.simulated || f.truth === 'PUBLIC_CONFLICT_REVIEW')) return false
       if (filter === 'to_verify' && f.truth !== 'PUBLIC_CONFLICT_REVIEW') return false
-      if (filter === 'weekend_cur' && f.date !== '2026-10-17' && f.date !== '2026-10-18') return false
-      if (filter === 'weekend_prev' && f.date !== '2026-10-03' && f.date !== '2026-10-04') return false
+      if (filter === 'weekend_cur' && !weekends.current.includes(f.date)) return false
+      if (filter === 'weekend_prev' && !weekends.previous.includes(f.date)) return false
       if (filter === 'finished' && !f.score) return false
       if (filter === 'upcoming' && f.score) return false
       return true
     }).sort((a, b) => a.date.localeCompare(b.date))
-  }, [currentViewMatches, query, filter])
+  }, [currentViewMatches, query, filter,weekends])
 
   // Select match
   useEffect(() => {
@@ -675,70 +687,45 @@ export default function CSSASportWorkspace() {
     navigateTo(activeView, id)
   }
 
-  const handleToggleCheck = (matchId: string, key: string) => {
-    const currentMatchChecks = checks[matchId] || {}
-    const nextVal = !currentMatchChecks[key]
-    const nextChecks = {
-      ...checks,
-      [matchId]: {
-        ...currentMatchChecks,
-        [key]: nextVal
-      }
-    }
-    setChecks(nextChecks)
-    persistState({checks: nextChecks})
+  const handleToggleCheck=(matchId:string,key:string)=>{
+    void persistState({checks:{[matchId]:{[key]:!checks[matchId]?.[key]}}})
+  }
+  const handleNoteChange=(matchId:string,text:string)=>{
+    dirtyNotes.current.add(matchId);setSaveStatus('offline');setNotes(previous=>({...previous,[matchId]:text}))
+  }
+  const handleSaveNote=(matchId?:string)=>{
+    if(matchId)void persistState({notes:{[matchId]:notes[matchId]||''}})
+  }
+  const handleToggleReview=(matchId:string)=>{
+    void persistState({reviewed:{[matchId]:!reviewed[matchId]}})
+  }
+  const runTaskAction=async(operation:()=>Promise<CssaTasksState>)=>{
+    if(writing.current)return false
+    writing.current=true;generation.current++;setLocalBusy(true);setLocalMessage('Enregistrement dans Tâches…')
+    try{
+      const data=await operation()
+      if(active.current){setOpsState(data);setLocalMessage('Opération confirmée dans le registre Tâches.')}
+      window.dispatchEvent(new Event('cssa-ops-updated'));return true
+    }catch(cause){if(active.current)setLocalMessage(`${cause instanceof Error?cause.message:'Opération non confirmée.'} Saisie conservée ; réessayez.`);return false}
+    finally{writing.current=false;if(active.current)setLocalBusy(false)}
+  }
+  const handleAddTask=async(matchId:string,customText?:string)=>{
+    const text=customText||newTaskText
+    if(!text.trim()||writing.current)return
+    const fixture=allClubFixtures.find(row=>row.id===matchId)
+    if(!fixture)return
+    const id=pendingTaskIds.current[matchId]??(pendingTaskIds.current[matchId]='task-sport-'+Date.now()+'-'+Math.random().toString(36).slice(2,7))
+    const task={id,title:text.trim(),description:'Action saisie depuis une rencontre de référence',status:'A_FAIRE' as const,priority:'NORMALE' as const,dueAt:fixture.date,origin:'SPORTIF' as const,structure:'cssa',team:fixture.teamId,matchRef:matchId,responsible:'UNKNOWN / NON ASSIGNÉ',responsiblePersonId:null,source:'Saisie sportive locale',truthClass:'UNKNOWN',checklist:{},notes:'',history:[],relations:[{type:'MATCH',targetId:matchId,label:fixture.home+' — '+fixture.away}],caseRef:null}
+    if(await runTaskAction(()=>createCssaManualTask<CssaTasksState>(task))){delete pendingTaskIds.current[matchId];if(!customText)setNewTaskText('')}
+  }
+  const handleToggleTask=(matchId:string,id:string)=>{
+    const task=tasks[matchId]?.find(row=>row.id===id)
+    if(task)void runTaskAction(()=>updateCssaTask<CssaTasksState>(id,{kind:'STATUS',value:task.done?'A_FAIRE':'TERMINE'}))
+  }
+  const handleDeleteTask=(_matchId:string,id:string)=>{
+    void runTaskAction(()=>deleteCssaTask<CssaTasksState>(id))
   }
 
-  const handleNoteChange = (matchId: string, text: string) => {
-    const nextNotes = {...notes, [matchId]: text}
-    setNotes(nextNotes)
-  }
-
-  const handleSaveNote = (_matchId?: string) => {
-    persistState({notes})
-  }
-
-  const handleToggleReview = (matchId: string) => {
-    const nextReviewed = {...reviewed, [matchId]: !reviewed[matchId]}
-    setReviewed(nextReviewed)
-    persistState({reviewed: nextReviewed})
-  }
-
-  const handleAddTask = (matchId: string, customText?: string) => {
-    const textToAdd = customText || newTaskText
-    if (!textToAdd.trim()) return
-    const newTask: MatchTask = {
-      id: 'task-' + Date.now(),
-      label: textToAdd.trim(),
-      done: false,
-      createdAt: new Date().toISOString()
-    }
-    const currentList = tasks[matchId] || []
-    const nextTasks = {...tasks, [matchId]: [...currentList, newTask]}
-    setTasks(nextTasks)
-    if (!customText) setNewTaskText('')
-    persistState({tasks: nextTasks})
-  }
-
-  const handleToggleTask = (matchId: string, taskId: string) => {
-    const currentList = tasks[matchId] || []
-    const nextTasks = {
-      ...tasks,
-      [matchId]: currentList.map(t => t.id === taskId ? {...t, done: !t.done} : t)
-    }
-    setTasks(nextTasks)
-    persistState({tasks: nextTasks})
-  }
-
-  const handleDeleteTask = (matchId: string, taskId: string) => {
-    const currentList = tasks[matchId] || []
-    const nextTasks = {
-      ...tasks,
-      [matchId]: currentList.filter(t => t.id !== taskId)
-    }
-    setTasks(nextTasks)
-    persistState({tasks: nextTasks})
-  }
 
   const handleCreateConflictTask = (c: PitchConflict) => {
     const target = c.matches[0]
@@ -931,12 +918,16 @@ export default function CSSASportWorkspace() {
             </article>
             <article className="spx-overview-card attention">
               <small>PRÉPARATION</small>
-              <strong>{selected ? Object.values(checks[selected.id] || {}).filter(Boolean).length+'/'+checklistItems.length : '—'}</strong>
-              <span>{selected ? (tasks[selected.id] || []).length+' tâche(s) liée(s)' : 'Sélectionnez un match'}</span>
+              <strong>{selected&&sportAvailable ? Object.values(checks[selected.id] || {}).filter(Boolean).length+'/'+checklistItems.length : 'UNKNOWN'}</strong>
+              <span>{selected ? (tasksAvailable?(tasks[selected.id] || []).length+' tâche(s) liée(s)':'UNKNOWN · tâches indisponibles') : 'Sélectionnez un match'}</span>
             </article>
           </div>
         )}
 
+        <p>Calendriers, résultats et classement : références chargées, non revérifiées par les déclarations locales. Les simulations restent signalées.</p>
+        {sportState?<CSSAStoreSourceNotice state={sportState}/>:<p>UNKNOWN · source des déclarations sportives indisponible. Un éventuel brouillon navigateur reste non confirmé.</p>}
+        {opsState?<CSSAStoreSourceNotice state={opsState}/>:<p>UNKNOWN · source des tâches indisponible.</p>}
+        {localMessage&&<p role="status">{localMessage}</p>}
         {/* Toolbar & Filtres */}
         <div className="spx-controls">
           <div className="spx-filters">
@@ -1019,7 +1010,7 @@ export default function CSSASportWorkspace() {
               placeholder="Adversaire, lieu, terrain…"
             />
             <span className={'spx-sync-indicator ' + saveStatus}>
-              {saveStatus === 'saved' ? '✓ Disque .obsidia-live' : saveStatus === 'saving' ? '⟳ Sauvegarde...' : '⚠ Local (offline)'}
+              {saveStatus === 'saved' ? '✓ Déclarations locales enregistrées' : saveStatus === 'saving' ? '⟳ Sauvegarde...' : 'UNKNOWN · brouillon ou source non confirmée'}
             </span>
           </div>
         </div>
@@ -1211,7 +1202,7 @@ export default function CSSASportWorkspace() {
                       <div className="spx-match-foot">
                         <span className="spx-source-cite">{m.source}</span>
                         {m.pitch && <span className="spx-pitch-tag">🏟 {m.pitch}</span>}
-                        {reviewsCount(m.id, reviewed) && (
+                        {sportAvailable&&reviewsCount(m.id, reviewed) && (
                           <span className="spx-reviewed-badge">✓ Revu</span>
                         )}
                       </div>
@@ -1335,7 +1326,7 @@ export default function CSSASportWorkspace() {
                           <section className="spx-prep-section">
                             <header>
                               <h4>Checklist Opérationnelle</h4>
-                              <small>Persistée sur disque (.obsidia-live)</small>
+                              <small>{sportAvailable?'Déclarations du registre local':'UNKNOWN · contrôles non confirmés'}</small>
                             </header>
                             <div className="spx-checklist">
                               {checklistItems.map(item => {
@@ -1344,6 +1335,7 @@ export default function CSSASportWorkspace() {
                                   <label key={item.key} className={'spx-check-item ' + (isChecked ? 'checked' : '')}>
                                     <input
                                       type="checkbox"
+                                      disabled={localBusy}
                                       checked={isChecked}
                                       onChange={() => handleToggleCheck(selected.id, item.key)}
                                     />
@@ -1357,7 +1349,7 @@ export default function CSSASportWorkspace() {
                           {/* Tâches liées */}
                           <section className="spx-tasks-section">
                             <header style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                              <h4>Tâches Liées à la Rencontre ({(tasks[selected.id] || []).length})</h4>
+                              <h4>Tâches Liées à la Rencontre ({tasksAvailable?(tasks[selected.id] || []).length:'UNKNOWN'})</h4>
                               <div style={{display: 'flex', gap: '8px', fontSize: '0.75rem'}}>
                                 <a href="#cssa/tasks" style={{color: '#16a34a', textDecoration: 'none', fontWeight: 600}}>Vue Globale TASKS →</a>
                                 <a href="#cssa/matchday" style={{color: '#64748b', textDecoration: 'none'}}>Matchday →</a>
@@ -1365,6 +1357,7 @@ export default function CSSASportWorkspace() {
                             </header>
                             <div className="spx-task-add">
                               <input
+                                disabled={localBusy}
                                 value={newTaskText}
                                 onChange={e => setNewTaskText(e.target.value)}
                                 onKeyDown={e => {
@@ -1372,7 +1365,7 @@ export default function CSSASportWorkspace() {
                                 }}
                                 placeholder="Ex: Réserver minibus 9 places, contacter délégué..."
                               />
-                              <button onClick={() => handleAddTask(selected.id)}>Ajouter</button>
+                              <button disabled={localBusy} onClick={() => handleAddTask(selected.id)}>Ajouter</button>
                             </div>
 
                             <div className="spx-task-list">
@@ -1380,10 +1373,11 @@ export default function CSSASportWorkspace() {
                                 <div key={task.id} className={'spx-task-row ' + (task.done ? 'done' : '')}>
                                   <input
                                     type="checkbox"
+                                    disabled={localBusy||!tasksAvailable}
                                     checked={task.done}
                                     onChange={() => handleToggleTask(selected.id, task.id)}
                                   />
-                                  <span>{task.label}</span>
+                                  <span>{task.label}<small> · {task.status} · source {task.source||'UNKNOWN'} · {task.truthClass||'UNKNOWN'}</small></span>
                                   <a
                                     href={'#cssa/tasks/' + encodeURIComponent(task.id)}
                                     title="Ouvrir la fiche tâche dans le module TASKS"
@@ -1392,6 +1386,7 @@ export default function CSSASportWorkspace() {
                                     Détail →
                                   </a>
                                   <button
+                                    disabled={localBusy||!tasksAvailable}
                                     className="spx-task-del"
                                     onClick={() => handleDeleteTask(selected.id, task.id)}
                                     title="Supprimer la tâche"
@@ -1401,7 +1396,7 @@ export default function CSSASportWorkspace() {
                                 </div>
                               ))}
                               {!(tasks[selected.id] || []).length && (
-                                <small className="spx-task-empty">Aucune tâche rattachée à cette rencontre.</small>
+                                <small className="spx-task-empty">{tasksAvailable?'Aucune tâche rattachée à cette rencontre.':'UNKNOWN · source Tâches indisponible.'}</small>
                               )}
                             </div>
                           </section>
@@ -1413,6 +1408,7 @@ export default function CSSASportWorkspace() {
                               <small>Sauvegarde automatique</small>
                             </header>
                             <textarea
+                              disabled={localBusy}
                               value={notes[selected.id] || ''}
                               onChange={e => handleNoteChange(selected.id, e.target.value)}
                               onBlur={() => handleSaveNote(selected.id)}
@@ -1424,10 +1420,11 @@ export default function CSSASportWorkspace() {
                               <label className="spx-reviewed-toggle">
                                 <input
                                   type="checkbox"
+                                  disabled={localBusy}
                                   checked={Boolean(reviewed[selected.id])}
                                   onChange={() => handleToggleReview(selected.id)}
                                 />
-                                <span>Dossier revu par le staff</span>
+                                <span>Relecture déclarée par le staff · hors autorisation</span>
                               </label>
                             </div>
                           </section>
@@ -1493,10 +1490,11 @@ export default function CSSASportWorkspace() {
                       <section className="spx-notes-section">
                         <header>
                           <h4>Consignes & Notes Éducateur</h4>
-                          <small>Persistée sur disque (.obsidia-live)</small>
+                          <small>{sportAvailable?'Déclarations du registre local':'UNKNOWN · contrôles non confirmés'}</small>
                         </header>
                         <textarea
-                          value={notes[selected.id] || ''}
+                          disabled={localBusy}
+                              value={notes[selected.id] || ''}
                           onChange={e => handleNoteChange(selected.id, e.target.value)}
                           onBlur={() => handleSaveNote(selected.id)}
                           placeholder="Horaires de rendez-vous, convocations, consignes d'échauffement..."

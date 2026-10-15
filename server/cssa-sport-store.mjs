@@ -15,7 +15,7 @@ const DEFAULT_STATE = {
 
 import {syncSportTasksToOps, readCssaOpsState, defaultOpsFile} from './cssa-ops-store.mjs'
 
-export function readCssaSportState(filePath = defaultStateFile, opsFilePath = null) {
+function loadSportBase(filePath){
   let baseState = {...DEFAULT_STATE}
   if (existsSync(filePath)) {
     try {
@@ -33,6 +33,12 @@ export function readCssaSportState(filePath = defaultStateFile, opsFilePath = nu
       baseState = {...DEFAULT_STATE}
     }
   }
+
+  return baseState
+}
+
+export function readCssaSportState(filePath = defaultStateFile, opsFilePath = null) {
+  let baseState=loadSportBase(filePath)
 
   // Fusionner les tâches des opérations globales qui pointent vers ce match si en live ou si ops file spécifié
   const targetOps = opsFilePath || (filePath === defaultStateFile ? defaultOpsFile : resolve(filePath, '..', 'cssa_ops_state.json'))
@@ -74,7 +80,7 @@ export function readCssaSportState(filePath = defaultStateFile, opsFilePath = nu
 }
 
 export function writeCssaSportState(patch = {}, filePath = defaultStateFile, opsFilePath = null) {
-  const current = readCssaSportState(filePath, opsFilePath)
+  const current = loadSportBase(filePath)
   const next = {
     version: DEFAULT_STATE.version,
     updatedAt: new Date().toISOString(),

@@ -9,7 +9,7 @@ import {liveSnapshot,liveDirectory} from './live-events.mjs'
 import {buildObsidiaState} from './obsidia-state.mjs'
 import {readNativeEnterpriseView} from './native-enterprise-read.mjs'
 import {readCssaSportWatch} from './cssa-sport-watch.mjs'
-import {readCssaSportState,writeCssaSportState} from './cssa-sport-store.mjs'
+import {readCssaSportState,writeCssaSportState,defaultStateFile as defaultSportStateFile} from './cssa-sport-store.mjs'
 import {readCssaOpsState,writeCssaOpsState,defaultOpsFile} from './cssa-ops-store.mjs'
 import {readCssaBusinessState,writeCssaBusinessState,defaultBusinessFile} from './cssa-business-store.mjs'
 import {readCssaOrganisationState,writeCssaOrganisationState,defaultOrganisationFile} from './cssa-organisation-store.mjs'
@@ -574,8 +574,8 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  }
  if(req.method==='GET'&&url.pathname==='/native-enterprise'){res.end(JSON.stringify(readNativeEnterpriseView({repoRoot:repository()})));return}
  if(req.method==='GET'&&url.pathname==='/cssa-sport-watch'){res.end(JSON.stringify(await readCssaSportWatch({force:url.searchParams.get('force')==='1'})));return}
- if(req.method==='GET'&&url.pathname==='/cssa-sport-state'){res.end(JSON.stringify(readCssaSportState()));return}
- if(req.method==='POST'&&url.pathname==='/cssa-sport-state'){const patch=await body(req);res.end(JSON.stringify(writeCssaSportState(patch)));return}
+ if(req.method==='GET'&&url.pathname==='/cssa-sport-state'){res.end(JSON.stringify(observeCssaSource(readCssaSportState(),defaultSportStateFile,[],{maps:['notes','checks','reviewed','tasks']})));return}
+ if(req.method==='POST'&&url.pathname==='/cssa-sport-state'){const patch=await body(req);res.end(JSON.stringify(observeCssaSource(writeCssaSportState(patch),defaultSportStateFile,[],{maps:['notes','checks','reviewed','tasks']})));return}
  if(req.method==='GET'&&url.pathname==='/cssa-ops-state'){res.end(JSON.stringify(observeCssaSource(readCssaOpsState(),defaultOpsFile,opsLists,{fallback:'TEMPLATE'})));return}
  if(req.method==='POST'&&url.pathname==='/cssa-ops-state'){const patch=await body(req);res.end(JSON.stringify(observeCssaSource(writeCssaOpsState(patch),defaultOpsFile,opsLists,{fallback:'TEMPLATE'})));return}
  if(req.method==='GET'&&url.pathname==='/cssa-business-state'){res.end(JSON.stringify(observeCssaSource(readCssaBusinessState(),defaultBusinessFile,businessLists)));return}
