@@ -267,3 +267,23 @@ Validation : 53 tests ciblés PASS (task-lifecycle, task-update, tasks-read, req
 - Raccord prioritaire Organisation → Dossiers → Accueil → Tâches : projections, liens, lectures renforcées et principales confirmations livrés ; clôture globale non revendiquée.
 - Reste CSSA : Intendance / Administration / CRM, parcours de relance CRM et autres confirmations métier, profondeur Sportif et calendrier transversal ; pages métier avant copilote.
 - Cadre global maintenu : V0.1 entreprise, Forge privée distincte du Builder entreprise, agents selon les besoins, universalité et synchronisation Monde / Workspace / Pokémon. Position actuelle OBSERVER → RECONSTRUIRE → PROJETER ; KX108_ONLY, UNKNOWN, contradictions, sources et preuves conservés.
+
+## Passe exécutée : Intendance / Matchday confirmé et actualisé
+
+Les modifications du statut logistique, des notes et du responsable ne sont plus affichées avant leur confirmation par Ops. Elles relisent l’élément unique dans une source AVAILABLE puis transmettent seulement id et champ modifié. Une source MISSING/INVALID/UNREADABLE, un élément absent/ambigu ou une personne canonique introuvable/ambiguë bloque l’écriture. Les références de match, lieu, tâche liée et classe de vérité sont conservées ; aucun objet métier n’est créé implicitement par une modification partielle.
+
+La réponse doit confirmer exactement la modification dans un élément unique d’une source AVAILABLE. Si une reprise retrouve déjà la valeur désirée, elle ne renvoie pas de POST. Le responsable reste un id explicite : aucune activation ni habilitation n’est déduite, y compris pour une personne inactive. Un statut CONFIRMÉ décrit une inscription logistique, pas une autorisation d’exécution.
+
+Le workspace réutilise le mécanisme de confirmation des modifications de tâches pour ces trois actions : verrou, messages en cours/succès/échec, application après confirmation, protection contre une ancienne lecture et retrait du faux succès des notes. Le brouillon de note reste conservé pendant une modification d’un autre champ de la même fiche. Les parcours CRM encore anciens ne sont pas déclarés confirmés par cette réutilisation.
+
+La vue Matchday lit maintenant le même registre contrôlé toutes les quinze secondes et après cssa-ops-updated, avec timeout, génération de lecture et nettoyage au démontage. Les objets de secours ne sont plus projetés comme travail réel, les indicateurs deviennent UNKNOWN quand la source n’est pas AVAILABLE et le pourcentage de préparation reste UNKNOWN si aucun élément n’est enregistré. Le calendrier chargé reste explicitement une référence séparée des états logistiques locaux. Les responsables de tâches se résolvent via Organisation canonique et la sélection ouvre la gestion détaillée.
+
+Validation : 55 tests ciblés PASS (intendance-update, task-update, task-lifecycle, tasks-read, people-projection, UX CSSA), TypeScript, build Vite, lint et diff whitespace PASS. Sept scénarios ajoutés : vrai store conservant match/tâche/classe de vérité et autres objets Ops ; réponse perdue puis reprise sans nouvelle écriture ; personne inactive sans promotion ; sources/éléments absents ou ambigus ; réponses HTTP/objets non confirmés ; références Organisation invalides ; contrôle de lecture des éléments malformés et conservation des métadonnées MISSING. Suite globale non relancée.
+
+### État du plan après cette passe
+
+- Livré : statut/notes/responsable Intendance confirmés, préparation Matchday actualisée et distinction calendrier de référence / état local / UNKNOWN.
+- Prochaine passe locale : CRM, confirmations du répertoire et du journal relationnel, puis contrôle du parcours de relance vers Tâches afin de conserver saisie et liens en cas d’échec partiel.
+- Raccord prioritaire Organisation → Dossiers → Accueil → Tâches : projections et principaux raccords de confirmation présents ; ensemble encore ouvert, sans clôture globale revendiquée.
+- Reste CSSA : CRM et relances, autres confirmations Administration/métier, profondeur Sportif et calendrier transversal ; pages métier avant copilote.
+- Cadre global maintenu : V0.1 entreprise, Forge privée distincte du Builder entreprise, génération d’agents selon besoins, universalité et vues Monde / Workspace / Pokémon synchronisées. Position actuelle OBSERVER → RECONSTRUIRE → PROJETER ; KX108_ONLY, UNKNOWN, contradictions, sources et preuves conservés.

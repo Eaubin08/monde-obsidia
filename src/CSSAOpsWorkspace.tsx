@@ -1,3 +1,4 @@
+import {updateCssaIntendance,type IntendanceChange} from './cssaIntendanceUpdate'
 import {createCssaManualTask,deleteCssaTask} from './cssaTaskLifecycle'
 import {updateCssaTask,type TaskChange} from './cssaTaskUpdate'
 import {useEffect, useState, useMemo, useCallback, useRef} from 'react'
@@ -183,14 +184,14 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
     if(!draftDirty.current)setDraftNote(item?.notes||'')
   }, [activeModule, selectedId, state])
 
-  const editTask=async(taskId:string,change:TaskChange)=>{
+  const editOps=async(operation:()=>Promise<OpsState>,savesNote=false)=>{
     if(taskEditing.current)return false
     taskEditing.current=true;readGeneration.current++
     setTaskEditingBusy(true);setTaskEditMessage('Enregistrement de la modification…');setTaskEditFailed(false);setSaveSuccess(false)
     try{
-      const updated=await updateCssaTask<OpsState>(taskId,change)
+      const updated=await operation()
       if(mounted.current){
-        if(change.kind==='NOTES'){draftDirty.current=false;setSaveSuccess(true)}
+        if(savesNote){draftDirty.current=false;setSaveSuccess(true)}
         setState(updated);setTaskEditMessage('Modification confirmée dans le registre local.')
       }
       window.dispatchEvent(new CustomEvent('cssa-ops-updated',{detail:updated}))
@@ -201,6 +202,9 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
       return false
     }finally{taskEditing.current=false;if(mounted.current)setTaskEditingBusy(false)}
   }
+
+  const editTask=(id:string,change:TaskChange)=>editOps(()=>updateCssaTask<OpsState>(id,change),change.kind==='NOTES')
+  const editIntendance=(id:string,change:IntendanceChange)=>editOps(()=>updateCssaIntendance<OpsState>(id,change),change.kind==='NOTES')
 
   // Post update
   const postPatch = async (patch: Record<string, unknown>) => {
@@ -301,13 +305,8 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
     void editTask(taskId,{kind:'RESPONSIBLE',personId:personId||null})
   }
 
-  const handleIntendanceResponsible = (itemId: string, personId: string) => {
-    if (!state) return
-    const target = state.intendanceItems.find(i => i.id === itemId)
-    if (!target) return
-    const updated = {...target, responsiblePersonId: personId || null}
-    setState(prev => prev ? {...prev, intendanceItems: prev.intendanceItems.map(i => i.id === itemId ? updated : i)} : null)
-    void postPatch({intendancePatch: updated})
+  const handleIntendanceResponsible=(id:string,personId:string)=>{
+    void editIntendance(id,{kind:'RESPONSIBLE',personId:personId||null})
   }
 
   const handleTaskStatus = (taskId:string,nextStatus:TaskStatus) => {
@@ -348,30 +347,14 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
     if(result)onSelect(activeModule,'')
   }
 
-  // Intendance : changement de statut
-  const handleIntendanceStatus = (itemId: string, nextStatus: 'CONFIRMÉ' | 'À PRÉPARER' | 'EN ATTENTE' | 'UNKNOWN') => {
-    if (!state) return
-    const target = state.intendanceItems.find(i => i.id === itemId)
-    if (!target) return
-    const updated = {...target, status: nextStatus}
-    setState(prev => prev ? {
-      ...prev,
-      intendanceItems: prev.intendanceItems.map(i => i.id === itemId ? updated : i)
-    } : null)
-    void postPatch({intendancePatch: updated})
+  const handleIntendanceStatus=(id:string,status:IntendanceItem['status'])=>{
+    void editIntendance(id,{kind:'STATUS',value:status})
   }
-
-  // Intendance : sauvegarde note
-  const handleSaveIntendanceNote = async (itemId: string) => {
-    if (!state) return
+  const handleSaveIntendanceNote=async(id:string)=>{
+    if(taskEditing.current)return
     setSavingNote(true)
-    const target = state.intendanceItems.find(i => i.id === itemId)
-    if (!target) return
-    const updated = {...target, notes: draftNote}
-    await postPatch({intendancePatch: updated})
-    setSavingNote(false)
-    setSaveSuccess(true)
-    setTimeout(() => setSaveSuccess(false), 2000)
+    try{await editIntendance(id,{kind:'NOTES',value:draftNote})}
+    finally{if(mounted.current)setSavingNote(false)}
   }
 
   // Création d'une nouvelle tâche
