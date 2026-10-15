@@ -137,3 +137,28 @@ La lecture utilise le même endpoint local, sans cache et avec délai maximal de
 Une sélection de tâche ouvre la gestion détaillée, notamment depuis Dossiers ou Organisation. Les statuts, relations, sources et métadonnées sont conservés tels que lus. Aucun changement du protocole d’écriture ni de l’autorité de validation n’est introduit.
 
 Validation : 44 tests ciblés PASS (tasks-read, navigation-counts, requirement-task, UX CSSA), TypeScript, build Vite, lint et diff whitespace PASS. Les cinq nouveaux scénarios vérifient conservation des relations/provenance/contradictions, maintien de MISSING pour un template, refus des réponses HTTP et structures invalides, registre vide AVAILABLE et paramètres de lecture locale bornée. Suite globale non relancée.
+
+## Passe exécutée : disponibilité réelle Dossiers / Documents
+
+Les deux pages relisent Business via un raccord de lecture commun : endpoint existant, absence de cache, timeout quatre secondes, contrôle des six collections utilisées et identifiants des lignes. Les événements cssa-business-updated déclenchent une lecture au lieu d’injecter leur payload dans l’état affiché. Le numéro de génération rejette les réponses dépassées ; le démontage interdit leur application après navigation. Une erreur de lecture retire l’ancien état de la projection.
+
+Les indicateurs Dossiers et Documents affichent UNKNOWN quand la source n’est pas AVAILABLE. Les listes ne projettent plus les éventuels objets de secours comme des objets réels. Les messages distinguent registre disponible vide et source indisponible ; la gestion détaillée reste accessible quand une réponse de secours valide est servie. Documents conserve les UNKNOWN pour une sélection sans source et ne fabrique aucun lien de dossier. Aucun état métier, preuve, validation ou autorisation n’est modifié.
+
+Validation : 52 tests ciblés PASS (business-read, tasks-read, navigation-counts, requirement-task, linked-reference et UX CSSA), TypeScript, build Vite, lint et diff whitespace PASS. Cinq scénarios Business ajoutés : source disponible vide vs métadonnées indisponibles, collections illisibles, conservation exigences/preuves/contradictions, erreurs de transport/HTTP/JSON et lecture du véritable endpoint avec timeout. Suite globale non relancée.
+
+## Carte de suivi à reprendre en fin de passe
+
+Cette carte suit l’implémentation ; elle ne remplace pas le plan maître et n’atteste pas l’achèvement de ses phases.
+
+| Niveau | État constaté / suite |
+| --- | --- |
+| Raccord Organisation → Dossiers → Accueil → Tâches | Projections locales, liens explicites personnes/exigences/documents/tâches, attention Accueil et compteurs raccordés. Continuer la cohérence des lectures et sources sur Organisation puis les parcours liés. Ne pas déclarer le raccord entièrement clos. |
+| Dossiers / Documents / Tâches | Distinction AVAILABLE / UNKNOWN et registre vide renforcée sur les trois vues ; vérifier ensuite les parcours de modification existants et leurs confirmations, au-delà de la création de tâche déjà contrôlée. |
+| Administration / Intendance / CRM | Stores et pages existants ; poursuivre leur raccord transversal au travail persistant selon les objets présents, sans recréer de registres. |
+| Sportif | Direction maintenue : profondeur R1/R2/U20, Formation regroupée, École de foot globale, Féminines regroupées et calendrier transversal. Achèvement non attesté par ces passes. |
+| Pages métier puis copilote | Pages alimentées par les données présentes d’abord ; copilote fondé sur les capacités réellement disponibles ensuite. Non livré par les compteurs et raccords seuls. |
+| V0.1 / Forge / Builder / agents / universalité | Cadre global maintenu, non démontré par ces passes CSSA. Forge privée distincte du Builder entreprise ; agents générés selon les besoins ; CSSA première incarnation, pas origine de V0.1. Monde / Workspace / Pokémon restent des vues à synchroniser. |
+
+Boucle directrice inchangée : BRANCHER → OBSERVER → RECONSTRUIRE → PROJETER → COPILOTER → CONSTRUIRE → GÉNÉRER LES AGENTS → GOUVERNER → UTILISER → PROUVER → APPRENDRE → FAIRE ÉVOLUER. Le travail courant porte sur les projections Monde. UNKNOWN, contradictions, sources et preuves restent conservés ; KX108_ONLY, séparation comprendre/proposer/autoriser/exécuter/prouver et absence d’autorité déduite d’une tâche demeurent les frontières.
+
+Consigne de restitution de l’utilisateur : en fin de chaque passe, donner le livré, la prochaine étape locale, le reste CSSA et la position dans le plan global.

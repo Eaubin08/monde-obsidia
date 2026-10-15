@@ -1,9 +1,10 @@
+import useCssaBusinessRead from './useCssaBusinessRead'
 import useCssaLinkedTasks from './useCssaLinkedTasks'
 import {resolveCssaReference,cssaSourceAvailable,referenceLabels} from './cssaLinkedReference'
 import useCssaPeople from './useCssaPeople'
 import {resolveCssaPerson} from './cssaPeopleProjection'
 import CSSAStoreSourceNotice from './CSSAStoreSourceNotice'
-import {useEffect,useMemo,useState} from 'react'
+import {useMemo,useState} from 'react'
 import CSSABusinessPage from './CSSABusinessPage'
 import './CSSADossiersPage.css'
 
@@ -20,15 +21,12 @@ const human=(v:string)=>String(v||'').replaceAll('_',' ').toLowerCase().replace(
 export default function CSSADossiersPage({selectedId,onOpen}:Props){
  const organisation=useCssaPeople()
  const linkedTasks=useCssaLinkedTasks()
- const [state,setState]=useState<BusinessState|null>(null)
+ const {state,error}=useCssaBusinessRead<BusinessState>()
+ const available=cssaSourceAvailable(state)
  const [filter,setFilter]=useState<'ACTIFS'|'PRETS'|'DEPOSES'|'CLOTURES'|'TOUS'>('ACTIFS')
- const [error,setError]=useState(false)
- const refresh=async()=>{try{const r=await fetch('/obsidia-local/cssa-business-state',{cache:'no-store'});if(!r.ok)throw new Error();setState(await r.json());setError(false)}catch{setError(true)}}
- useEffect(()=>{void refresh();const timer=window.setInterval(refresh,15000);return()=>window.clearInterval(timer)},[])
- useEffect(()=>{const h=(e:Event)=>setState((e as CustomEvent<BusinessState>).detail);window.addEventListener('cssa-business-updated',h);return()=>window.removeEventListener('cssa-business-updated',h)},[])
 
  const rows=useMemo(()=>{
-  if(!state)return []
+  if(!state||!available)return []
   return state.dossiers.map(d=>{
    const reqs=state.requirements.filter(r=>r.dossierId===d.id)
    const required=reqs.filter(r=>r.criticality==='OBLIGATOIRE')
@@ -42,7 +40,7 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
    const late=Boolean(d.deadline)&&new Date(d.deadline).getTime()<Date.now()&&!proof&&!['ATTRIBUE','NON_RETENU','ANNULE'].includes(d.status)
    return {d,reqs,required,satisfied,blocking,validation,proof,outcome,docs,ready,late}
   })
- },[state])
+ },[state,available])
 
  const shown=rows.filter(x=>{
   if(filter==='PRETS')return x.ready&&!x.proof
@@ -57,7 +55,7 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
  const depositedCount=rows.filter(x=>x.proof&&!x.outcome).length
  const closedCount=rows.filter(x=>x.outcome).length
 
- if(error)return <section className="dosv"><div className="dosv-empty">Dossiers indisponibles.</div></section>
+ if(error)return <section className="dosv"><div className="dosv-empty">UNKNOWN · source dossiers indisponible ou invalide.</div></section>
  if(!state)return <section className="dosv"><div className="dosv-empty">Chargement…</div></section>
 
  return <section className="dosv">
@@ -68,10 +66,10 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
   </header>
 
   <section className="dosv-kpis">
-   <button className={lateCount?'danger':''} onClick={()=>setFilter('ACTIFS')}><small>EN RETARD</small><strong>{lateCount}</strong><span>sans preuve de dépôt</span></button>
-   <button onClick={()=>setFilter('PRETS')}><small>PRÊTS À DÉPOSER</small><strong>{readyCount}</strong><span>validation finale acquise</span></button>
-   <button onClick={()=>setFilter('DEPOSES')}><small>RÉSULTAT ATTENDU</small><strong>{depositedCount}</strong><span>dépôt confirmé</span></button>
-   <button onClick={()=>setFilter('CLOTURES')}><small>RÉSULTATS</small><strong>{closedCount}</strong><span>décision externe sourcée</span></button>
+   <button className={lateCount?'danger':''} onClick={()=>setFilter('ACTIFS')}><small>EN RETARD</small><strong>{available?lateCount:'UNKNOWN'}</strong><span>sans preuve de dépôt</span></button>
+   <button onClick={()=>setFilter('PRETS')}><small>PRÊTS À DÉPOSER</small><strong>{available?readyCount:'UNKNOWN'}</strong><span>validation finale acquise</span></button>
+   <button onClick={()=>setFilter('DEPOSES')}><small>RÉSULTAT ATTENDU</small><strong>{available?depositedCount:'UNKNOWN'}</strong><span>dépôt confirmé</span></button>
+   <button onClick={()=>setFilter('CLOTURES')}><small>RÉSULTATS</small><strong>{available?closedCount:'UNKNOWN'}</strong><span>décision externe sourcée</span></button>
   </section>
 
   <nav className="dosv-tabs">{(['ACTIFS','PRETS','DEPOSES','CLOTURES','TOUS'] as const).map(x=><button key={x} className={filter===x?'active':''} onClick={()=>setFilter(x)}>{human(x)}</button>)}</nav>
@@ -87,7 +85,7 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
      <div className="dosv-meta"><span>{x.d.deadline?new Date(x.d.deadline).toLocaleDateString('fr-FR'):'Échéance inconnue'}</span><span>{x.docs.length} doc.</span><span>{x.blocking.length} blocage(s)</span></div>
      <footer>{x.outcome?<b className="result">{human(x.outcome.result)}</b>:x.proof?<b className="info">Déposé · résultat attendu</b>:x.ready?<b className="ready">Prêt à déposer</b>:x.late?<b className="latepill">Échéance dépassée</b>:<b>En préparation</b>}<em>Ouvrir →</em></footer>
     </article>
-   }):<div className="dosv-empty">Aucun dossier dans cette vue.</div>}
+   }):<div className="dosv-empty">{available?'Aucun dossier dans cette vue.':'UNKNOWN · source dossiers indisponible ; aucun dossier réel ne peut être déduit du modèle de secours.'}</div>}
   </section>
 
   {selected&&<section className="dosv-focus">
