@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useState} from 'react'
+import {cssaNavigationCount} from './cssaNavigationCounts'
 import {cssaProfileStores,projectCssaProfile,type Observations,type StoreId} from './cssaLiveProfile'
 import './CSSAPage.css'
 import './CSSASport.css'
@@ -544,7 +545,9 @@ export default function CSSAPage(){
  const profile=useMemo(()=>structureId==='cssa'?projectCssaProfile(profiles.cssa,observations):profiles[structureId],[structureId,observations])
  useEffect(()=>{
   let active=true
+  let generation=0
   const read=async()=>{
+   const current=++generation
    const rows=await Promise.all(Object.entries(cssaProfileStores).map(async([id,definition])=>{
     try{
      const response=await fetch(`/obsidia-local/${definition.route}`,{cache:'no-store',signal:AbortSignal.timeout(4000)})
@@ -554,7 +557,7 @@ export default function CSSAPage(){
      return [id,{available:true,state}] as const
     }catch{return [id,{available:false}] as const}
    }))
-   if(active)setObservations(Object.fromEntries(rows) as Observations)
+   if(active&&current===generation)setObservations(Object.fromEntries(rows) as Observations)
   }
   void read();const timer=window.setInterval(read,5000)
   const events=(Object.keys(cssaProfileStores) as StoreId[]).map(id=>`cssa-${id}-updated`)
@@ -638,6 +641,13 @@ export default function CSSAPage(){
   return catalogueItems[structureId][id]?.length??0
  }
 
+ const moduleBadge=(id:string)=>{
+  const live=structureId==='cssa'?cssaNavigationCount(id,observations):null
+  if(live)return <b title={`${live.label} · /obsidia-local/${live.route}${live.value===null?' · UNKNOWN : source indisponible ou invalide':''}`} aria-label={`${live.label} : ${live.value??'UNKNOWN'}`}>{live.value??'UNKNOWN'}</b>
+  const count=moduleCount(id)
+  return count>0?<b title="Références de navigation">{count}</b>:null
+ }
+
  const openItem=(id:string)=>{setSelectedId(id);setTab('overview');location.hash='cssa/'+moduleId+'/'+encodeURIComponent(id)}
  const openModule=(id:string,picked='')=>{setModuleId(id);setSelectedId(picked);setQuery('');setTab('overview');location.hash='cssa/'+id+(picked?'/'+encodeURIComponent(picked):'')}
  const switchStructure=(id:StructureId)=>{setStructureId(id);setModuleId('dashboard');setSelectedId('');setQuery('');setTab('overview');setDashboardMode('capabilities');location.hash='cssa/dashboard'}
@@ -691,7 +701,7 @@ export default function CSSAPage(){
               >
                 <span><UiIcon name={m.icon} /></span>
                 <strong>{m.label}</strong>
-                {moduleCount(m.id) > 0 && <b>{moduleCount(m.id)}</b>}
+                {moduleBadge(m.id)}
               </a>
             ))}
           </div>
@@ -701,7 +711,7 @@ export default function CSSAPage(){
           <div className="u-nav-group-title">AVANCÉ / AUDIT</div>
           {structure.modules.filter(m=>cssaAdvancedModuleIds.includes(m.id)).map(m=>(
             <a key={m.id} href={'#cssa/'+m.id} className={moduleId===m.id?'active':''} onClick={()=>openModule(m.id)}>
-              <span><UiIcon name={m.icon}/></span><strong>{m.label}</strong>{moduleCount(m.id)>0&&<b>{moduleCount(m.id)}</b>}
+              <span><UiIcon name={m.icon}/></span><strong>{m.label}</strong>{moduleBadge(m.id)}
             </a>
           ))}
         </div>
@@ -716,7 +726,7 @@ export default function CSSAPage(){
         >
           <span><UiIcon name={m.icon} /></span>
           <strong>{m.label}</strong>
-          {moduleCount(m.id) > 0 && <b>{moduleCount(m.id)}</b>}
+          {moduleBadge(m.id)}
         </a>
       ))
     )}
