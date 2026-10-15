@@ -1,3 +1,7 @@
+import {readCssaCases,updateCssaCaseOrganisation} from './cssaCaseUpdate'
+import {readCssaOrganisation} from './cssaOrganisationRead'
+import {cssaSourceAvailable} from './cssaLinkedReference'
+import CSSAStoreSourceNotice from './CSSAStoreSourceNotice'
 import {readCssaCrm,writeCssaCrm,recordCssaCrmInteraction} from './cssaCrmWrite'
 import {updateCssaIntendance,type IntendanceChange} from './cssaIntendanceUpdate'
 import {createCssaManualTask,deleteCssaTask} from './cssaTaskLifecycle'
@@ -120,6 +124,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
   const [crmTypeFilter, setCrmTypeFilter] = useState<string>('TOUT')
   const [crmMode,setCrmMode]=useState<'cases'|'directory'>('cases')
   const [directorySelectedId,setDirectorySelectedId]=useState('')
+  const appliedCrmSelection=useRef('')
   const [showExternalCreate,setShowExternalCreate]=useState(false)
   const [externalForm,setExternalForm]=useState<Record<string,string>>({kind:'AUTRE'})
   const [intendanceCatFilter, setIntendanceCatFilter] = useState<string>('TOUT')
@@ -149,31 +154,25 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
   const [savingNote, setSavingNote] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
 
-  // Fetch state on mount
   const fetchOpsState = useCallback(async () => {
+    if(taskEditing.current)return
     const request=++readGeneration.current
-    try {
-      const [res, orgRes, directoryRes] = await Promise.all([
-        fetch('/obsidia-local/cssa-ops-state', {cache: 'no-store'}),
-        fetch('/obsidia-local/cssa-organisation-state', {cache: 'no-store'}),
-        readCssaCrm<CrmDirectoryState>().then(data=>({ok:true,json:async()=>data})).catch(()=>({ok:false,json:async()=>null}))
-      ])
-      if(!mounted.current||request!==readGeneration.current)return
-      if (res.ok) {
-        const data: OpsState = await res.json()
-        setState(data)
-      }
-      if (orgRes.ok) setOrgState(await orgRes.json())
-      if (directoryRes.ok) setDirectory(await directoryRes.json())
-    } catch {}
-    finally {
-      if(mounted.current&&request===readGeneration.current)setLoading(false)
-    }
+    const [ops,organisation,crm]=await Promise.allSettled([
+      readCssaCases<OpsState>(),readCssaOrganisation<OrgState>(),readCssaCrm<CrmDirectoryState>()
+    ])
+    if(!mounted.current||request!==readGeneration.current)return
+    setState(ops.status==='fulfilled'?ops.value:null)
+    setOrgState(organisation.status==='fulfilled'&&cssaSourceAvailable(organisation.value)?organisation.value:null)
+    setDirectory(crm.status==='fulfilled'?crm.value:null)
+    setLoading(false)
   }, [])
 
   useEffect(() => {
     mounted.current=true;void fetchOpsState()
-    return()=>{mounted.current=false;readGeneration.current++}
+    const timer=window.setInterval(fetchOpsState,15000)
+    const events=['cssa-ops-updated','cssa-organisation-updated','cssa-crm-updated']
+    events.forEach(event=>window.addEventListener(event,fetchOpsState))
+    return()=>{mounted.current=false;readGeneration.current++;window.clearInterval(timer);events.forEach(event=>window.removeEventListener(event,fetchOpsState))}
   }, [fetchOpsState])
 
   // Keep a dirty draft during unrelated confirmed task updates.
@@ -207,22 +206,6 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
 
   const editTask=(id:string,change:TaskChange)=>editOps(()=>updateCssaTask<OpsState>(id,change),change.kind==='NOTES')
   const editIntendance=(id:string,change:IntendanceChange)=>editOps(()=>updateCssaIntendance<OpsState>(id,change),change.kind==='NOTES')
-
-  // Post update
-  const postPatch = async (patch: Record<string, unknown>) => {
-    try {
-      const res = await fetch('/obsidia-local/cssa-ops-state', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(patch)
-      })
-      if (res.ok) {
-        const updated: OpsState = await res.json()
-        setState(updated)
-        window.dispatchEvent(new CustomEvent('cssa-ops-updated',{detail:updated}))
-      }
-    } catch {}
-  }
 
   const runCrmWrite=async(operation:()=>Promise<CrmDirectoryState>)=>{
     if(taskEditing.current)return false
@@ -462,6 +445,15 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
     return state.tasks.find(t => t.id === selectedId) || state.tasks[0]
   }, [state, selectedId])
 
+  useEffect(()=>{
+    if(activeModule!=='crm'||!selectedId||appliedCrmSelection.current===selectedId)return
+    if(directory?.organizations.some(row=>row.id===selectedId)){
+      setCrmMode('directory');setDirectorySelectedId(selectedId);appliedCrmSelection.current=selectedId
+    }else if(state?.cases.some(row=>row.id===selectedId)){
+      setCrmMode('cases');appliedCrmSelection.current=selectedId
+    }
+  },[activeModule,selectedId,directory,state])
+
   const selectedCase = useMemo(() => {
     if (!state || !state.cases.length) return null
     return state.cases.find(c => c.id === selectedId) || state.cases[0]
@@ -490,6 +482,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
 
   return (
     <div className="ops-wrapper">
+      {state?<CSSAStoreSourceNotice state={state}/>:<p>UNKNOWN · source Ops indisponible ou invalide.</p>}
       {taskEditMessage&&<p role={taskEditFailed?'alert':'status'}>{taskEditMessage}</p>}
       <fieldset disabled={taskEditingBusy} style={{display:'contents'}}>
       <div className="ops-workbox">
@@ -1082,7 +1075,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
                 </span>
                 <span className="badge-origin">Échéance : {selectedCase.dates.dueAt}</span>
                 <span className="badge-origin">Responsable : {selectedCase.responsible}</span>
-                <select className="ops-person-select" aria-label="Organisme CRM" value={selectedCase.relatedOrgId||''} onChange={e=>postPatch({casePatch:{...selectedCase,relatedOrgId:e.target.value||null,relatedOrg:e.target.value?externalName(e.target.value):selectedCase.relatedOrg}})}>
+                <select className="ops-person-select" aria-label="Organisme CRM" value={selectedCase.relatedOrgId||''} onChange={e=>{void editOps(()=>updateCssaCaseOrganisation<OpsState>(selectedCase.id,e.target.value||null))}}>
                   <option value="">Organisme non raccordé</option>
                   {(directory?.organizations||[]).map(o=><option key={o.id} value={o.id}>{o.name}</option>)}
                 </select>

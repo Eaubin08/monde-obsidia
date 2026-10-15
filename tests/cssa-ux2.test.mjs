@@ -113,7 +113,8 @@ test('UX5 · Organisation is the canonical people, availability and authority su
 
 test('UX6 · canonical Organisation people are referenced by Tasks, Matchday, Dossiers and Finance',()=>{
   assert.match(ops,/responsiblePersonId/)
-  assert.match(ops,/cssa-organisation-state/)
+  assert.match(ops,/readCssaOrganisation/)
+  assert.match(readFileSync(new URL('../src/cssaOrganisationRead.ts',import.meta.url),'utf8'),/cssa-organisation-state/)
   assert.match(ops,/Responsable matchday/)
   assert.match(business,/ownerPersonId/)
   assert.match(business,/recordedByPersonId/)
