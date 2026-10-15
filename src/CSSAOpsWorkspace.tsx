@@ -1,4 +1,5 @@
-import {useEffect, useState, useMemo, useCallback} from 'react'
+import {updateCssaTask,type TaskChange} from './cssaTaskUpdate'
+import {useEffect, useState, useMemo, useCallback, useRef} from 'react'
 import './CSSAOps.css'
 
 export type TaskStatus = 'A_FAIRE' | 'EN_COURS' | 'EN_ATTENTE' | 'BLOQUE' | 'TERMINE'
@@ -132,17 +133,27 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
 
   // Draft note
   const [draftNote, setDraftNote] = useState('')
+  const draftDirty=useRef(false)
+  const draftSelection=useRef('')
+  const taskEditing=useRef(false)
+  const mounted=useRef(true)
+  const readGeneration=useRef(0)
+  const [taskEditingBusy,setTaskEditingBusy]=useState(false)
+  const [taskEditMessage,setTaskEditMessage]=useState('')
+  const [taskEditFailed,setTaskEditFailed]=useState(false)
   const [savingNote, setSavingNote] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
 
   // Fetch state on mount
   const fetchOpsState = useCallback(async () => {
+    const request=++readGeneration.current
     try {
       const [res, orgRes, directoryRes] = await Promise.all([
         fetch('/obsidia-local/cssa-ops-state', {cache: 'no-store'}),
         fetch('/obsidia-local/cssa-organisation-state', {cache: 'no-store'}),
         fetch('/obsidia-local/cssa-crm-directory', {cache: 'no-store'})
       ])
+      if(!mounted.current||request!==readGeneration.current)return
       if (res.ok) {
         const data: OpsState = await res.json()
         setState(data)
@@ -151,25 +162,43 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
       if (directoryRes.ok) setDirectory(await directoryRes.json())
     } catch {}
     finally {
-      setLoading(false)
+      if(mounted.current&&request===readGeneration.current)setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    void fetchOpsState()
+    mounted.current=true;void fetchOpsState()
+    return()=>{mounted.current=false;readGeneration.current++}
   }, [fetchOpsState])
 
-  // Sync draft note with selection
+  // Keep a dirty draft during unrelated confirmed task updates.
   useEffect(() => {
     if (!state) return
-    if (activeModule === 'admin' || activeModule === 'administration' || activeModule === 'tasks') {
-      const t = state.tasks.find(x => x.id === selectedId) || state.tasks[0]
-      setDraftNote(t?.notes || '')
-    } else if (activeModule === 'matchday' || activeModule === 'intendance') {
-      const item = state.intendanceItems.find(x => x.id === selectedId) || state.intendanceItems[0]
-      setDraftNote(item?.notes || '')
-    }
+    const taskView=['admin','administration','tasks'].includes(activeModule)
+    const item=taskView?(state.tasks.find(x=>x.id===selectedId)||state.tasks[0]):(['matchday','intendance'].includes(activeModule)?state.intendanceItems.find(x=>x.id===selectedId)||state.intendanceItems[0]:null)
+    const key=activeModule+':'+(item?.id||'')
+    if(key!==draftSelection.current){draftSelection.current=key;draftDirty.current=false;setSaveSuccess(false)}
+    if(!draftDirty.current)setDraftNote(item?.notes||'')
   }, [activeModule, selectedId, state])
+
+  const editTask=async(taskId:string,change:TaskChange)=>{
+    if(taskEditing.current)return false
+    taskEditing.current=true;readGeneration.current++
+    setTaskEditingBusy(true);setTaskEditMessage('Enregistrement de la modification…');setTaskEditFailed(false);setSaveSuccess(false)
+    try{
+      const updated=await updateCssaTask<OpsState>(taskId,change)
+      if(mounted.current){
+        if(change.kind==='NOTES'){draftDirty.current=false;setSaveSuccess(true)}
+        setState(updated);setTaskEditMessage('Modification confirmée dans le registre local.')
+      }
+      window.dispatchEvent(new CustomEvent('cssa-ops-updated',{detail:updated}))
+      return true
+    }catch(cause){
+      if(mounted.current){setTaskEditFailed(true);setTaskEditMessage(`${cause instanceof Error?cause.message:'Modification non confirmée.'} Réessayez ; une note non enregistrée reste dans le champ.`)}
+      window.dispatchEvent(new Event('cssa-ops-updated'))
+      return false
+    }finally{taskEditing.current=false;if(mounted.current)setTaskEditingBusy(false)}
+  }
 
   // Post update
   const postPatch = async (patch: Record<string, unknown>) => {
@@ -266,13 +295,8 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
     return orgState?.people.find(p => p.id === personId)?.displayName || 'PERSONNE INCONNUE'
   }
 
-  const handleTaskResponsible = (taskId: string, personId: string) => {
-    if (!state) return
-    const target = state.tasks.find(t => t.id === taskId)
-    if (!target) return
-    const updated = {...target, responsiblePersonId: personId || null, responsible: personId ? personName(personId) : 'UNKNOWN / NON ASSIGNÉ'}
-    setState(prev => prev ? {...prev, tasks: prev.tasks.map(t => t.id === taskId ? updated : t)} : null)
-    void postPatch({taskPatch: updated})
+  const handleTaskResponsible = (taskId:string,personId:string) => {
+    void editTask(taskId,{kind:'RESPONSIBLE',personId:personId||null})
   }
 
   const handleIntendanceResponsible = (itemId: string, personId: string) => {
@@ -284,64 +308,21 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
     void postPatch({intendancePatch: updated})
   }
 
-  // Tâche : changement de statut
-  const handleTaskStatus = (taskId: string, nextStatus: TaskStatus) => {
-    if (!state) return
-    const target = state.tasks.find(t => t.id === taskId)
-    if (!target) return
-    const updated = {
-      ...target,
-      status: nextStatus,
-      history: [
-        ...(target.history || []),
-        {at: new Date().toISOString(), action: 'STATUT', note: `Statut changé à ${nextStatus}`}
-      ]
-    }
-    setState(prev => prev ? {
-      ...prev,
-      tasks: prev.tasks.map(t => t.id === taskId ? updated : t)
-    } : null)
-    void postPatch({taskPatch: updated})
+  const handleTaskStatus = (taskId:string,nextStatus:TaskStatus) => {
+    void editTask(taskId,{kind:'STATUS',value:nextStatus})
   }
-
-  // Tâche : changement de priorité
-  const handleTaskPriority = (taskId: string, nextPriority: TaskPriority) => {
-    if (!state) return
-    const target = state.tasks.find(t => t.id === taskId)
-    if (!target) return
-    const updated = {...target, priority: nextPriority}
-    setState(prev => prev ? {
-      ...prev,
-      tasks: prev.tasks.map(t => t.id === taskId ? updated : t)
-    } : null)
-    void postPatch({taskPatch: updated})
+  const handleTaskPriority = (taskId:string,nextPriority:TaskPriority) => {
+    void editTask(taskId,{kind:'PRIORITY',value:nextPriority})
   }
-
-  // Tâche : checklist toggle
-  const handleToggleChecklist = (taskId: string, key: string) => {
-    if (!state) return
-    const target = state.tasks.find(t => t.id === taskId)
-    if (!target) return
-    const updatedChecks = {...target.checklist, [key]: !target.checklist[key]}
-    const updated = {...target, checklist: updatedChecks}
-    setState(prev => prev ? {
-      ...prev,
-      tasks: prev.tasks.map(t => t.id === taskId ? updated : t)
-    } : null)
-    void postPatch({taskPatch: updated})
+  const handleToggleChecklist = (taskId:string,key:string) => {
+    const target=state?.tasks.find(task=>task.id===taskId)
+    if(target)void editTask(taskId,{kind:'CHECKLIST',key,value:!target.checklist[key]})
   }
-
-  // Tâche : sauvegarde note
-  const handleSaveTaskNote = async (taskId: string) => {
-    if (!state) return
+  const handleSaveTaskNote = async (taskId:string) => {
+    if(taskEditing.current)return
     setSavingNote(true)
-    const target = state.tasks.find(t => t.id === taskId)
-    if (!target) return
-    const updated = {...target, notes: draftNote}
-    await postPatch({taskPatch: updated})
-    setSavingNote(false)
-    setSaveSuccess(true)
-    setTimeout(() => setSaveSuccess(false), 2000)
+    try{await editTask(taskId,{kind:'NOTES',value:draftNote})}
+    finally{if(mounted.current)setSavingNote(false)}
   }
 
   // Tâche : suppression
@@ -496,6 +477,8 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
 
   return (
     <div className="ops-wrapper">
+      {taskEditMessage&&<p role={taskEditFailed?'alert':'status'}>{taskEditMessage}</p>}
+      <fieldset disabled={taskEditingBusy} style={{display:'contents'}}>
       <div className="ops-workbox">
       {/* ========================================================
           COLONNE 1 : Catégories & Filtres (Boîte de travail)
@@ -983,7 +966,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
                 <textarea
                   className="ops-notes-textarea"
                   value={draftNote}
-                  onChange={e => setDraftNote(e.target.value)}
+                  onChange={e => {draftDirty.current=true;setSaveSuccess(false);setDraftNote(e.target.value)}}
                   placeholder="Ajouter une consigne opérationnelle, un numéro de contact ou un point de blocage..."
                 />
                 <div className="ops-notes-footer">
@@ -1370,7 +1353,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
                 <textarea
                   className="ops-notes-textarea"
                   value={draftNote}
-                  onChange={e => setDraftNote(e.target.value)}
+                  onChange={e => {draftDirty.current=true;setSaveSuccess(false);setDraftNote(e.target.value)}}
                   placeholder="Détails matériel, clés des vestiaires, horaire point de rendez-vous..."
                 />
                 <div className="ops-notes-footer">
@@ -1403,6 +1386,6 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
         )}
       </main>
     </div>
-  </div>
+  </fieldset></div>
   )
 }

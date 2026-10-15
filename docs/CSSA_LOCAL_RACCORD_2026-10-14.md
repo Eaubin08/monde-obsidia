@@ -223,3 +223,25 @@ Validation : 49 tests ciblés PASS (business-write, business-read, requirement-t
 - Raccord Organisation → Dossiers → Accueil → Tâches : projections et liens présents ; lectures renforcées et confirmations Organisation / Dossiers / Documents livrées. Ensemble encore ouvert, sans clôture globale revendiquée.
 - Reste CSSA : raccords Administration / Intendance / CRM, confirmations des autres modifications métier, profondeur Sportif et calendrier transversal ; pages métier avant copilote.
 - Cadre global inchangé : V0.1 entreprise, Forge privée distincte du Builder entreprise, génération d’agents selon les besoins, universalité et synchronisation Monde / Workspace / Pokémon. Position actuelle OBSERVER → RECONSTRUIRE → PROJETER ; KX108_ONLY et états tâche/exigence/validation/dépôt/preuve distincts.
+
+## Passe exécutée : modifications des tâches confirmées
+
+Statut, priorité, checklist, notes et responsable utilisent désormais un raccord de modification des tâches existantes. Les affichages optimistes de ces cinq actions sont retirés : la fiche ne présente leur résultat qu’après confirmation de l’objet unique dans le registre Ops AVAILABLE. Une source MISSING/INVALID/UNREADABLE, une tâche absente/ambiguë ou un point de checklist disparu bloque l’écriture. La modification d’un template de secours ne l’initialise pas implicitement comme une tâche réelle.
+
+Le raccord relit la tâche puis transmet uniquement id et champs demandés. Il ne renvoie pas son ancien historique, ses relations, sa source, sa classe de vérité ou ses autres champs. L’historique reste produit par le store existant. La checklist est fusionnée avec sa version relue et reçoit une valeur explicite, pas une nouvelle inversion lors de la reprise. Le responsable est résolu par id unique dans Organisation AVAILABLE ; son nom actuel est repris sans activation ni habilitation déduite. La désaffectation reste explicite.
+
+Une réponse POST est contrôlée avec le lecteur de tâches existant, les collections Ops nécessaires au workspace, la disponibilité et les champs demandés. Si une reprise retrouve déjà ces champs dans la source actuelle, elle retourne cette confirmation sans POST supplémentaire : pas de double inversion ni d’entrée UPDATE supplémentaire. Ce n’est pas une transaction avec comparaison atomique entre utilisateurs ; une modification survenue après la relecture reste hors de cette garantie.
+
+Le workspace bloque ses commandes pendant une de ces modifications et expose en cours, confirmation ou erreur. Le succès des notes ne s’affiche plus après une réponse en échec. Un brouillon de note non sauvegardé est conservé lors des mises à jour confirmées d’autres champs de la même fiche ; le changement de sélection recharge la note de la fiche choisie. Les réponses de lecture du montage ne remplacent plus une modification plus récente et ne sont pas appliquées après démontage.
+
+Cette passe concerne les cinq modifications de tâches, aussi réutilisées par la vue Administration. La création manuelle, la suppression de tâche et les écritures Intendance / CRM utilisent encore leurs parcours antérieurs ; leur confirmation n’est pas revendiquée ici. Une tâche TERMINE ou un point coché ne modifie aucune exigence, validation, preuve ou autorisation.
+
+Validation : 52 tests ciblés PASS (task-update, tasks-read, requirement-task, person-work, UX CSSA), TypeScript, build Vite, lint et diff whitespace PASS. Sept scénarios ajoutés, dont trois avec le vrai store isolé : modifications partielles conservant sources/contradictions/relations et historique, fusion de checklist conservant les autres points actualisés et réponse perdue suivie d’une reprise sans deuxième écriture. Autres scénarios : identité canonique actuelle sans activation, sources/tâches/checklist indisponibles, réponses HTTP/objets non confirmés et identités supprimées/ambiguës. Suite globale non relancée.
+
+### État du plan après cette passe
+
+- Livré : statut, priorité, checklist, notes et responsable des tâches confirmés ; champs indépendants préservés, brouillon de note conservé sur mise à jour d’autres champs.
+- Prochaine passe locale : création manuelle et suppression des tâches, pour ne plus fermer le formulaire ni retirer une tâche avant confirmation. La création depuis une exigence est déjà contrôlée.
+- Raccord prioritaire Organisation → Dossiers → Accueil → Tâches : projections et liens présents, lectures renforcées, confirmations Organisation/Dossiers/Documents et modifications des tâches livrées ; ensemble encore ouvert.
+- Reste CSSA : raccords Administration / Intendance / CRM et confirmations des autres modifications ; profondeur Sportif et calendrier transversal ; pages métier avant copilote.
+- Cadre global maintenu : V0.1 entreprise, Forge privée distincte du Builder entreprise, agents générés selon les besoins, universalité et synchronisation Monde / Workspace / Pokémon. Position actuelle OBSERVER → RECONSTRUIRE → PROJETER ; KX108_ONLY conservé.
