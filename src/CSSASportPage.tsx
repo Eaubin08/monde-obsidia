@@ -1,3 +1,4 @@
+import {buildClubCalendar,sportCalendarHref} from './cssaSportCalendar'
 import {readCssaSportLocal,writeCssaSportLocal,readCssaTasks,projectSportOpsTasks,sportWeekendRanges,type SportLocalState,type SportPatch} from './cssaSportLocal'
 import type {CssaTasksState} from './cssaTasksRead'
 import {createCssaManualTask,deleteCssaTask} from './cssaTaskLifecycle'
@@ -325,6 +326,11 @@ export const ARDENNES_ARCHIVES: Fixture[] = [
   {id:'ard-u18-2026',teamId:'U18F_R2',competition:'COUPE DES ARDENNES U18',date:'2026-05-30',time:'16:00',home:'OCPAM',away:'CS Sedan Ardennes',stage:'Archive 2025–2026',venue:'EXTERIEUR',pitch:'À confirmer',truth:'PUBLIC_CORROBORATED',source:'OCPAM',sourceUrl:'https://www.ocpam.fr/',note:'Archive publique identifiée ; résultat non promu faute de source fiable dans le dataset courant.'}
 ]
 
+export const CSSA_REFERENCE_CALENDAR = buildClubCalendar(
+ [...R1_MATCHES,...COUPE_DE_FRANCE,...R2_MATCHES,...U20_MATCHES,...FORMATION_MATCHES,...FEMININES_MATCHES,...ARDENNES_ARCHIVES],
+ ECOLE_FOOT_PLATEAUX
+)
+
 export function detectPitchConflicts(matches: Fixture[]): PitchConflict[] {
   const conflicts: PitchConflict[] = []
   const slotMap = new Map<string, Fixture[]>()
@@ -545,17 +551,7 @@ export default function CSSASportWorkspace() {
   }, [auto, loadWatch])
 
   // All club fixtures consolidated
-  const allClubFixtures = useMemo<Fixture[]>(() => {
-    return [
-      ...R1_MATCHES,
-      ...COUPE_DE_FRANCE,
-      ...R2_MATCHES,
-      ...U20_MATCHES,
-      ...FORMATION_MATCHES,
-      ...FEMININES_MATCHES,
-      ...ARDENNES_ARCHIVES
-    ]
-  }, [])
+  const allClubFixtures = useMemo<Fixture[]>(() => CSSA_REFERENCE_CALENDAR.flatMap(e=>e.fixture?[e.fixture]:[]), [])
 
   // Pitch collision detection across all club matches
   const pitchConflicts = useMemo(() => {
@@ -616,6 +612,7 @@ export default function CSSASportWorkspace() {
       if (query && !((f.home + ' ' + f.away + ' ' + f.competition + ' ' + f.stage + ' ' + (f.pitch || '')).toLowerCase().includes(query.toLowerCase()))) {
         return false
       }
+      if (filter === 'ecole_foot') return false
       if (filter === 'seniors' && !['SENIORS_R1', 'SENIORS_R2', 'U20_R1'].includes(f.teamId)) return false
       if (filter === 'formation' && !['U17_R1', 'U16_R1', 'U15_R1', 'U15_D1', 'U13_FANION', 'U13_U12_ESPOIR', 'U12_AVENIR'].includes(f.teamId)) return false
       if (filter === 'feminines' && !['SENIORS_F', 'U18F_R2'].includes(f.teamId)) return false
@@ -634,7 +631,7 @@ export default function CSSASportWorkspace() {
   // Select match
   useEffect(() => {
     if (activeView === 'ECOLE_FOOT') {
-      if (selectedId) setSelectedId('')
+      if (selectedId && !ECOLE_FOOT_PLATEAUX.some(p=>p.id===selectedId)) setSelectedId('')
       return
     }
     if (!visible.length) {
@@ -762,7 +759,7 @@ export default function CSSASportWorkspace() {
             <strong>Calendrier global</strong>
             <span>Vue transversale multi-équipes</span>
           </div>
-          <span className="spx-team-pill count">{allClubFixtures.length}</span>
+          <span className="spx-team-pill count">{CSSA_REFERENCE_CALENDAR.length}</span>
         </div>
 
         <nav className="spx-team-list">
@@ -867,11 +864,11 @@ export default function CSSASportWorkspace() {
           <div className="spx-kpis">
             <span>
               <b>
-                {activeView === 'CALENDRIER_GLOBAL' ? allClubFixtures.length
+                {activeView === 'CALENDRIER_GLOBAL' ? CSSA_REFERENCE_CALENDAR.length
                   : activeView === 'ECOLE_FOOT' ? ECOLE_FOOT_PLATEAUX.length
                   : currentViewMatches.length}
               </b>
-              <small>{activeView === 'ECOLE_FOOT' ? 'plateaux' : 'rencontres'}</small>
+              <small>{activeView === 'CALENDRIER_GLOBAL' ? 'événements' : activeView === 'ECOLE_FOOT' ? 'plateaux' : 'rencontres'}</small>
             </span>
             <span>
               <b>{finishedCount}</b>
@@ -937,10 +934,11 @@ export default function CSSASportWorkspace() {
                 ['seniors', 'Seniors (R1, R2, U20)'],
                 ['formation', 'Formation (U17–U12)'],
                 ['feminines', 'Féminines'],
+                ['ecole_foot', 'École de foot'],
                 ['home', 'À Domicile'],
                 ['away', 'À l’Extérieur'],
-                ['weekend_cur', 'Ce week-end (17–18 oct.)'],
-                ['weekend_prev', 'Week-end passé (03–04 oct.)'],
+                ['weekend_cur', 'Ce week-end ('+weekends.current.join(' / ')+')'],
+                ['weekend_prev', 'Week-end passé ('+weekends.previous.join(' / ')+')'],
                 ['to_verify', 'Conflits / À vérifier']
               ].map(([id, label]) => (
                 <button
@@ -1096,6 +1094,14 @@ export default function CSSASportWorkspace() {
           </section>
         ) : (
           <>
+        {activeView==='CALENDRIER_GLOBAL'&&<section className="spx-plateaux-container">
+          <h3>École de foot · plateaux du calendrier transversal</h3>
+          <p>Références non revérifiées. Les plateaux gardent leur format, leur lieu et leur statut propres.</p>
+          {CSSA_REFERENCE_CALENDAR.filter(e=>e.kind==='PLATEAU')
+            .filter(e=>!query||(e.title+' '+e.venue+' '+e.source).toLowerCase().includes(query.toLowerCase()))
+            .filter(e=>filter==='all'||filter==='ecole_foot'||filter==='upcoming'||(filter==='confirmed'&&e.plateau?.status==='CONFIRMED')||(filter==='to_verify'&&e.plateau?.status==='TO_VERIFY')||(filter==='weekend_cur'&&weekends.current.includes(e.date))||(filter==='weekend_prev'&&weekends.previous.includes(e.date)))
+            .map((e,index)=><p key={e.kind+':'+e.id+':'+index}><a href={e.href}>{e.date} · {e.time||'heure UNKNOWN'} · {e.title}</a> · {e.venue||'lieu UNKNOWN'} · {e.truth} · {e.detail} · {e.source}</p>)}
+        </section>}
         {/* NIVEAU 3 : AFFICHAGE SPÉCIFIQUE ÉCOLE DE FOOT (PLATEAUX) */}
         {activeView === 'ECOLE_FOOT' ? (
           <div className="spx-plateaux-container">
@@ -1123,9 +1129,9 @@ export default function CSSASportWorkspace() {
               </thead>
               <tbody>
                 {ECOLE_FOOT_PLATEAUX.map(p => (
-                  <tr key={p.id}>
+                  <tr key={p.id} aria-selected={selectedId===p.id}>
                     <td><span className="spx-cat-badge">{p.category}</span></td>
-                    <td><strong>{p.teamLabel}</strong></td>
+                    <td><a href={sportCalendarHref('ECOLE_FOOT',p.id)}><strong>{p.teamLabel}</strong>{selectedId===p.id?' · sélectionné':''}</a></td>
                     <td>{frDate(p.date)} · {p.time}</td>
                     <td>{p.format === 'FOOT_8' ? 'Foot à 8' : 'Foot à 5'}</td>
                     <td>{p.venue} {p.pitch ? `(${p.pitch})` : ''}</td>
@@ -1133,7 +1139,7 @@ export default function CSSASportWorkspace() {
                     <td><small>{p.source}</small></td>
                     <td>
                       <span className={'spx-team-pill ' + (p.status === 'CONFIRMED' ? 'real' : 'sim')}>
-                        {p.status === 'CONFIRMED' ? 'Confirmé' : 'À vérifier'}
+                        {p.status === 'CONFIRMED' ? 'Confirmé dans la référence' : 'À vérifier'} · {p.truth}
                       </span>
                     </td>
                   </tr>

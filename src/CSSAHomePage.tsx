@@ -2,7 +2,8 @@ import {deriveCssaDossierAttention} from './cssaDossierAttention'
 import {cssaSourceAvailable} from './cssaLinkedReference'
 import {useEffect,useMemo,useState} from 'react'
 import './CSSAHome.css'
-import {R1_MATCHES,R2_MATCHES,U20_MATCHES,FORMATION_MATCHES,FEMININES_MATCHES,COUPE_DE_FRANCE} from './CSSASportPage'
+import {CSSA_REFERENCE_CALENDAR} from './CSSASportPage'
+import {clubCalendarWindow} from './cssaSportCalendar'
 
 type OpsTask={id:string;title:string;status:string;priority?:string;dueAt?:string;matchRef?:string;origin?:string}
 type OpsCase={id:string;title?:string;subject?:string;status?:string;priority?:string;truthClass?:string;isTestFixture?:boolean}
@@ -25,7 +26,7 @@ type ClubAttention={id:string;level:'CRITIQUE'|'ACTION'|'INFO';domain:'TASK'|'MA
 type AvailabilityRow={id:string;personId:string;from:string;to:string;status:string;note:string}
 type PersonRow={id:string;displayName:string;status:string}
 type OrganisationState={people?:PersonRow[];availabilities?:AvailabilityRow[]}
-type AgendaItem={id:string;date:string;time:string;domain:'MATCH'|'TASK'|'DOSSIER'|'FINANCE'|'CONTRAT'|'MAINTENANCE'|'HUMAIN';title:string;detail:string;moduleId:string;targetId?:string}
+type AgendaItem={href?:string;id:string;date:string;time:string;domain:'MATCH'|'PLATEAU'|'TASK'|'DOSSIER'|'FINANCE'|'CONTRAT'|'MAINTENANCE'|'HUMAIN';title:string;detail:string;moduleId:string;targetId?:string}
 
 type Props={
   contradictions:string[]
@@ -206,14 +207,13 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
   const people=organisation?.people??[]
   const availabilities=organisation?.availabilities??[]
   const personName=(id:string)=>people.find(p=>p.id===id)?.displayName||'Personne inconnue'
-  const fixtures=[...R1_MATCHES,...COUPE_DE_FRANCE,...R2_MATCHES,...U20_MATCHES,...FORMATION_MATCHES,...FEMININES_MATCHES]
-    .filter(f=>!f.simulated&&f.date>=today&&f.date<=horizon7)
+  const fixtures=clubCalendarWindow(CSSA_REFERENCE_CALENDAR,today,horizon7)
   const agenda=([
-    ...fixtures.map<AgendaItem>(f=>({
-      id:'match:'+f.id,date:f.date,time:f.time||'',domain:'MATCH',
-      title:f.home+' — '+f.away,
-      detail:[f.competition,f.stage,f.truth==='PUBLIC_CONFLICT_REVIEW'?'horaire à confirmer':f.venue].filter(Boolean).join(' · '),
-      moduleId:'sportif',targetId:f.id
+    ...fixtures.map<AgendaItem>((f,index)=>({
+      id:f.kind+':'+f.id+':'+index,date:f.date,time:f.time||'',domain:f.kind,
+      title:f.title,
+      detail:[f.competition,f.venue,f.truth,f.detail,f.source,'référence non revérifiée'].filter(Boolean).join(' · '),
+      moduleId:'sportif',href:f.href
     })),
     ...tasks.filter(t=>attentionStatuses.has(t.status)&&t.dueAt&&t.dueAt.slice(0,10)>=today&&t.dueAt.slice(0,10)<=horizon7).map<AgendaItem>(t=>({
       id:'agenda-task:'+t.id,date:t.dueAt!.slice(0,10),time:'',domain:'TASK',title:t.title,
@@ -238,7 +238,7 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
       title:personName(a.personId)+' · '+(a.status==='INDISPONIBLE'?'indisponible':'disponibilité inconnue'),
       detail:a.note||'Disponibilité déclarée',moduleId:'organisation'
     }))
-  ] as AgendaItem[]).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time))
+  ] as AgendaItem[]).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'99:99').localeCompare(b.time||'99:99'))
   const agendaToday=agenda.filter(x=>x.date===today)
   const agendaWeek=agenda.filter(x=>x.date>today).slice(0,18)
 
@@ -275,14 +275,14 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
     <section className="cssa-home-agenda">
       <header><div><small>TEMPS CLUB</small><h3>Aujourd’hui & 7 prochains jours</h3></div><span>{agenda.length} échéance(s)</span></header>
       <div className="cssa-home-agenda-grid">
-        <div><h4>Aujourd’hui · {today}</h4>{agendaToday.length?agendaToday.map(x=><button key={x.id} onClick={()=>onOpen(x.moduleId,x.targetId)}>
+        <div><h4>Aujourd’hui · {today}</h4>{agendaToday.length?agendaToday.map(x=><button key={x.id} onClick={()=>x.href?location.hash=x.href:onOpen(x.moduleId,x.targetId)}>
           <time>{x.time||'—'}</time><div><strong>{x.title}</strong><small>{x.detail}</small></div><em>{x.domain}</em>
         </button>):<p className="cssa-home-empty">Aucune échéance datée aujourd’hui.</p>}</div>
-        <div><h4>Cette semaine</h4>{agendaWeek.length?agendaWeek.map(x=><button key={x.id} onClick={()=>onOpen(x.moduleId,x.targetId)}>
+        <div><h4>Cette semaine · {agendaWeek.length}/{agenda.filter(x=>x.date>today).length} affichées</h4>{agendaWeek.length?agendaWeek.map(x=><button key={x.id} onClick={()=>x.href?location.hash=x.href:onOpen(x.moduleId,x.targetId)}>
           <time>{x.date.slice(5)}{x.time?' · '+x.time:''}</time><div><strong>{x.title}</strong><small>{x.detail}</small></div><em>{x.domain}</em>
         </button>):<p className="cssa-home-empty">Aucune échéance datée dans les 7 prochains jours.</p>}</div>
       </div>
-      <footer>Agenda dérivé uniquement des dates déjà présentes : matchs non simulés, tâches, dossiers, factures, contrats, maintenance et disponibilités humaines.</footer>
+      <footer>Agenda dérivé uniquement des dates déjà présentes : matchs et plateaux de référence non revérifiés, tâches, dossiers, factures, contrats, maintenance et disponibilités humaines.</footer>
     </section>
 
     <div className="cssa-home-grid">
