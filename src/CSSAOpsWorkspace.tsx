@@ -1,3 +1,4 @@
+import {readCssaCrm,writeCssaCrm,recordCssaCrmInteraction} from './cssaCrmWrite'
 import {updateCssaIntendance,type IntendanceChange} from './cssaIntendanceUpdate'
 import {createCssaManualTask,deleteCssaTask} from './cssaTaskLifecycle'
 import {updateCssaTask,type TaskChange} from './cssaTaskUpdate'
@@ -137,6 +138,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
   const [draftNote, setDraftNote] = useState('')
   const draftDirty=useRef(false)
   const draftSelection=useRef('')
+  const pendingCrmIds=useRef<Record<string,string>>({})
   const pendingTaskId=useRef<string|null>(null)
   const taskEditing=useRef(false)
   const mounted=useRef(true)
@@ -154,7 +156,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
       const [res, orgRes, directoryRes] = await Promise.all([
         fetch('/obsidia-local/cssa-ops-state', {cache: 'no-store'}),
         fetch('/obsidia-local/cssa-organisation-state', {cache: 'no-store'}),
-        fetch('/obsidia-local/cssa-crm-directory', {cache: 'no-store'})
+        readCssaCrm<CrmDirectoryState>().then(data=>({ok:true,json:async()=>data})).catch(()=>({ok:false,json:async()=>null}))
       ])
       if(!mounted.current||request!==readGeneration.current)return
       if (res.ok) {
@@ -222,31 +224,44 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
     } catch {}
   }
 
-  const postDirectory = async (patch:Record<string,unknown>) => {
+  const runCrmWrite=async(operation:()=>Promise<CrmDirectoryState>)=>{
+    if(taskEditing.current)return false
+    taskEditing.current=true;readGeneration.current++
+    setTaskEditingBusy(true);setTaskEditMessage('Enregistrement CRM en cours…');setTaskEditFailed(false)
     try{
-      const res=await fetch('/obsidia-local/cssa-crm-directory',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)})
-      if(res.ok)setDirectory(await res.json())
-    }catch{}
+      const updated=await operation()
+      if(mounted.current){setDirectory(updated);setTaskEditMessage('Enregistrement CRM confirmé.')}
+      window.dispatchEvent(new CustomEvent('cssa-crm-updated',{detail:updated}))
+      return mounted.current
+    }catch(cause){
+      if(mounted.current){setTaskEditFailed(true);setTaskEditMessage(`${cause instanceof Error?cause.message:'Enregistrement CRM non confirmé.'} Saisie conservée ; réessayez sans recharger la page.`)}
+      window.dispatchEvent(new Event('cssa-crm-updated'))
+      return false
+    }finally{taskEditing.current=false;if(mounted.current)setTaskEditingBusy(false);window.dispatchEvent(new Event('cssa-ops-updated'))}
   }
+  const postDirectory=(patch:Record<string,unknown>)=>runCrmWrite(()=>writeCssaCrm<CrmDirectoryState>(patch))
 
   const externalName=(id?:string|null)=>id?(directory?.organizations.find(x=>x.id===id)?.name||'ORGANISME INCONNU'):'NON RACCORDE'
-  const extUid=(prefix:string)=>prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6)
+  const extUid=(prefix:string)=>pendingCrmIds.current[prefix]??(pendingCrmIds.current[prefix]=prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6))
 
   const createExternalOrganization=async(e:React.FormEvent)=>{
     e.preventDefault()
     if(!externalForm.orgName?.trim())return
     const id=extUid('org')
-    await postDirectory({organizationPatch:{id,name:externalForm.orgName.trim(),kind:externalForm.kind||'AUTRE',status:'ACTIF',legalId:externalForm.legalId?.trim()||'',website:externalForm.website?.trim()||'',email:externalForm.email?.trim()||'',phone:externalForm.phone?.trim()||'',address:externalForm.address?.trim()||'',source:externalForm.source?.trim()||'SAISIE_INTERNE_A_VERIFIER',note:''}})
+    if(!await postDirectory({organizationPatch:{id,name:externalForm.orgName.trim(),kind:externalForm.kind||'AUTRE',status:'ACTIF',legalId:externalForm.legalId?.trim()||'',website:externalForm.website?.trim()||'',email:externalForm.email?.trim()||'',phone:externalForm.phone?.trim()||'',address:externalForm.address?.trim()||'',source:externalForm.source?.trim()||'SAISIE_INTERNE_A_VERIFIER',note:''}}))return
+    delete pendingCrmIds.current.org
     setDirectorySelectedId(id);setShowExternalCreate(false);setExternalForm({kind:'AUTRE'})
   }
 
   const createExternalInteraction=async(e:React.FormEvent)=>{
     e.preventDefault()
     if(!selectedExternal||!externalForm.interactionSummary?.trim())return
-    const id=extUid('interaction')
+    const operationKey='interaction:'+selectedExternal.id
+    const id=extUid(operationKey)
     let followupTaskId:string|null=null
+    let followupTask:OpsTask|null=null
     if(externalForm.followupDueAt){
-      followupTaskId=extUid('task-crm')
+      followupTaskId='task-crm-'+id
       const task:OpsTask={
         id:followupTaskId,
         title:externalForm.followupTitle?.trim()||('Relance '+selectedExternal.name),
@@ -261,16 +276,16 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
         responsible:externalForm.interactionPersonId?personName(externalForm.interactionPersonId):'UNKNOWN / NON ASSIGNÉ',
         responsiblePersonId:externalForm.interactionPersonId||null,
         source:'Journal relationnel CRM',
-        truthClass:'PUBLIC_CONFIRMED',
+        truthClass:'UNKNOWN',
         checklist:{},
         notes:'',
         history:[{at:new Date().toISOString(),action:'CREATION',note:'Créée depuis interaction CRM '+id}],
         relations:[{type:'CRM_ORGANIZATION',targetId:selectedExternal.id,label:selectedExternal.name},{type:'CRM_INTERACTION',targetId:id,label:'Interaction CRM'}],
         caseRef:null
       }
-      await postPatch({taskPatch:task})
+      followupTask=task
     }
-    await postDirectory({interactionPatch:{
+    const interaction={
       id,
       organizationId:selectedExternal.id,
       contactId:externalForm.interactionContactId||null,
@@ -285,14 +300,18 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
       internalPersonId:externalForm.interactionPersonId||null,
       followupTaskId,
       source:externalForm.interactionSource?.trim()||'SAISIE_INTERNE_A_VERIFIER'
-    }})
+    }
+    if(!await runCrmWrite(()=>recordCssaCrmInteraction<CrmDirectoryState>(interaction,followupTask)))return
+    delete pendingCrmIds.current[operationKey]
     setExternalForm({...externalForm,interactionSummary:'',interactionProof:'',interactionSource:'',followupDueAt:'',followupTitle:''})
   }
 
   const createExternalContact=async(e:React.FormEvent)=>{
     e.preventDefault()
     if(!directorySelectedId||!externalForm.contactName?.trim())return
-    await postDirectory({contactPatch:{id:extUid('contact'),organizationId:directorySelectedId,displayName:externalForm.contactName.trim(),role:externalForm.contactRole?.trim()||'INCONNU',email:externalForm.contactEmail?.trim()||'',phone:externalForm.contactPhone?.trim()||'',status:'ACTIF',source:externalForm.contactSource?.trim()||'SAISIE_INTERNE_A_VERIFIER'}})
+    const operationKey='contact:'+directorySelectedId
+    if(!await postDirectory({contactPatch:{id:extUid(operationKey),organizationId:directorySelectedId,displayName:externalForm.contactName.trim(),role:externalForm.contactRole?.trim()||'INCONNU',email:externalForm.contactEmail?.trim()||'',phone:externalForm.contactPhone?.trim()||'',status:'ACTIF',source:externalForm.contactSource?.trim()||'SAISIE_INTERNE_A_VERIFIER'}}))return
+    delete pendingCrmIds.current[operationKey]
     setExternalForm({...externalForm,contactName:'',contactRole:'',contactEmail:'',contactPhone:'',contactSource:''})
   }
 

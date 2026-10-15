@@ -1,3 +1,7 @@
+import {readCssaCrm} from './cssaCrmWrite'
+import {readCssaTasks} from './cssaTasksRead'
+import {cssaSourceAvailable} from './cssaLinkedReference'
+import CSSAStoreSourceNotice from './CSSAStoreSourceNotice'
 import {useEffect,useMemo,useState} from 'react'
 import CSSAOpsWorkspace from './CSSAOpsWorkspace'
 import './CSSACrmPage.css'
@@ -15,38 +19,46 @@ const human=(v:string)=>String(v||'').replaceAll('_',' ').toLowerCase().replace(
 export default function CSSACrmPage({selectedId,onSelect}:Props){
  const [directory,setDirectory]=useState<Directory|null>(null)
  const [ops,setOps]=useState<OpsState|null>(null)
- const [error,setError]=useState(false)
+ const [loaded,setLoaded]=useState(false)
 
- const refresh=async()=>{
-  try{
-   const [d,o]=await Promise.all([
-    fetch('/obsidia-local/cssa-crm-directory',{cache:'no-store'}),
-    fetch('/obsidia-local/cssa-ops-state',{cache:'no-store'})
-   ])
-   if(!d.ok||!o.ok)throw new Error('crm unavailable')
-   setDirectory(await d.json());setOps(await o.json());setError(false)
-  }catch{setError(true)}
- }
- useEffect(()=>{void refresh()},[])
+ useEffect(()=>{
+  let active=true;let generation=0
+  const refresh=async()=>{
+   const request=++generation
+   const [directoryResult,opsResult]=await Promise.allSettled([readCssaCrm<Directory>(),readCssaTasks()])
+   if(!active||request!==generation)return
+   setDirectory(directoryResult.status==='fulfilled'?directoryResult.value:null)
+   const next=opsResult.status==='fulfilled'?opsResult.value:null
+   setOps(next&&Array.isArray(next.cases)?next as unknown as OpsState:null)
+   setLoaded(true)
+  }
+  void refresh();const timer=window.setInterval(refresh,15000)
+  const events=['cssa-crm-updated','cssa-ops-updated']
+  events.forEach(event=>window.addEventListener(event,refresh))
+  return()=>{active=false;window.clearInterval(timer);events.forEach(event=>window.removeEventListener(event,refresh))}
+ },[])
+ const directoryAvailable=cssaSourceAvailable(directory)
+ const opsAvailable=cssaSourceAvailable(ops)
 
  const view=useMemo(()=>{
-  const orgs=directory?.organizations||[]
-  const contacts=directory?.contacts||[]
-  const interactions=directory?.interactions||[]
-  const cases=ops?.cases||[]
+  const orgs=directoryAvailable?directory?.organizations||[]:[]
+  const contacts=directoryAvailable?directory?.contacts||[]:[]
+  const interactions=directoryAvailable?directory?.interactions||[]:[]
+  const cases=opsAvailable?ops?.cases||[]:[]
   const openCases=cases.filter(c=>!['FERME','CLOSED','TERMINE'].includes(String(c.status).toUpperCase()))
   const recent=[...interactions].sort((a,b)=>String(b.occurredAt).localeCompare(String(a.occurredAt))).slice(0,10)
   const followups=interactions.filter(i=>i.followupTaskId).length
   return {orgs,contacts,interactions,cases,openCases,recent,followups}
- },[directory,ops])
+ },[directory,ops,directoryAvailable,opsAvailable])
 
- if(error)return <section className="crmx"><div className="crmx-empty">CRM indisponible.</div></section>
- if(!directory||!ops)return <section className="crmx"><div className="crmx-empty">Chargement…</div></section>
+ if(!loaded)return <section className="crmx"><div className="crmx-empty">Chargement…</div></section>
 
  return <section className="crmx">
+  {directory?<CSSAStoreSourceNotice state={directory}/>:<p>UNKNOWN · source du répertoire CRM indisponible.</p>}
+  {ops?<CSSAStoreSourceNotice state={ops}/>:<p>UNKNOWN · source des dossiers et tâches indisponible.</p>}
   <header className="crmx-hero">
    <div><small>CRM CSSA</small><h2>Avec qui le club est-il en relation ?</h2><p>Organismes, contacts, dossiers relationnels, échanges et prochaines actions réunis dans une lecture relationnelle.</p></div>
-   <div className="crmx-hero-stats"><span><strong>{view.orgs.length}</strong><small>organismes</small></span><span><strong>{view.contacts.length}</strong><small>contacts</small></span><span><strong>{view.openCases.length}</strong><small>dossiers ouverts</small></span></div>
+   <div className="crmx-hero-stats"><span><strong>{directoryAvailable?view.orgs.length:'UNKNOWN'}</strong><small>organismes</small></span><span><strong>{directoryAvailable?view.contacts.length:'UNKNOWN'}</strong><small>contacts</small></span><span><strong>{opsAvailable?view.openCases.length:'UNKNOWN'}</strong><small>dossiers ouverts</small></span></div>
   </header>
 
   <section className="crmx-section">
@@ -56,29 +68,29 @@ export default function CSSACrmPage({selectedId,onSelect}:Props){
     const interactions=view.interactions.filter(i=>i.organizationId===o.id)
     const open=view.openCases.filter(c=>c.relatedOrgId===o.id)
     return <article key={o.id} onClick={()=>onSelect('crm',o.id)}>
-     <div className="crmx-logo">{o.name.slice(0,2).toUpperCase()}</div>
-     <div><small>{human(o.kind)}</small><h4>{o.name}</h4><p>{contacts.length} contact(s) · {interactions.length} échange(s) · {open.length} dossier(s)</p></div>
+     <div className="crmx-logo">{String(o.name||'UNKNOWN').slice(0,2).toUpperCase()}</div>
+     <div><small>{human(o.kind)}</small><h4>{o.name}</h4><p>{contacts.length} contact(s) · {interactions.length} échange(s) · {opsAvailable?open.length:'UNKNOWN'} dossier(s)</p></div>
      <span>{human(o.status)}</span>
-    </article>})}</div>:<div className="crmx-empty">Aucun acteur externe enregistré.</div>}
+    </article>})}</div>:<div className="crmx-empty">{directoryAvailable?'Aucun acteur externe enregistré.':'UNKNOWN · source du répertoire indisponible.'}</div>}
   </section>
 
   <section className="crmx-grid">
    <article className="crmx-panel">
-    <header><div><small>DERNIERS ÉCHANGES</small><h3>Journal relationnel</h3></div><span>{view.interactions.length}</span></header>
+    <header><div><small>DERNIERS ÉCHANGES</small><h3>Journal relationnel</h3></div><span>{directoryAvailable?view.interactions.length:'UNKNOWN'}</span></header>
     {view.recent.length?view.recent.map(i=>{const o=view.orgs.find(x=>x.id===i.organizationId);return <button key={i.id} onClick={()=>onSelect('crm',i.organizationId)}>
       <span>{i.type}</span><div><strong>{o?.name||'Organisme inconnu'}</strong><small>{i.summary}</small></div><time>{String(i.occurredAt).slice(0,10)}</time>
-    </button>}):<p>Aucun échange enregistré.</p>}
+    </button>}):<p>{directoryAvailable?'Aucun échange enregistré.':'UNKNOWN · source du journal indisponible.'}</p>}
    </article>
    <article className="crmx-panel">
-    <header><div><small>DOSSIERS RELATIONNELS</small><h3>À suivre</h3></div><span>{view.openCases.length}</span></header>
+    <header><div><small>DOSSIERS RELATIONNELS</small><h3>À suivre</h3></div><span>{opsAvailable?view.openCases.length:'UNKNOWN'}</span></header>
     {view.openCases.length?view.openCases.slice(0,10).map(c=><button key={c.id} onClick={()=>onSelect('crm',c.id)}>
       <span className="case">{c.priority}</span><div><strong>{c.subject}</strong><small>{c.relatedOrg} · {human(c.status)}</small></div><time>{c.dates?.dueAt||'—'}</time>
-    </button>):<p>Aucun dossier relationnel ouvert.</p>}
+    </button>):<p>{opsAvailable?'Aucun dossier relationnel ouvert.':'UNKNOWN · source des dossiers indisponible.'}</p>}
    </article>
   </section>
 
-  <section className="crmx-next"><div><small>PROCHAINES ACTIONS</small><h3>{view.followups} relance(s) déjà reliée(s) à une interaction</h3><p>Les relances CRM restent de vraies tâches Tasks : le CRM montre la relation, Tasks porte l’exécution.</p></div><button onClick={()=>onSelect('tasks','')}>Ouvrir Tasks →</button></section>
+  <section className="crmx-next"><div><small>PROCHAINES ACTIONS</small><h3>{directoryAvailable?view.followups:'UNKNOWN'} relance(s) déjà reliée(s) à une interaction</h3><p>Les relances CRM restent de vraies tâches Tasks : le CRM montre la relation, Tasks porte l’exécution.</p></div><button onClick={()=>onSelect('tasks','')}>Ouvrir Tasks →</button></section>
 
-  <details className="crmx-tools"><summary>Gestion détaillée du CRM</summary><CSSAOpsWorkspace activeModule="crm" selectedId={selectedId} onSelect={onSelect}/></details>
+  <details className="crmx-tools" open={Boolean(selectedId)}><summary>Gestion détaillée du CRM</summary><CSSAOpsWorkspace activeModule="crm" selectedId={selectedId} onSelect={onSelect}/></details>
  </section>
 }

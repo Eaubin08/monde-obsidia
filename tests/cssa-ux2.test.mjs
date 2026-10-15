@@ -125,7 +125,8 @@ test('UX6 · canonical Organisation people are referenced by Tasks, Matchday, Do
 
 test('UX7 · CRM is the canonical directory for external actors reused by business flows',()=>{
   assert.match(ops,/Répertoire externe/)
-  assert.match(ops,/cssa-crm-directory/)
+  assert.match(ops,/from '.\/cssaCrmWrite'/)
+  assert.match(readFileSync(new URL('../src/cssaCrmWrite.ts',import.meta.url),'utf8'),/cssa-crm-directory/)
   assert.match(ops,/Nouvel acteur externe/)
   assert.match(ops,/Contacts canoniques/)
   assert.match(ops,/relatedOrgId/)
