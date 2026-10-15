@@ -127,3 +127,13 @@ Une source absente, INVALID, UNREADABLE, non qualifiée AVAILABLE ou une collect
 Projection seule : aucune écriture dans les registres, modification de validation ou inférence d’autorisation. Les inconnues, contradictions, sources et preuves existantes sont conservées.
 
 Validation : 44 tests ciblés PASS (navigation-counts, live-profile, person-work, linked-reference, UX CSSA), TypeScript, build Vite, lint et diff whitespace PASS. Les cinq nouveaux scénarios couvrent périmètres réels, zéro vs UNKNOWN, templates/sources invalides, collections malformées/résultats manquants et indépendance des sources. Suite globale non relancée ; la limite réseau déjà documentée reste applicable.
+
+## Passe exécutée : Tâches distingue registre réel et modèle de secours
+
+La vue métier Tâches ne présente plus les tâches du template Ops comme du travail réel quand le fichier local est MISSING ou que la source n’est pas AVAILABLE. Les trois indicateurs deviennent UNKNOWN, les listes de triage sont remplacées par un message explicite et la gestion détaillée reste accessible pour préparer le registre. Un registre AVAILABLE vide conserve ses compteurs à zéro.
+
+La lecture utilise le même endpoint local, sans cache et avec délai maximal de quatre secondes. Une structure illisible ou une tâche dont les champs nécessaires au rendu manquent produit une indisponibilité explicite, sans conserver d’anciennes lignes affichées. Un numéro de génération empêche les réponses précédentes de remplacer une lecture plus récente ; le démontage empêche leur application à une page quittée.
+
+Une sélection de tâche ouvre la gestion détaillée, notamment depuis Dossiers ou Organisation. Les statuts, relations, sources et métadonnées sont conservés tels que lus. Aucun changement du protocole d’écriture ni de l’autorité de validation n’est introduit.
+
+Validation : 44 tests ciblés PASS (tasks-read, navigation-counts, requirement-task, UX CSSA), TypeScript, build Vite, lint et diff whitespace PASS. Les cinq nouveaux scénarios vérifient conservation des relations/provenance/contradictions, maintien de MISSING pour un template, refus des réponses HTTP et structures invalides, registre vide AVAILABLE et paramètres de lecture locale bornée. Suite globale non relancée.
