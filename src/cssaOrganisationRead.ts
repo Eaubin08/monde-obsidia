@@ -10,6 +10,11 @@ export async function readCssaOrganisation<T>(fetcher:typeof fetch=fetch):Promis
  const response=await fetcher('/obsidia-local/cssa-organisation-state',{cache:'no-store',signal:AbortSignal.timeout(4000)})
  if(!response.ok)throw new Error('Source Organisation indisponible')
  const state=await response.json()
- if(!state||typeof state!=='object'||Array.isArray(state)||Object.entries(fields).some(([list,keys])=>!Array.isArray(state[list])||state[list].some((row:unknown)=>!row||typeof row!=='object'||Array.isArray(row)||keys.some(key=>typeof (row as Record<string,unknown>)[key]!=='string'))))throw new Error('Registre Organisation invalide')
+ validateCssaOrganisationState(state)
  return state as T
+}
+
+export function validateCssaOrganisationState(state:unknown):asserts state is Record<string,unknown>{
+ const data=state as Record<string,unknown>
+ if(!data||typeof data!=='object'||Array.isArray(data)||Object.entries(fields).some(([list,keys])=>!Array.isArray(data[list])||(data[list] as unknown[]).some((row:unknown)=>!row||typeof row!=='object'||Array.isArray(row)||keys.some(key=>typeof (row as Record<string,unknown>)[key]!=='string'))))throw new Error('Registre Organisation invalide')
 }

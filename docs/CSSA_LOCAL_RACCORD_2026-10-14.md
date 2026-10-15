@@ -179,3 +179,23 @@ Validation : 51 tests ciblés PASS (organisation-read, Organisation store, peopl
 - Prochaine passe locale : confirmations des écritures du formulaire Organisation (erreur explicite, ne pas effacer une saisie non enregistrée), en conservant les stores et opérations existants. Le raccord n’est pas déclaré entièrement clos.
 - Reste CSSA : poursuivre les modifications et confirmations des parcours liés, puis les raccords Administration / Intendance / CRM ; direction Sportif et calendrier transversal maintenue ; pages métier alimentées avant copilote.
 - Cadre global inchangé : V0.1 entreprise, Forge privée distincte du Builder entreprise, agents générés selon les besoins, universalité au-delà de CSSA et vues Monde / Workspace / Pokémon synchronisées. Les raccords courants restent dans OBSERVER → RECONSTRUIRE → PROJETER, sans démontrer la boucle entière.
+
+## Passe exécutée : écritures Organisation confirmées
+
+Les cinq formulaires existants (personne, affectation de rôle, disponibilité, engagement, habilitation déclarée) n’effacent plus leurs champs après un HTTP en échec ou une réponse non confirmée. Ils affichent l’enregistrement en cours, le succès confirmé ou l’erreur explicite. Tous leurs champs sont désactivés pendant une écriture et un verrou empêche les envois concurrents dans cette instance de la page.
+
+Le raccord relit le registre avant écriture. AVAILABLE autorise la modification locale ; MISSING permet l’initialisation explicite d’une personne. INVALID/UNREADABLE ou une source non qualifiée bloquent l’écriture plutôt que de remplacer un fichier illisible par un état vide. Les quatre opérations liées à une personne exigent exactement une personne canonique portant l’id sélectionné dans la source actuelle. Cela ne constitue pas un contrôle d’autorité d’exécution et n’ajoute pas d’habilitation déduite.
+
+La réponse POST est contrôlée avec le validateur de lecture Organisation : source AVAILABLE, objet unique dans sa collection et champs saisis tous identiques. Une réponse absente/ambiguë/différente ne confirme pas l’opération. La saisie reste présente. L’id de l’opération reste stable pour une nouvelle tentative tant que cette instance du formulaire reste montée ; il est libéré seulement après confirmation. Le mécanisme réutilise l’upsert existant, sans nouvelle table ou contrat. Il n’est pas une transaction multiutilisateur ni une garantie de reprise après fermeture/rechargement de la page.
+
+Les événements demandent une relecture des projections après succès ou échec, pour exposer aussi une éventuelle écriture dont la réponse a été perdue. Une lecture de montage antérieure ne peut plus écraser la réponse confirmée du formulaire. Les rôles, disponibilités, engagements, habilitations et leurs sources conservent leurs états déclarés indépendants. Le serveur et son protocole de persistance restent ceux déjà présents.
+
+Validation : 49 tests ciblés PASS (organisation-write, organisation-read, Organisation store, people-projection, person-work et UX CSSA), TypeScript, build Vite, lint et diff whitespace PASS. Six scénarios d’écriture ajoutés, dont les quatre formulaires liés à une personne et une reprise sur le vrai store avec réponse perdue après sauvegarde : deux requêtes, une seule nouvelle personne, autre personne conservée. Autres cas : initialisation MISSING, source invalide/illisible, personne supprimée/ambiguë, refus HTTP, objet absent/dupliqué/différent ou source non confirmée. Suite globale non relancée.
+
+### État du plan après cette passe
+
+- Livré : confirmations et conservation de saisie des cinq formulaires Organisation, ids de reprise stables dans la page et blocage des envois concurrents.
+- Prochaine passe locale : appliquer la vérification des écritures aux parcours détaillés Dossiers / Documents déjà existants, sans confondre enregistrement, validation, dépôt et preuve.
+- Raccord Organisation → Dossiers → Accueil → Tâches : projections et liens explicites présents, lectures renforcées, confirmations Organisation et création de tâche contrôlées ; ensemble encore ouvert.
+- Reste CSSA : confirmations des autres modifications métier, raccords Administration / Intendance / CRM, profondeur Sportif et calendrier transversal ; pages métier alimentées avant copilote.
+- Cadre global : V0.1 entreprise, Forge privée distincte du Builder entreprise, génération d’agents selon les besoins, universalité et synchronisation Monde / Workspace / Pokémon restent dans le plan maître. Position actuelle OBSERVER → RECONSTRUIRE → PROJETER ; KX108_ONLY et séparation comprendre/proposer/autoriser/exécuter/prouver conservées.
