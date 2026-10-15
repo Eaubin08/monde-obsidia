@@ -199,3 +199,27 @@ Validation : 49 tests ciblés PASS (organisation-write, organisation-read, Organ
 - Raccord Organisation → Dossiers → Accueil → Tâches : projections et liens explicites présents, lectures renforcées, confirmations Organisation et création de tâche contrôlées ; ensemble encore ouvert.
 - Reste CSSA : confirmations des autres modifications métier, raccords Administration / Intendance / CRM, profondeur Sportif et calendrier transversal ; pages métier alimentées avant copilote.
 - Cadre global : V0.1 entreprise, Forge privée distincte du Builder entreprise, génération d’agents selon les besoins, universalité et synchronisation Monde / Workspace / Pokémon restent dans le plan maître. Position actuelle OBSERVER → RECONSTRUIRE → PROJETER ; KX108_ONLY et séparation comprendre/proposer/autoriser/exécuter/prouver conservées.
+
+## Passe exécutée : confirmations Dossiers / Documents
+
+Les opérations des deux modes détaillés passent désormais par le raccord de confirmation du protocole Business existant : dossier, exigence, document, validation, preuve de dépôt et résultat. La source est relue avant POST ; INVALID/UNREADABLE ou une source non qualifiée bloquent l’écriture. Une modification partielle dont la cible a disparu, un id ambigu ou un dossier parent introuvable/ambigu sont refusés avant envoi. MISSING conserve la possibilité d’initialiser explicitement un dossier ou un document de bibliothèque.
+
+La réponse doit porter une source AVAILABLE et confirmer tous les objets du patch, chacun unique et avec les champs envoyés identiques (y compris tableaux, valeurs nulles et champs structurés). Ainsi une réponse confirmant seulement le dossier et pas sa preuve ne suffit pas. Le succès confirme l’enregistrement local ; il ne vérifie pas le contenu de la preuve, ne soumet rien à un tiers et n’ajoute aucune décision d’exécution.
+
+Les formulaires conservent leur saisie et leur sélection sur erreur. Pendant une écriture ou une création de tâche liée, les commandes Dossiers/Documents sont désactivées ; un verrou empêche la concurrence entre ces deux opérations dans cette page. Les créations dossier/exigence/document/validation/dépôt/résultat gardent leur id pour une reprise tant que l’instance reste montée. Les ids des exigences/validations/dépôts/résultats sont associés au dossier pour ne pas réutiliser une opération incertaine sur un autre dossier. Ce mécanisme n’est ni une transaction multiutilisateur ni une reprise durable après rechargement.
+
+Les changements de statut, responsable, état d’exigence ou validation n’envoient plus une copie complète ancienne de l’objet : ils transmettent uniquement id et champs modifiés à l’upsert. Les autres champs, notamment sources et taskRefId, restent ceux du registre. Les enregistrements groupés dépôt/résultat ne renvoient que le statut du dossier associé. Les conditions métier préexistantes de préparation et de validation demeurent dans l’interface ; cette passe ne les transforme pas en autorisation serveur.
+
+Un document ajouté depuis la bibliothèque générale n’est plus rattaché implicitement au premier dossier ni à un id de document sélectionné. Un ajout depuis un dossier garde son lien explicite au dossier courant. La lecture de montage ne peut pas remplacer une réponse d’écriture plus récente.
+
+Le composant étant partagé avec Commerce/Finance, son chemin HTTP commun expose aussi les échecs et ne vide plus leurs formulaires sur échec HTTP ; les confirmations détaillées et ids de reprise de cette passe concernent Dossiers/Documents. Les autres registres financiers ne sont pas déclarés raccordés par ce travail.
+
+Validation : 49 tests ciblés PASS (business-write, business-read, requirement-task, linked-reference, UX CSSA), TypeScript, build Vite, lint et diff whitespace PASS. Sept scénarios d’écriture ajoutés, dont quatre scénarios avec le vrai store isolé : six types d’objets conservant leurs états indépendants, confirmation groupée dépôt/résultat, réponse perdue puis reprise sans doublon de document, modification partielle conservant source et lien tâche. Refus testés : source invalide, cible supprimée/ambiguë, parent absent, HTTP échoué, réponse partielle/différente/ambiguë/non qualifiée et patch invalide. Suite globale non relancée.
+
+### État du plan après cette passe
+
+- Livré : confirmations des opérations détaillées Dossiers/Documents, conservation de saisie, ids de reprise dans la page, modifications partielles et bibliothèque sans rattachement implicite.
+- Prochaine passe locale : modifications des tâches dans le workspace Ops existant (statut, checklist, notes et responsable), avec confirmation et conservation de la dernière version des autres champs. La création tâche depuis une exigence est déjà contrôlée.
+- Raccord Organisation → Dossiers → Accueil → Tâches : projections et liens présents ; lectures renforcées et confirmations Organisation / Dossiers / Documents livrées. Ensemble encore ouvert, sans clôture globale revendiquée.
+- Reste CSSA : raccords Administration / Intendance / CRM, confirmations des autres modifications métier, profondeur Sportif et calendrier transversal ; pages métier avant copilote.
+- Cadre global inchangé : V0.1 entreprise, Forge privée distincte du Builder entreprise, génération d’agents selon les besoins, universalité et synchronisation Monde / Workspace / Pokémon. Position actuelle OBSERVER → RECONSTRUIRE → PROJETER ; KX108_ONLY et états tâche/exigence/validation/dépôt/preuve distincts.
