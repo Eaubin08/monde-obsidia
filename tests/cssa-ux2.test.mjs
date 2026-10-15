@@ -254,8 +254,11 @@ test('UX15 · Commerce Finance and Media are distinct visual products, not one r
 
 test('UX16 · visual Finance and Commerce refresh from one shared business state without page duplication',()=>{
   assert.match(business,/cssa-business-updated/)
-  assert.match(finance,/addEventListener\('cssa-business-updated'/)
-  assert.match(commerce,/addEventListener\('cssa-business-updated'/)
+  assert.match(finance,/useCssaEconomy\(\)/)
+  assert.match(commerce,/useCssaEconomy\(\)/)
+  const economyHook=readFileSync(new URL('../src/useCssaEconomy.ts',import.meta.url),'utf8')
+  assert.match(economyHook,/addEventListener\('cssa-business-updated'/)
+  assert.match(economyHook,/addEventListener\('cssa-crm-updated'/)
   assert.match(finance,/Gestion détaillée · saisir \/ modifier les données financières/)
   assert.match(commerce,/Gestion détaillée · saisir \/ modifier l’activité commerciale/)
   assert.match(finance,/receivable/)
