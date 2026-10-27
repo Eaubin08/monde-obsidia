@@ -103,6 +103,35 @@ function nativeServicesObservedStatus(){
  return value
 }
 
+function localHttpJson(url,timeout=1600){
+ try{
+  const raw=execFileSync('curl.exe',['-fsS','--max-time',String(Math.max(1,Math.ceil(timeout/1000))),url],{encoding:'utf8',timeout:timeout+900,windowsHide:true}).trim()
+  return raw?JSON.parse(raw):null
+ }catch{return null}
+}
+function obsidiaApiIdentity(){
+ const base=obsidiaApiBase()
+ const data=localHttpJson(base+'/',1600)
+ const ready=!!data&&data.service==='obsidia-api'&&data.decision_authority==='KX108_ONLY'
+ return {port:8000,base,required:true,ready,reachable:!!data,service:data?.service||null,version:data?.version||null,mode:data?.mode||null,decisionAuthority:data?.decision_authority||null,state:ready?'READY':data?'BLOCKED':'OFFLINE',evidence:ready?'HTTP_ROOT_OBSIDIA_API_KX108_ONLY':data?'BLOCKED_WRONG_SERVICE_IDENTITY':'HTTP_ROOT_UNAVAILABLE'}
+}
+function qwenTextIdentity(){
+ const base=(process.env.JARJAR_QWEN_BASE||'http://127.0.0.1:8080/v1').replace(/\/+$/,'')
+ const data=localHttpJson(base+'/models',1800)
+ const models=Array.isArray(data?.data)?data.data:[]
+ const model=models.find(m=>/qwen/i.test(String(m?.id||m?.path||'')))
+ const ready=!!model
+ return {port:8080,base,required:false,ready,reachable:!!data,modelId:model?.id||null,ownedBy:model?.owned_by||null,state:ready?'READY':data?'BLOCKED':'OFFLINE',evidence:ready?'OPENAI_MODELS_QWEN_TEXT':'BLOCKED_WRONG_SERVICE_IDENTITY'}
+}
+function qwenVisionIdentity(portOpen){
+ const ready=portOpen(8081)
+ return {port:8081,required:false,ready,state:ready?'READY':'OPTIONAL_OFFLINE',evidence:ready?'PORT_8081_OBSERVED_OPTIONAL':'OPTIONAL_NOT_REQUIRED'}
+}
+function kernelIdentity(portOpen){
+ const required=process.env.OBSIDIA_JARJAR_REQUIRE_KERNEL==='1'
+ const ready=portOpen(3001)
+ return {port:3001,required,ready,state:ready?'READY':required?'BLOCKED':'OPTIONAL_OFFLINE',evidence:ready?'PORT_3001_OBSERVED_KERNEL_CONTRACT':'OPTIONAL_NOT_REQUIRED_FOR_R12_PREPARE'}
+}
 function jarjarObservedStatus(){
  let listening=''
  try{listening=execFileSync('netstat.exe',['-ano','-p','tcp'],{encoding:'utf8',timeout:4000,windowsHide:true})}catch{}
@@ -113,19 +142,24 @@ function jarjarObservedStatus(){
   jarjarProcess=ps.endsWith('1')
  }catch{}
  const managed=[...processes.entries()].find(([,p])=>p.tool==='jarjar'&&p.active)
+ const jr=jarjarRoot()
+ const entrypoint=resolve(jr,jarjarModuleFile)
+ const entrypointReady=existsSync(entrypoint)
  const components={
-  kernel:{port:3001,ready:portOpen(3001)},
-  brodyApi:{port:8000,ready:portOpen(8000)},
-  qwenText:{port:8080,ready:portOpen(8080)},
-  qwenVL:{port:8081,ready:portOpen(8081)},
-  hud:{port:null,ready:jarjarProcess}
+  kernel:kernelIdentity(portOpen),
+  brodyApi:obsidiaApiIdentity(),
+  qwenText:qwenTextIdentity(),
+  qwenVL:qwenVisionIdentity(portOpen),
+  hud:{port:null,required:false,ready:jarjarProcess,state:jarjarProcess?'READY':'OFFLINE',evidence:jarjarProcess?'PROCESS_RUN_JARJAR_LIVE':'PROCESS_NOT_OBSERVED'},
+  jarjarEntrypoint:{path:entrypoint,required:true,ready:entrypointReady,state:entrypointReady?'READY':'BLOCKED',evidence:entrypointReady?'RUN_JARJAR_LIVE_PRESENT':'RUN_JARJAR_LIVE_MISSING'}
  }
+ const required=[components.brodyApi,components.jarjarEntrypoint,components.kernel].filter(c=>c.required)
+ const blocked=required.find(c=>!c.ready)||[components.brodyApi,components.qwenText].find(c=>c.reachable&&!c.ready)
  let state='OFFLINE'
- if(jarjarProcess){
-  state=(components.kernel.ready&&components.brodyApi.ready&&components.qwenText.ready&&components.qwenVL.ready)?'READY':'DEGRADED'
- }else if(managed){
-  state='STARTING'
- }
+ if(blocked)state='BLOCKED'
+ else if(jarjarProcess)state=(components.brodyApi.ready&&components.qwenText.ready?'READY':'PARTIAL')
+ else if(managed)state='STARTING'
+ else if(components.brodyApi.ready||components.qwenText.ready)state='PARTIAL'
  let telemetry=null
  try{
   const local=process.env.LOCALAPPDATA||resolve(homedir(),'AppData','Local')
@@ -136,7 +170,8 @@ function jarjarObservedStatus(){
   }
  }catch{}
  return {
-  state,components,managed:!!managed,sessionId:managed?.[0]||null,
+  state,components,managed:!!managed,sessionId:managed?.[0]||null,repository:jr,
+  runtimeContract:'JARJAR_RUNTIME_ALIGNMENT_J1',
   decisionAuthority:telemetry?.decision_authority||'KX108_ONLY',
   inputMode:telemetry?.mode||null,
   hudState:telemetry?.hud_state||null,
@@ -525,7 +560,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   if(launching.has(id))throw Error('Jarjar est déjà en cours de lancement');launchKey=id;launching.add(id)
   const jr=jarjarRoot()
   if(!existsSync(jr))throw Error('Repo Jarjar absent. Candidats : '+jarjarRootCandidates().join(' | '))
-  if(!existsSync(resolve(jr,jarjarModuleFile)))throw Error('Launcher Jarjar absent : '+resolve(jr,jarjarModuleFile))
+  if(!existsSync(resolve(jr,jarjarModuleFile)))throw Error('JARJAR_BLOCKED_RUN_JARJAR_LIVE_MISSING : '+resolve(jr,jarjarModuleFile))
   if(!existsSync(jarjarPython()))throw Error('Python Jarjar validé absent. Candidats : '+jarjarPythonCandidates().join(' | '))
   const master=resolve(projectRoot,'scripts','start-jarjar-full.ps1')
   if(!existsSync(master))throw Error('Launcher maître Jarjar absent : '+master)
