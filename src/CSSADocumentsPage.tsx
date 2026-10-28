@@ -66,11 +66,13 @@ export default function CSSADocumentsPage({selectedId,onOpen}:Props){
   <section className="docxv-library">
    <header><div><small>BIBLIOTHÈQUE</small><h3>Documents</h3></div><div className="docxv-search"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher un document…"/><select value={filter} onChange={e=>setFilter(e.target.value as any)}><option>TOUS</option><option>VALIDE</option><option>A_VERIFIER</option><option>EXPIRE</option><option>MAIL</option></select></div></header>
    {view.shown.length?<div className="docxv-grid">{view.shown.map(d=>{
-    const dossier=d.dossierId?state.dossiers.find(x=>x.id===d.dossierId):null
-    const req=state.requirements.find(r=>r.documentRefId===d.id)
+    const dossierRef=resolveCssaReference(d.dossierId,state.dossiers,cssaSourceAvailable(state))
+    const dossier=dossierRef.item
+    const requirements=state.requirements.filter(r=>r.documentRefId===d.id)
+    const req=requirements.length===1?requirements[0]:null
     return <article key={d.id} onClick={()=>onOpen?.('documents',d.id)}>
      <div className="docxv-file"><span>{d.type.slice(0,3).toUpperCase()}</span></div>
-     <div className="docxv-copy"><small>{human(d.type)} · v{d.version}</small><h4>{d.title}</h4><p>{dossier?dossier.reference+' · '+dossier.title:'Bibliothèque générale'}</p>{req&&<em>Exigence : {req.label}</em>}</div>
+     <div className="docxv-copy"><small>{human(d.type)} · v{d.version}</small><h4>{d.title}</h4><p>{dossier?dossier.reference+' · '+dossier.title:d.dossierId?referenceLabels[dossierRef.status]+' · '+d.dossierId:'Bibliothèque générale'}</p>{req?<em>Exigence : {req.label}</em>:requirements.length>1?<em>UNKNOWN · plusieurs exigences associées</em>:null}</div>
      <div className="docxv-meta"><span className={'status '+d.status.toLowerCase()}>{human(d.status)}</span><small>{d.validUntil?'jusqu’au '+d.validUntil:'validité inconnue'}</small>{d.originType==='MAIL'&&<small>✉ reçu par mail</small>}</div>
     </article>})}</div>:<div className="docxv-empty">{available?'Aucun document dans cette vue.':'UNKNOWN · source documents indisponible ; aucune pièce réelle ne peut être déduite du modèle de secours.'}</div>}
   </section>
