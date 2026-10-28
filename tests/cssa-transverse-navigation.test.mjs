@@ -111,3 +111,9 @@ test('unresolved CRM deep link clears previous selected organization and never f
  assert.match(opsWorkspace,/selectedId \? null : directory\.organizations\[0\]/)
  assert.match(opsWorkspace,/!state\?\.cases\.some\(c=>c\.id===directorySelectedId\)/)
 })
+
+test('CRM selection is revalidated on source refresh, not frozen by prior resolved ID',()=>{
+ assert.match(opsWorkspace,/if\(activeModule!=='crm'\|\|!selectedId\)return/)
+ assert.doesNotMatch(opsWorkspace,/appliedCrmSelection\.current===selectedId\)return/)
+ assert.match(opsWorkspace,/setDirectorySelectedId\(''\);appliedCrmSelection\.current=''/)
+})
