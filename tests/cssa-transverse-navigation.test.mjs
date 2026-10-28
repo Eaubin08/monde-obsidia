@@ -56,3 +56,9 @@ test('Accueil resolves people and outcome dossiers without arbitrary first match
  assert.match(home,/resolveCssaReference\(o\.dossierId,dossiers,cssaSourceAvailable\(business\)\)/)
  assert.match(home,/referenceLabels\[dossierRef\.status\]/)
 })
+
+test('Accueil flags duplicate final validations, proofs and outcomes',()=>{
+ assert.match(home,/finalValidations\.length>1\|\|proofs\.length>1\|\|outcomes\.length>1/)
+ assert.match(home,/UNKNOWN · validations, dépôts ou résultats multiples à réconcilier/)
+ assert.match(home,/!dossierOutcomes\.some\(o=>o\.dossierId===d\.id\)/)
+})
