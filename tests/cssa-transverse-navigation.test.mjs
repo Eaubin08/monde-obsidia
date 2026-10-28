@@ -88,3 +88,11 @@ test('Task-to-person navigation requires a unique observed person',()=>{
  assert.match(tasksPage,/organisation\?\.people\.filter\(person=>person\.id===t\.responsiblePersonId\)\.length===1/)
  assert.match(tasksPage,/UNKNOWN · référence personne ambiguë ou introuvable/)
 })
+
+test('CRM namespace collisions and Intendance deep links never select another identity',()=>{
+ assert.match(opsWorkspace,/orgMatches===1&&caseMatches===0/)
+ assert.match(opsWorkspace,/caseMatches===1&&orgMatches===0/)
+ assert.match(opsWorkspace,/state\.intendanceItems\.filter\(i => i\.id === selectedId\)\.length === 1/)
+ assert.match(opsWorkspace,/cssaSourceAvailable\(directory\)/)
+ assert.match(opsWorkspace,/cssaSourceAvailable\(state\)/)
+})
