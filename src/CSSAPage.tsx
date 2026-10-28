@@ -773,7 +773,7 @@ export default function CSSAPage(){
    ):moduleId==='media'&&structureId==='cssa'?(
     <CSSAMediaPage onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):moduleId==='mail'&&structureId==='cssa'?(
-    <CSSAMailPage onOpen={(mod,id)=>openModule(mod,id||'')}/>
+    <CSSAMailPage selectedId={selectedId} onOpen={(mod,id)=>openModule(mod,id||'')}/>
    ):moduleId==='crm'&&structureId==='cssa'?(
     <CSSACrmPage selectedId={selectedId} onSelect={(mod,id)=>openModule(mod,id)}/>
    ):moduleId==='tasks'&&structureId==='cssa'?(
