@@ -28,7 +28,7 @@ export function createSyntheticSourceBuildPipeline(root){
    const dest=join(directory,jobId+'.json')
    // Persist source and manifest together; fail-closed inspect detects partial/corrupt writes.
    await writeFile(dest,JSON.stringify({manifest,artifact},null,2)+'\n',{flag:'wx'})
-   return {status:'STORED_SOURCE_FUNCTIONALLY_TESTED_LAB',jobId,digest:artifact.digest,tests:validation.tests,functionalTests:functional.tests,executionAllowed:false}
+   return {status:'STORED_SOURCE_NOT_EXECUTED',functionalStatus:'FUNCTIONAL_TESTED_LAB',jobId,digest:artifact.digest,tests:validation.tests,functionalTests:functional.tests,executionAllowed:false}
   }catch{return {status:'HOLD',reason:'SOURCE_STORE_FAILURE',executionAllowed:false}}
   finally{await lease.release().catch(()=>false)}
  }
