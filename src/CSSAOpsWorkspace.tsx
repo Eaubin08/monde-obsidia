@@ -447,8 +447,8 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
 
   useEffect(()=>{
     if(activeModule!=='crm'||!selectedId||appliedCrmSelection.current===selectedId)return
-    const orgMatches=directory?._source?.status==='AVAILABLE'?directory.organizations.filter(row=>row.id===selectedId).length:0
-    const caseMatches=state?._source?.status==='AVAILABLE'?state.cases.filter(row=>row.id===selectedId).length:0
+    const orgMatches=cssaSourceAvailable(directory)?directory.organizations.filter(row=>row.id===selectedId).length:0
+    const caseMatches=cssaSourceAvailable(state)?state.cases.filter(row=>row.id===selectedId).length:0
     // An identity present in both namespaces (or duplicated) is ambiguous, never auto-selected.
     if(orgMatches===1&&caseMatches===0){
       setCrmMode('directory');setDirectorySelectedId(selectedId);appliedCrmSelection.current=selectedId
