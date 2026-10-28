@@ -1,3 +1,4 @@
+import CSSAWorldSnapshotDiagnostic from './CSSAWorldSnapshotDiagnostic'
 import {buildWorldReadModel,buildWorldGraph,createWorldContext} from './worldReadModel'
 import {worldObjectKey} from './worldObjectContract'
 import {composeWorldManifest} from './worldManifest'
@@ -72,6 +73,7 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
 
  return <section className="dosv">
   <CSSAStoreSourceNotice state={state}/>
+  <CSSAWorldSnapshotDiagnostic dossierId={selected?.d.id??null}/>
   <header className="dosv-hero">
    <div><small>DOSSIERS CSSA</small><h2>Chaque dossier comme une mission à conduire jusqu’à la preuve.</h2><p>Appels d’offres, subventions, conventions et partenariats : échéances, pièces, validation, dépôt et résultat réunis dans une lecture de progression.</p></div>
    <button onClick={()=>onOpen?.('dossiers','')}>+ Nouveau dossier</button>
