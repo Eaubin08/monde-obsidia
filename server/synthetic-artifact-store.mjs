@@ -37,19 +37,19 @@ export function createSyntheticArtifactStore(root){
   if(!id(jobId))return {status:'INVALID_ID'}
   let manifest
   try{manifest=JSON.parse(await readFile(join(manifests,jobId+'.json'),'utf8'))}catch{return {status:'NOT_FOUND'}}
-  if(manifest.jobId!==jobId||!hex(manifest.artifactDigest)||manifest.schema!=='OBSIDIA_SYNTHETIC_STORED_JOB_V0'||manifest.status!=='TESTED_SYNTHETIC'||manifest.buildApproved!==false||manifest.executionAllowed!==false||manifest.deploymentApproved!==false)return {status:'INVALID_MANIFEST'}
+  if(manifest.jobId!==jobId||!id(manifest.organizationId)||!id(manifest.componentId)||!['AGENT_CONFIG','TOOL_CONFIG','WORKFLOW_CONFIG'].includes(manifest.kind)||!Array.isArray(manifest.tests)||!manifest.tests.length||!manifest.tests.every(x=>x&&x.pass===true)||!Array.isArray(manifest.events)||!manifest.events.includes('TESTED_SYNTHETIC')||!hex(manifest.artifactDigest)||manifest.schema!=='OBSIDIA_SYNTHETIC_STORED_JOB_V0'||manifest.status!=='TESTED_SYNTHETIC'||manifest.buildApproved!==false||manifest.executionAllowed!==false||manifest.deploymentApproved!==false)return {status:'INVALID_MANIFEST'}
   const path=join(artifacts,manifest.artifactDigest.slice(7)+'.json')
   try{
    if(!(await lstat(path)).isFile())return {status:'INVALID_ARTIFACT'}
    const content=await readFile(path,'utf8')
    if(hash(content)!==manifest.artifactDigest)return {status:'DIGEST_MISMATCH'}
    const parsed=JSON.parse(content)
-   if(parsed.synthetic!==true||parsed.deployable!==false||parsed.decisionAuthority!=='NONE'||parsed.organizationId!==manifest.organizationId||parsed.id!==manifest.componentId)return {status:'INVALID_ARTIFACT'}
+   if(parsed.synthetic!==true||parsed.deployable!==false||parsed.decisionAuthority!=='NONE'||parsed.organizationId!==manifest.organizationId||parsed.id!==manifest.componentId||parsed.kind!==manifest.kind)return {status:'INVALID_ARTIFACT'}
    return {status:'VERIFIED_STORED_SYNTHETIC',manifest,artifact:{content,digest:manifest.artifactDigest},buildApproved:false,deploymentApproved:false,executionAllowed:false}
   }catch{return {status:'INVALID_ARTIFACT'}}
  }
  async function list(){
-  try{return (await readdir(manifests)).filter(x=>/^LAB_JOB_[0-9]{5}\.json$/.test(x)).map(x=>x.slice(0,-5)).sort()}catch{return []}
+  try{return (await readdir(manifests)).filter(x=>/^LAB_JOB_[0-9]{5}(?:_[0-9a-f]{32})?\.json$/.test(x)).map(x=>x.slice(0,-5)).sort()}catch{return []}
  }
  return {save,inspect,list,root:base}
 }
