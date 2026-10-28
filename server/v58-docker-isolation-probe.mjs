@@ -23,7 +23,7 @@ export const V58_CONTAINER_IMAGE=image
 export function v58IsolationDockerArguments(){return [...args]}
 export async function probeV58Isolation({timeoutMs=12000,executor=run}={}){
  const hold=reason=>({schema:'OBSIDIA_V58_ISOLATION_ATTESTATION_V0',status:'HOLD',reason,
-  verified:false,osIsolated:false,networkIsolated:false,filesystemIsolated:false,resourceLimitsApplied:false,
+  verified:false,osIsolated:false,networkIsolated:false,filesystemIsolated:false,resourceLimitsConfigured:false,resourceLimitsApplied:false,
   executionAllowed:false,buildApproved:false,deploymentApproved:false})
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1000||timeoutMs>30000)return hold('INVALID_TIMEOUT')
  if(process.platform!=='linux'&&process.platform!=='win32'&&process.platform!=='darwin')return hold('UNSUPPORTED_HOST')
@@ -34,7 +34,7 @@ export async function probeV58Isolation({timeoutMs=12000,executor=run}={}){
    !parsed.checks||Object.keys(parsed.checks).sort().join('|')!=='networkDenied|nonRoot|readOnlyRoot|writableTmp'||
    !Object.values(parsed.checks).every(v=>v===true))return hold('PROBE_OUTPUT_INVALID')
   return {schema:'OBSIDIA_V58_ISOLATION_ATTESTATION_V0',status:'PROBED_ISOLATION',verified:true,
-   osIsolated:true,networkIsolated:true,filesystemIsolated:true,resourceLimitsApplied:true,
+   osIsolated:true,networkIsolated:true,filesystemIsolated:true,resourceLimitsConfigured:true,resourceLimitsApplied:false,
    image,checks:parsed.checks,scope:'LOCAL_PROBE_ONLY',executionAllowed:false,buildApproved:false,deploymentApproved:false,
    governance:{authority:'NONE',decisionAuthority:'KX108_ONLY'}}
  }catch{return hold('DOCKER_UNAVAILABLE_OR_PROBE_FAILED')}
