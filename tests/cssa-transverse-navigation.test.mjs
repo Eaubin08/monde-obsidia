@@ -76,3 +76,15 @@ test('CRM followups require an observed, unique task reference',()=>{
  assert.match(crm,/unresolvedFollowups/)
  assert.match(crm,/relance\(s\) reliée\(s\) à une tâche vérifiée/)
 })
+
+const opsWorkspace=readFileSync(new URL('../src/CSSAOpsWorkspace.tsx',import.meta.url),'utf8')
+const tasksPage=readFileSync(new URL('../src/CSSATasksPage.tsx',import.meta.url),'utf8')
+test('Ops Workspace preserves missing or ambiguous explicit selections',()=>{
+ assert.match(opsWorkspace,/state\.tasks\.filter\(t => t\.id === selectedId\)\.length === 1/)
+ assert.match(opsWorkspace,/state\.cases\.filter\(c => c\.id === selectedId\)\.length === 1/)
+ assert.match(opsWorkspace,/directory\.organizations\.filter\(x=>x\.id===directorySelectedId\)\.length===1/)
+})
+test('Task-to-person navigation requires a unique observed person',()=>{
+ assert.match(tasksPage,/organisation\?\.people\.filter\(person=>person\.id===t\.responsiblePersonId\)\.length===1/)
+ assert.match(tasksPage,/UNKNOWN · référence personne ambiguë ou introuvable/)
+})
