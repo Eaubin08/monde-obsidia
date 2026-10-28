@@ -22,16 +22,16 @@ type Dossier={id:string;reference:string;title:string;organizationId?:string|nul
 type Requirement={id:string;dossierId:string;label:string;state:string;documentRefId:string|null}
 type DocumentRef={id:string;dossierId:string|null;type:string;title:string;version:string;status:string;issuedAt:string;validUntil:string;source:string;fileRef:string;usedIn:string[];originType?:string;originMailId?:string|null;requirementIds?:string[];receivedAt?:string;proof?:string}
 type BusinessState={dossiers:Dossier[];requirements:Requirement[];documentRefs:DocumentRef[]}
-type Props={onOpen?:(moduleId:string,id?:string)=>void}
+type Props={selectedId?:string;onOpen?:(moduleId:string,id?:string)=>void}
 
 function uid(prefix:string){return prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6)}
 
-export default function CSSAMailPage({onOpen}:Props){
+export default function CSSAMailPage({selectedId:requestedId,onOpen}:Props){
  const [observed,setState]=useState<MailState|null>(null)
  const [directory,setDirectory]=useState<Directory|null>(null)
  const [orgState,setOrgState]=useState<OrgState|null>(null)
  const [business,setBusiness]=useState<BusinessState|null>(null)
- const [selectedId,setSelectedId]=useState('')
+ const [selectedId,setSelectedId]=useState(requestedId||'')
  const [mode,setMode]=useState<'inbox'|'import'|'drafts'>('inbox')
  const [query,setQuery]=useState('')
  const [form,setForm]=useState<Record<string,string>>({direction:'ENTRANT'})
@@ -42,6 +42,7 @@ export default function CSSAMailPage({onOpen}:Props){
  const pending=useRef<Record<string,string>>({})
  const times=useRef<Record<string,string>>({})
  const operationId=(kind:string)=>pending.current[kind]??(pending.current[kind]=uid(kind))
+ useEffect(()=>{setSelectedId(requestedId||'')},[requestedId])
  const available=cssaSourceAvailable(observed)
  const state=available?observed:null
  const refresh=async()=>{
@@ -53,7 +54,7 @@ export default function CSSAMailPage({onOpen}:Props){
   setDirectory(crm.status==='fulfilled'&&cssaSourceAvailable(crm.value)?crm.value:null)
   setOrgState(org.status==='fulfilled'&&cssaSourceAvailable(org.value)?org.value:null)
   setBusiness(biz.status==='fulfilled'&&cssaSourceAvailable(biz.value)?biz.value:null)
-  if(mail.status==='fulfilled'&&cssaSourceAvailable(mail.value))setSelectedId(previous=>previous||mail.value.messages[0]?.id||'')
+  if(mail.status==='fulfilled'&&cssaSourceAvailable(mail.value))setSelectedId(previous=>previous||requestedId||mail.value.messages[0]?.id||'')
  }
  useEffect(()=>{
   active.current=true;void refresh();const timer=window.setInterval(refresh,15000)
@@ -141,6 +142,7 @@ export default function CSSAMailPage({onOpen}:Props){
  })||[],[state,query])
  const selectedRows=state?.messages.filter(m=>m.id===selectedId)||[]
  const selected=selectedRows.length===1?selectedRows[0]:null
+ const selectionIssue=selectedId&&!selected?(available?(selectedRows.length>1?'UNKNOWN · référence Mail ambiguë':'UNKNOWN · référence Mail introuvable'):'UNKNOWN · source Mail indisponible'):''
  const orgName=(id:string|null)=>mailReference(id,directory?.organizations||[],cssaSourceAvailable(directory),'name')
  const contactName=(id:string|null)=>mailReference(id,directory?.contacts||[],cssaSourceAvailable(directory),'displayName')
  const personName=(id:string|null)=>resolveCssaPerson(id,undefined,orgState)
@@ -215,7 +217,7 @@ export default function CSSAMailPage({onOpen}:Props){
       <p>La pièce est enregistrée <strong>À vérifier</strong>. Le lien ne modifie pas l’état déclaré de l’exigence. Le système ne considère jamais automatiquement qu’une pièce satisfait une exigence.</p>
      </form>
     </section>
-   </>:<div className="mailx-empty">Sélectionnez un message.</div>}</main>
+   </>:<div className="mailx-empty">{selectionIssue?selectionIssue+' · '+selectedId:'Sélectionnez un message.'}</div>}</main>
   </div>}
 
   {mode==='drafts'&&<div className="mailx-drafts">
