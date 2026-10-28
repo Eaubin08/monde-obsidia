@@ -7,6 +7,7 @@ import {cssaNavigationCount} from '../src/cssaNavigationCounts.ts'
 const shell=readFileSync(new URL('../src/CSSAPage.tsx',import.meta.url),'utf8')
 const mail=readFileSync(new URL('../src/CSSAMailPage.tsx',import.meta.url),'utf8')
 const home=readFileSync(new URL('../src/CSSAHomePage.tsx',import.meta.url),'utf8')
+const docs=readFileSync(new URL('../src/CSSADocumentsPage.tsx',import.meta.url),'utf8')
 const available=state=>({available:true,state:{_source:{status:'AVAILABLE'},...state}})
 
 test('CSSA shell passes the deep-linked Mail identity into the Mail page',()=>{
@@ -38,4 +39,14 @@ test('Accueil uses the same task count semantics as CSSA side navigation',()=>{
  assert.match(home,/openTasks\?\?'UNKNOWN'/)
  assert.match(home,/data\._source\?\.status!=='AVAILABLE'/)
  assert.doesNotMatch(home,/const openTasks=tasks\.filter/)
+})
+
+test('deep links do not silently pick the first unrelated item',()=>{
+ assert.doesNotMatch(shell,/if\(!items\.some\(x=>x\.id===selectedId\)\)setSelectedId\(items\[0\]\.id\)/)
+ assert.match(shell,/if\(selectedId\)return/)
+})
+test('document cards reject ambiguous dossier and requirement references',()=>{
+ assert.match(docs,/const dossierRef=resolveCssaReference\(d\.dossierId,state\.dossiers,cssaSourceAvailable\(state\)\)/)
+ assert.match(docs,/requirements\.length===1\?requirements\[0\]:null/)
+ assert.match(docs,/UNKNOWN · plusieurs exigences associées/)
 })
