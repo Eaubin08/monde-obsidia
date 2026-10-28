@@ -1,6 +1,7 @@
 import useCssaLinkedDossiers from './useCssaLinkedDossiers'
 import {readCssaTasks,type CssaTasksState} from './cssaTasksRead'
 import {cssaSourceAvailable,resolveCssaReference,referenceLabels} from './cssaLinkedReference'
+import {cssaNavigationCount} from './cssaNavigationCounts'
 import useCssaPeople from './useCssaPeople'
 import {resolveCssaPerson} from './cssaPeopleProjection'
 import CSSAStoreSourceNotice from './CSSAStoreSourceNotice'
@@ -35,17 +36,18 @@ export default function CSSATasksPage({selectedId,onSelect}:Props){
  const available=cssaSourceAvailable(state)
  const view=useMemo(()=>{
   const tasks=available?state?.tasks||[]:[]
-  const open=tasks.filter(t=>t.status!=='TERMINE')
+  const open=tasks.filter(t=>!['TERMINE','FERME','CLOSED'].includes(t.status))
   const critical=open.filter(t=>['CRITIQUE','HAUTE'].includes(t.priority))
   const blocked=open.filter(t=>t.status==='BLOQUE'||t.status==='EN_ATTENTE')
   const due=[...open].filter(t=>t.dueAt).sort((a,b)=>String(a.dueAt).localeCompare(String(b.dueAt))).slice(0,8)
-  return {tasks,open,critical,blocked,due}
+  const openCount=cssaNavigationCount('tasks',{ops:{available,state:(state??undefined) as unknown as Record<string,unknown>|undefined}})?.value
+  return {tasks,open,critical,blocked,due,openCount}
  },[state,available])
  if(error)return <section className="taskx"><div className="taskx-empty">UNKNOWN · source tâches indisponible ou invalide.</div></section>
  if(!state)return <section className="taskx"><div className="taskx-empty">Chargement…</div></section>
  return <section className="taskx">
   <CSSAStoreSourceNotice state={state}/>
-  <header className="taskx-hero"><div><small>TASKS CSSA</small><h2>Qu’est-ce qu’on doit faire maintenant ?</h2><p>Une vue de triage opérationnel : priorités, blocages, échéances et responsabilités avant le détail technique.</p></div><div className="taskx-stats"><span><strong>{available?view.open.length:'UNKNOWN'}</strong><small>ouvertes</small></span><span><strong>{available?view.critical.length:'UNKNOWN'}</strong><small>hautes / critiques</small></span><span><strong>{available?view.blocked.length:'UNKNOWN'}</strong><small>attente / blocage</small></span></div></header>
+  <header className="taskx-hero"><div><small>TASKS CSSA</small><h2>Qu’est-ce qu’on doit faire maintenant ?</h2><p>Une vue de triage opérationnel : priorités, blocages, échéances et responsabilités avant le détail technique.</p></div><div className="taskx-stats"><span><strong>{view.openCount??'UNKNOWN'}</strong><small>ouvertes</small></span><span><strong>{available?view.critical.length:'UNKNOWN'}</strong><small>hautes / critiques</small></span><span><strong>{available?view.blocked.length:'UNKNOWN'}</strong><small>attente / blocage</small></span></div></header>
   {available?<>
   <section className="taskx-priority"><header><div><small>FOCUS</small><h3>À traiter en premier</h3></div></header>{view.critical.length?<div>{view.critical.slice(0,8).map(t=><button key={t.id} onClick={()=>onSelect('tasks',t.id)}><span className={'taskx-priority-pill '+t.priority.toLowerCase()}>{t.priority}</span><div><strong>{t.title}</strong><small>{t.origin} · {t.dueAt||'échéance inconnue'} · {responsible(t)}</small></div><b>{t.status.replaceAll('_',' ')}</b></button>)}</div>:<p className="taskx-empty">Aucune tâche haute ou critique.</p>}</section>
   <section className="taskx-board">{statusColumns.map(col=><article key={col.id}><header><h3>{col.label}</h3><span>{view.open.filter(t=>t.status===col.id).length}</span></header><div>{view.open.filter(t=>t.status===col.id).slice(0,10).map(t=><button key={t.id} onClick={()=>onSelect('tasks',t.id)}><small>{t.origin}</small><strong>{t.title}</strong><span>{responsible(t)}</span><small>Source : {t.source||'UNKNOWN'} · {t.truthClass||'UNKNOWN'}</small><footer><em>{t.priority}</em><time>{t.dueAt||'—'}</time></footer></button>)}{!view.open.some(t=>t.status===col.id)&&<p>Rien ici.</p>}</div></article>)}</section>
