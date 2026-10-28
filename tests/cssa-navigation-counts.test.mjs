@@ -29,3 +29,15 @@ test('source failures remain independent and unrelated navigation retains its ow
  assert.equal(cssaNavigationCount('finance',observations),null)
  assert.equal(cssaNavigationCount('tasks',observations).route,'cssa-ops-state')
 })
+
+
+test('CSSA task count returns UNKNOWN for absent statuses and excludes closed records',()=>{
+ const observed=tasks=>({ops:{available:true,state:{_source:{status:'AVAILABLE'},tasks}}})
+ assert.equal(cssaNavigationCount('tasks',observed([{id:'t1',status:'TERMINE'},{id:'t2',status:'CLOSED'},{id:'t3',status:'OPEN'}])).value,1)
+ assert.equal(cssaNavigationCount('tasks',observed([{id:'t1'}])).value,null)
+})
+test('CSSA dossier count rejects malformed outcome references instead of treating them as empty',()=>{
+ const business=(dossiers,dossierOutcomes)=>({business:{available:true,state:{_source:{status:'AVAILABLE'},dossiers,dossierOutcomes}}})
+ assert.equal(cssaNavigationCount('dossiers',business([{id:'d1',status:'EN_COURS'}],[{id:'o1'}])).value,null)
+ assert.equal(cssaNavigationCount('dossiers',business([{id:'d1',status:'EN_COURS'}],[{dossierId:'d1'}])).value,0)
+})
