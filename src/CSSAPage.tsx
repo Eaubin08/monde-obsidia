@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useState} from 'react'
 import {cssaNavigationCount} from './cssaNavigationCounts'
+import {parseCssaHash,formatCssaHash} from './cssaNavigationRoute'
 import {cssaProfileStores,projectCssaProfile,type Observations,type StoreId} from './cssaLiveProfile'
 import './CSSAPage.css'
 import './CSSASport.css'
@@ -525,9 +526,9 @@ function semanticMetaItem(kind:'unknown'|'risk'|'contradiction'|'evidence',value
 
 export default function CSSAPage(){
  const [structureId,setStructureId]=useState<StructureId>('cssa')
- const initialHashParts=location.hash.split('/')
- const initialSection=location.hash.startsWith('#cssa/')?initialHashParts[1]||'dashboard':'dashboard'
- const initialSelected=initialHashParts[2]?decodeURIComponent(initialHashParts.slice(2).join('/')):''
+ const initialRoute=parseCssaHash(location.hash,structures.find(s=>s.id==='cssa')!.modules.map(m=>m.id))
+ const initialSection=initialRoute?.moduleId??'dashboard'
+ const initialSelected=initialRoute?.selectedId??''
  const [moduleId,setModuleId]=useState(initialSection)
  const [world,setWorld]=useState<WorldState|null>(null)
  const [native,setNative]=useState<NativeReadModel|null>(null)
@@ -579,7 +580,7 @@ export default function CSSAPage(){
   }finally{setRefreshing(false)}
  }
  useEffect(()=>{refresh();const t=window.setInterval(refresh,5000);return()=>window.clearInterval(t)},[])
- useEffect(()=>{const onHash=()=>{if(!location.hash.startsWith('#cssa'))return;const parts=location.hash.split('/');const next=parts[1]||'dashboard';const picked=parts[2]?decodeURIComponent(parts.slice(2).join('/')):'';if(structure.modules.some(m=>m.id===next)){setModuleId(next);setSelectedId(picked);setTab('overview')}};window.addEventListener('hashchange',onHash);return()=>window.removeEventListener('hashchange',onHash)},[structure])
+ useEffect(()=>{const onHash=()=>{const route=parseCssaHash(location.hash,structure.modules.map(m=>m.id));if(!route)return;setModuleId(route.moduleId);setSelectedId(route.selectedId);setQuery('');setTab('overview')};window.addEventListener('hashchange',onHash);return()=>window.removeEventListener('hashchange',onHash)},[structure])
 
  const observedSources=useMemo(()=>entities.filter(e=>e.kind==='source'),[entities])
  const nativeByModule=useMemo(()=>{
@@ -649,9 +650,9 @@ export default function CSSAPage(){
   return count>0?<b title="Références de navigation">{count}</b>:null
  }
 
- const openItem=(id:string)=>{setSelectedId(id);setTab('overview');location.hash='cssa/'+moduleId+'/'+encodeURIComponent(id)}
- const openModule=(id:string,picked='')=>{setModuleId(id);setSelectedId(picked);setQuery('');setTab('overview');location.hash='cssa/'+id+(picked?'/'+encodeURIComponent(picked):'')}
- const switchStructure=(id:StructureId)=>{setStructureId(id);setModuleId('dashboard');setSelectedId('');setQuery('');setTab('overview');setDashboardMode('capabilities');location.hash='cssa/dashboard'}
+ const openItem=(id:string)=>{setSelectedId(id);setTab('overview');location.hash=formatCssaHash({moduleId,selectedId:id})}
+ const openModule=(id:string,picked='')=>{setModuleId(id);setSelectedId(picked);setQuery('');setTab('overview');location.hash=formatCssaHash({moduleId:id,selectedId:picked})}
+ const switchStructure=(id:StructureId)=>{setStructureId(id);setModuleId('dashboard');setSelectedId('');setQuery('');setTab('overview');setDashboardMode('capabilities');location.hash=formatCssaHash({moduleId:'dashboard',selectedId:''})}
  const addProject=()=>{const title=projectName.trim();if(!title)return;setProjects(prev=>({...prev,[structureId]:[...prev[structureId],{id:'project:'+Date.now(),title,status:'LOCAL'}]}));setProjectName('')}
 
  const relations=selected&&native?.relations?native.relations.filter(r=>r.from===selected.id||r.to===selected.id):[]
