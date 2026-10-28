@@ -8,6 +8,7 @@ const shell=readFileSync(new URL('../src/CSSAPage.tsx',import.meta.url),'utf8')
 const mail=readFileSync(new URL('../src/CSSAMailPage.tsx',import.meta.url),'utf8')
 const home=readFileSync(new URL('../src/CSSAHomePage.tsx',import.meta.url),'utf8')
 const docs=readFileSync(new URL('../src/CSSADocumentsPage.tsx',import.meta.url),'utf8')
+const crm=readFileSync(new URL('../src/CSSACrmPage.tsx',import.meta.url),'utf8')
 const available=state=>({available:true,state:{_source:{status:'AVAILABLE'},...state}})
 
 test('CSSA shell passes the deep-linked Mail identity into the Mail page',()=>{
@@ -61,4 +62,11 @@ test('Accueil flags duplicate final validations, proofs and outcomes',()=>{
  assert.match(home,/finalValidations\.length>1\|\|proofs\.length>1\|\|outcomes\.length>1/)
  assert.match(home,/UNKNOWN · validations, dépôts ou résultats multiples à réconcilier/)
  assert.match(home,/!dossierOutcomes\.some\(o=>o\.dossierId===d\.id\)/)
+})
+
+test('CRM interaction links are disabled unless organization identity resolves uniquely',()=>{
+ assert.match(crm,/resolveCssaReference\(i\.organizationId,view\.orgs,directoryAvailable\)/)
+ assert.match(crm,/disabled=\{!o\}/)
+ assert.match(crm,/referenceLabels\[ref\.status\]/)
+ assert.doesNotMatch(crm,/view\.orgs\.find\(x=>x\.id===i\.organizationId\)/)
 })
