@@ -23,7 +23,7 @@ test('match territory keeps provenance and KX108 separate from calendar and task
  assert.match(match,/onSelect\('organisation','person:'\+t\.responsiblePersonId\)/)
 })
 test('Matchday exposes upcoming match exploration without invented event data',()=>{
- assert.match(matchday,/CSSA_REFERENCE_CALENDAR\.filter\(e=>e\.date>=/)
+ assert.match(matchday,/CSSA_REFERENCE_CALENDAR\.filter\(e=>showPastEvents\|\|e\.date>=/)
  assert.match(matchday,/onSelect\('matchday','event:'\+e\.id\)/)
  assert.match(matchday,/selectedId\.startsWith\('event:'\)/)
  assert.match(matchday,/e\.fixture\?\.teamId==='SENIORS_R1'/)
