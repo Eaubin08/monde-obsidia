@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 const match=readFileSync(new URL('../src/CSSAMatchObjectView.tsx',import.meta.url),'utf8')
 const matchday=readFileSync(new URL('../src/CSSAMatchdayPage.tsx',import.meta.url),'utf8')
+const sportif=readFileSync(new URL('../src/CSSASportPage.tsx',import.meta.url),'utf8')
 
 test('match object requires unique calendar identity and never fabricates a substitute',()=>{
  assert.match(match,/matches\.length===1\?matches\[0\]:null/)
@@ -28,4 +29,10 @@ test('Matchday exposes upcoming match exploration without invented event data',(
  assert.match(matchday,/e\.fixture\?\.teamId==='SENIORS_R1'/)
  assert.match(matchday,/setShowPastEvents/)
  assert.match(matchday,/<CSSAMatchObjectView events=\{CSSA_REFERENCE_CALENDAR\}/)
+})
+
+test('Sportif opens only unique observed match objects in Matchday',()=>{
+ assert.match(sportif,/!selected\.simulated&&CSSA_REFERENCE_CALENDAR\.filter\(e=>e\.id===selected\.id&&e\.kind==='MATCH'\)\.length===1/)
+ assert.match(sportif,/#cssa\/matchday\//)
+ assert.match(sportif,/encodeURIComponent\('event:'\+selected\.id\)/)
 })
