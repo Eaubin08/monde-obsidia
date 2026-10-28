@@ -1,5 +1,7 @@
 import {deriveCssaDossierAttention} from './cssaDossierAttention'
 import {cssaSourceAvailable} from './cssaLinkedReference'
+import {cssaNavigationCount} from './cssaNavigationCounts'
+import type {Observations} from './cssaLiveProfile'
 import {useEffect,useMemo,useState} from 'react'
 import './CSSAHome.css'
 import {CSSA_REFERENCE_CALENDAR} from './CSSASportPage'
@@ -56,7 +58,7 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
         if(!response.ok)throw new Error('unavailable')
         const data=await response.json()
         if(!data||typeof data!=='object'||Array.isArray(data)||source.lists.some(key=>!Array.isArray(data[key])))throw new Error('invalid state')
-        if(data._source&&data._source.status!=='AVAILABLE')throw new Error('source not available')
+        if(data._source?.status!=='AVAILABLE')throw new Error('source not available')
         source.set(data)
         return null
       }catch{source.set(null);return source.route}
@@ -80,7 +82,12 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
   const blocked=useMemo(()=>tasks.filter(t=>['BLOQUE','BLOQUÉ','EN_ATTENTE'].includes(t.status)).slice(0,6),[tasks])
   const openCaseRows=useMemo(()=>realCases.filter(c=>!['TERMINE','FERME','CLOSED'].includes(String(c.status||''))),[realCases])
   const activeCases=openCaseRows.slice(0,6)
-  const openTasks=tasks.filter(t=>attentionStatuses.has(t.status)).length
+  const countObservations:Observations={
+    ops:{available:cssaSourceAvailable(ops),state:(ops??undefined) as unknown as Record<string,unknown>|undefined},
+    business:{available:cssaSourceAvailable(business),state:(business??undefined) as unknown as Record<string,unknown>|undefined},
+    organisation:{available:cssaSourceAvailable(organisation),state:(organisation??undefined) as unknown as Record<string,unknown>|undefined}
+  }
+  const openTasks=cssaNavigationCount('tasks',countObservations)?.value
   const dossiers=business?.dossiers??[]
   const requirements=business?.requirements??[]
   const validations=business?.validations??[]
@@ -258,7 +265,7 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
 
     <div className="cssa-home-kpis">
       <button onClick={()=>onOpen('tasks')}><small>ATTENTION CLUB</small><strong>{allClubAttention.length}</strong><span>{criticalClub} critique(s) · {actionClub} action(s){error?' · vue partielle':''}</span></button>
-      <button onClick={()=>onOpen('tasks')}><small>TÂCHES OUVERTES</small><strong>{ops?openTasks:'UNKNOWN'}</strong><span>{highPriority.length} haute / critique</span></button>
+      <button onClick={()=>onOpen('tasks')}><small>TÂCHES OUVERTES</small><strong>{openTasks??'UNKNOWN'}</strong><span>{highPriority.length} haute / critique</span></button>
       <button onClick={()=>onOpen('dossiers')}><small>DOSSIERS À TRAITER</small><strong>{business?unresolvedDossierAttention:'UNKNOWN'}</strong><span>Validation, deadline, dépôt</span></button>
       <button onClick={()=>onOpen('mail')}><small>MAILS À RAPPROCHER</small><strong>{mail?unmatchedMail.length:'UNKNOWN'}</strong><span>CRM / dossier / contact</span></button>
     </div>
