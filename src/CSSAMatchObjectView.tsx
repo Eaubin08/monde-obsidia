@@ -1,3 +1,4 @@
+import {projectWorldMatch} from './cssaWorldObjects'
 import {useMemo} from 'react'
 import type {ClubCalendarEvent} from './cssaSportCalendar'
 import {resolveCssaReference,referenceLabels} from './cssaLinkedReference'
@@ -26,10 +27,12 @@ export function projectMatchRelations(events:ClubCalendarEvent[],selectedEventId
 export default function CSSAMatchObjectView({events,selectedEventId,opsAvailable,tasks,preparations,organisation,onSelect}:Props){
  const model=useMemo(()=>projectMatchRelations(events,selectedEventId,opsAvailable,tasks,preparations),[events,selectedEventId,opsAvailable,tasks,preparations])
  const event=model.event
+ const worldObject=event?projectWorldMatch(event):null
  if(!event)return <section className="mday-panel" aria-label="Objet match"><h3>Objet événement</h3><p>{model.eventCount>1?'UNKNOWN · identifiant de match ambigu':'UNKNOWN · événement introuvable dans le calendrier de référence'}</p><p>La navigation ne substitue aucun autre événement.</p></section>
  return <section className="mday-panel" aria-label="Objet match" data-object-id={event.id}>
   <header><div><small>OBJET MÉTIER · {event.kind}</small><h3>{event.title}</h3></div><a href={event.href}>Ouvrir dans Sportif →</a></header>
   <p>{event.competition} · {event.date} · {event.time||'Horaire UNKNOWN'} · {event.venue||'Lieu UNKNOWN'}</p>
+  <p><strong>Projection Monde :</strong> {worldObject?.identity.kind} · {worldObject?.presentation.pattern} · {worldObject?.governance.decisionAuthority}</p>
   <p><strong>État de la référence :</strong> {event.truth} · {event.detail||'Détail UNKNOWN'}</p>
   <p><strong>Source :</strong> {event.source||'UNKNOWN'}{event.sourceUrl&&<> · <a href={event.sourceUrl} target="_blank" rel="noreferrer">Consulter la source ↗</a></>}</p>
   {event.truth.includes('CONFLICT')&&<p>CONTRADICTION · Ne pas retenir un horaire ou résultat sans résolution et preuve.</p>}
