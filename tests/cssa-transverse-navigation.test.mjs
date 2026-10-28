@@ -50,3 +50,9 @@ test('document cards reject ambiguous dossier and requirement references',()=>{
  assert.match(docs,/requirements\.length===1\?requirements\[0\]:null/)
  assert.match(docs,/UNKNOWN · plusieurs exigences associées/)
 })
+
+test('Accueil resolves people and outcome dossiers without arbitrary first match',()=>{
+ assert.match(home,/resolveCssaReference\(id,people,cssaSourceAvailable\(organisation\)\)/)
+ assert.match(home,/resolveCssaReference\(o\.dossierId,dossiers,cssaSourceAvailable\(business\)\)/)
+ assert.match(home,/referenceLabels\[dossierRef\.status\]/)
+})
