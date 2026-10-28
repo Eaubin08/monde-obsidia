@@ -616,7 +616,8 @@ export default function CSSAPage(){
   if(items.length===1&&moduleId==='sources')setSelectedId(items[0].id)
  },[items,selectedId,moduleId])
 
- const selected=items.find(x=>x.id===selectedId)??null
+ const selectedMatches=selectedId?items.filter(x=>x.id===selectedId):[]
+ const selected=selectedMatches.length===1?selectedMatches[0]:null
  const selectedEvidence=structureId==='cssa'?evidenceFor(selected,moduleId):[]
  const selectedCapability=selected?.id.startsWith('cap:')?profile.capabilities.find(c=>'cap:'+c.id===selected.id):null
  const liveServices=worldEntities.filter(e=>e.kind==='session'&&e.nativeService)
