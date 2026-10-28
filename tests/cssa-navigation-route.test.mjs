@@ -19,7 +19,7 @@ import {readFileSync} from 'node:fs'
 const shell=readFileSync(new URL('../src/CSSAPage.tsx',import.meta.url),'utf8')
 test('shell handles hashchange for back/forward and clears stale cross-module query',()=>{
  assert.match(shell,/window\.addEventListener\('hashchange',onHash\)/)
- assert.match(shell,/setModuleId\(route\.moduleId\);setSelectedId\(route\.selectedId\);setQuery\(''\)/)
+ assert.match(shell,/setModuleId\(route\?\.moduleId\?\?'dashboard'\);setSelectedId\(route\?\.selectedId\?\?''\);setQuery\(''\)/)
  assert.match(shell,/formatCssaHash\(\{moduleId:id,selectedId:picked\}\)/)
 })
 
