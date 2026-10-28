@@ -1,6 +1,7 @@
 // Opt-in, bounded laboratory jobs. No user-generated code execution or production deployment.
 import {executeSyntheticBuild} from './synthetic-builder-lab.mjs'
 import {selectSyntheticTemplate} from './synthetic-template-registry.mjs'
+import {randomUUID} from 'node:crypto'
 const validId=x=>typeof x==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(x)
 export function createSyntheticBuildQueue({limit=16}={}){
  if(!Number.isSafeInteger(limit)||limit<1||limit>256)throw Error('Invalid queue capacity')
@@ -12,7 +13,7 @@ export function createSyntheticBuildQueue({limit=16}={}){
   if(!template||request?.mode!=='SYNTHETIC_ONLY'||!validId(request?.componentId)||!validId(request?.organizationId)){
    return {status:'REJECTED',reason:'INVALID_SYNTHETIC_REQUEST'}
   }
-  const id='LAB_JOB_'+String(++sequence).padStart(5,'0')
+  const id='LAB_JOB_'+String(++sequence).padStart(5,'0')+'_'+randomUUID().replaceAll('-','')
   jobs.set(id,{id,request:{mode:'SYNTHETIC_ONLY',kind:template.kind,componentId:request.componentId,organizationId:request.organizationId},
    templateId:template.id,phase:'QUEUED',events:['QUEUED'],artifact:null,tests:[],governance:{authority:'NONE',decisionAuthority:'KX108_ONLY'}})
   return {status:'ACCEPTED_SYNTHETIC',id,templateId:template.id}
