@@ -4,7 +4,6 @@ import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {createHash} from 'node:crypto'
-import {runInNewContext} from 'node:vm'
 const allowed=new Set(['AGENT_CONFIG','TOOL_CONFIG','WORKFLOW_CONFIG'])
 const slug=x=>typeof x==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(x)
 export function planSyntheticBuild(input){
