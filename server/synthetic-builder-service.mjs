@@ -4,10 +4,11 @@ import {createSyntheticArtifactStore} from './synthetic-artifact-store.mjs'
 import {createSyntheticJobJournal} from './synthetic-job-journal.mjs'
 import {createSyntheticComponentCatalog} from './synthetic-component-catalog.mjs'
 import {createSyntheticRecoveryInspector} from './synthetic-build-recovery.mjs'
+import {createSyntheticLabLock} from './synthetic-lab-lock.mjs'
 export function createSyntheticBuilderService({root,limit=16}={}){
  if(typeof root!=='string'||!root.trim())throw Error('Explicit laboratory root required')
  const queue=createSyntheticBuildQueue({limit}),journal=createSyntheticJobJournal(root),store=createSyntheticArtifactStore(root)
- const catalog=createSyntheticComponentCatalog(root),recovery=createSyntheticRecoveryInspector(root)
+ const catalog=createSyntheticComponentCatalog(root),recovery=createSyntheticRecoveryInspector(root),lock=createSyntheticLabLock(root)
  let busy=false
  async function submit(request){
   if(busy)return {status:'REJECTED',reason:'SERVICE_BUSY'}
@@ -22,7 +23,10 @@ export function createSyntheticBuilderService({root,limit=16}={}){
   const job=queue.inspect(jobId)
   if(!job||job.phase!=='QUEUED')return {status:'HOLD',reason:'JOB_NOT_QUEUED',executionAllowed:false}
   busy=true
+  let lease=null
   try{
+   lease=await lock.acquire()
+   if(lease.status!=='ACQUIRED')return {status:'HOLD',reason:'LAB_LOCKED',executionAllowed:false}
    const original=await journal.read(jobId)
    if(original.status!=='VERIFIED_LOCAL_JOURNAL'||original.events.length!==1||original.events[0].phase!=='QUEUED')
     return {status:'HOLD',reason:'INVALID_JOB_JOURNAL',executionAllowed:false}
@@ -40,7 +44,10 @@ export function createSyntheticBuilderService({root,limit=16}={}){
     artifactDigest:saved.digest,testCount:built.tests.length,recovery:reconciled.status,
     buildApproved:false,deploymentApproved:false,executionAllowed:false,governance:{authority:'NONE',decisionAuthority:'KX108_ONLY'}}
   }catch{return {status:'HOLD',reason:'SERVICE_OR_STORAGE_FAILURE',executionAllowed:false}}
-  finally{busy=false}
+  finally{
+   if(lease?.status==='ACQUIRED')await lease.release().catch(()=>false)
+   busy=false
+  }
  }
  async function inspect(jobId){return {memory:queue.inspect(jobId),recovery:await recovery.inspect(jobId),preview:await catalog.preview(jobId)}}
  async function list(){return {jobs:queue.list().map(x=>({id:x.id,phase:x.phase,templateId:x.templateId})),catalog:await catalog.list(),recovery:await recovery.inventory()}}
