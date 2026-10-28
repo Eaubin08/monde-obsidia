@@ -9,7 +9,6 @@ import {composeWorldManifest} from './worldManifest.ts'
 // One bounded snapshot, built only from independent validated GET reads.
 // Failed/unknown sources do not get replaced by stale UI state or synthetic records.
 type Business=NonNullable<CssaWorldSources['business']>&{_source?:{status?:string}}
-type Tasks=NonNullable<CssaWorldSources['tasks']>&{_source?:{status?:string}}
 type Crm=NonNullable<CssaWorldSources['crm']>&{_source?:{status?:string}}
 export type CssaWorldSnapshot={
  schema:'OBSIDIA_CSSA_WORLD_SNAPSHOT_V0'
