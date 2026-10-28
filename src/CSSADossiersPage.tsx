@@ -1,3 +1,4 @@
+import {projectWorldCase} from './cssaWorldObjects'
 import useCssaBusinessRead from './useCssaBusinessRead'
 import useCssaLinkedTasks from './useCssaLinkedTasks'
 import {resolveCssaReference,cssaSourceAvailable,referenceLabels} from './cssaLinkedReference'
@@ -95,7 +96,7 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
 
   {selectedId&&selectedMatches.length!==1&&<p className="dosv-empty">UNKNOWN · dossier {selectedMatches.length>1?'ambigu':'introuvable'} : aucune fiche arbitraire affichée.</p>}
   {selected&&<section className="dosv-focus">
-   <div><small>DOSSIER SÉLECTIONNÉ</small><h3>{selected.d.reference} · {selected.d.title}</h3><p>{selected.blocking.length} exigence(s) obligatoire(s) bloquante(s) · validation finale {selected.validation?human(selected.validation.status):'non demandée'} · {selected.proof?'dépôt prouvé':'dépôt non prouvé'}.</p></div>
+   <div><small>DOSSIER SÉLECTIONNÉ</small><h3>{selected.d.reference} · {selected.d.title}</h3><p>Projection Monde : {projectWorldCase(selected.d,available).identity.kind} · {projectWorldCase(selected.d,available).presentation.pattern} · {projectWorldCase(selected.d,available).governance.decisionAuthority}</p><p>{selected.blocking.length} exigence(s) obligatoire(s) bloquante(s) · validation finale {selected.validation?human(selected.validation.status):'non demandée'} · {selected.proof?'dépôt prouvé':'dépôt non prouvé'}.</p></div>
    <button onClick={()=>onOpen?.('dossiers',selected.d.id)}>Piloter ce dossier →</button>
   </section>}
 
