@@ -446,7 +446,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
   }, [state, selectedId])
 
   useEffect(()=>{
-    if(activeModule!=='crm'||!selectedId||appliedCrmSelection.current===selectedId)return
+    if(activeModule!=='crm'||!selectedId)return
     const orgMatches=directory&&cssaSourceAvailable(directory)?directory.organizations.filter(row=>row.id===selectedId).length:0
     const caseMatches=state&&cssaSourceAvailable(state)?state.cases.filter(row=>row.id===selectedId).length:0
     // An identity present in both namespaces (or duplicated) is ambiguous, never auto-selected.
@@ -457,6 +457,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
     }else{
       // Do not keep a previously resolved CRM record visible for an unknown or colliding deep link.
       setDirectorySelectedId('');appliedCrmSelection.current=''
+      setCrmMode('cases')
     }
   },[activeModule,selectedId,directory,state])
 
