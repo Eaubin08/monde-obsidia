@@ -1,4 +1,4 @@
-import {projectWorldObject,type WorldObject} from './worldObjectContract'
+import {projectWorldObject,type WorldObject} from './worldObjectContract.ts'
 import type {ClubCalendarEvent} from './cssaSportCalendar'
 import type {EconomyState} from './cssaEconomy'
 
