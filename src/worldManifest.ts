@@ -1,4 +1,4 @@
-import {worldObjectKey,type WorldObject} from './worldObjectContract'
+import {worldObjectKey,type WorldObject} from './worldObjectContract.ts'
 
 // Organization-scoped read model: objects are observed projections, not permissions.
 export type WorldManifest={
