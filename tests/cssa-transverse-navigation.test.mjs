@@ -70,3 +70,9 @@ test('CRM interaction links are disabled unless organization identity resolves u
  assert.match(crm,/referenceLabels\[ref\.status\]/)
  assert.doesNotMatch(crm,/view\.orgs\.find\(x=>x\.id===i\.organizationId\)/)
 })
+
+test('CRM followups require an observed, unique task reference',()=>{
+ assert.match(crm,/resolveCssaReference\(i\.followupTaskId,opsAvailable\?ops\?\.tasks\|\|\[\]:\[\],opsAvailable\)/)
+ assert.match(crm,/unresolvedFollowups/)
+ assert.match(crm,/relance\(s\) reliée\(s\) à une tâche vérifiée/)
+})
