@@ -16,6 +16,7 @@ export default function CSSAWorldSnapshotDiagnostic({dossierId}:{dossierId:strin
   <p>Lecture : {state.phase} · révision {state.revision} · cohérence {projection.consistency}.</p>
   <p>Sources : {projection.sourceStatus?Object.entries(projection.sourceStatus).map(([key,value])=>key+': '+value).join(' · '):'Aucune projection actuelle'}.</p>
   <p>Objets : {state.snapshot?.model.objects.length??0} · relations : {state.snapshot?.graph.edges.length??0} · domaines : {projection.territories.length}.</p>
+  <p>Capacités observées dans les sources : {state.snapshot?.capabilityRegistry.records.filter(c=>c.state==='OBSERVED_SOURCE').length??0} · déclarées seulement : {state.snapshot?.capabilityRegistry.records.filter(c=>c.state==='DECLARED_ONLY').length??0}. Aucune ne confère une autorisation d’exécution.</p>
   {dossierId&&<p>Dossier : {projection.focus?.label??'UNKNOWN'} · liens : {projection.relations.length} · inconnues : {projection.unknowns.length}.</p>}
   {state.error&&<p role="status">Erreur de lecture : {state.error}</p>}
   <p>Cette projection ne modifie pas les registres et ne représente aucune décision KX108.</p>
