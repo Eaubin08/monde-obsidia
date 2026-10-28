@@ -454,6 +454,9 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
       setCrmMode('directory');setDirectorySelectedId(selectedId);appliedCrmSelection.current=selectedId
     }else if(caseMatches===1&&orgMatches===0){
       setCrmMode('cases');setDirectorySelectedId('');appliedCrmSelection.current=selectedId
+    }else{
+      // Do not keep a previously resolved CRM record visible for an unknown or colliding deep link.
+      setDirectorySelectedId('');appliedCrmSelection.current=''
     }
   },[activeModule,selectedId,directory,state])
 
@@ -463,8 +466,8 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
   }, [state, selectedId, directory])
   const selectedExternal=useMemo(()=>{
     if(!directory?.organizations.length)return null
-    return directorySelectedId ? (directory.organizations.filter(x=>x.id===directorySelectedId).length===1 ? directory.organizations.find(x=>x.id===directorySelectedId)! : null) : directory.organizations[0]
-  },[directory,directorySelectedId])
+    return directorySelectedId ? (directory.organizations.filter(x=>x.id===directorySelectedId).length===1 && !state?.cases.some(c=>c.id===directorySelectedId) ? directory.organizations.find(x=>x.id===directorySelectedId)! : null) : (selectedId ? null : directory.organizations[0])
+  },[directory,directorySelectedId,state,selectedId])
 
   const selectedIntendance = useMemo(() => {
     if (!state || !state.intendanceItems.length) return null
