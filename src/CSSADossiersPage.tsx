@@ -32,13 +32,17 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
    const required=reqs.filter(r=>r.criticality==='OBLIGATOIRE')
    const satisfied=required.filter(r=>r.state==='SATISFAIT').length
    const blocking=required.filter(r=>r.state!=='SATISFAIT')
-   const validation=state.validations.find(v=>v.dossierId===d.id&&v.type==='REVUE_FINALE')
-   const proof=state.submissionProofs.find(p=>p.dossierId===d.id)
-   const outcome=state.dossierOutcomes.find(o=>o.dossierId===d.id)
+   const validations=state.validations.filter(v=>v.dossierId===d.id&&v.type==='REVUE_FINALE')
+   const validation=validations.length===1?validations[0]:null
+   const proofs=state.submissionProofs.filter(p=>p.dossierId===d.id)
+   const proof=proofs.length===1?proofs[0]:null
+   const outcomes=state.dossierOutcomes.filter(o=>o.dossierId===d.id)
+   const outcome=outcomes.length===1?outcomes[0]:null
    const docs=state.documentRefs.filter(x=>x.dossierId===d.id||x.usedIn?.includes(d.id))
-   const ready=required.length>0&&blocking.length===0&&validation?.status==='VALIDE'
+   const evidenceConflicts=[...(validations.length>1?['Plusieurs validations finales']:[]),...(proofs.length>1?['Plusieurs preuves de dépôt']:[]),...(outcomes.length>1?['Plusieurs résultats externes']:[])]
+   const ready=evidenceConflicts.length===0&&required.length>0&&blocking.length===0&&validation?.status==='VALIDE'
    const late=Boolean(d.deadline)&&new Date(d.deadline).getTime()<Date.now()&&!proof&&!['ATTRIBUE','NON_RETENU','ANNULE'].includes(d.status)
-   return {d,reqs,required,satisfied,blocking,validation,proof,outcome,docs,ready,late}
+   return {d,reqs,required,satisfied,blocking,validation,proof,outcome,docs,ready,late,evidenceConflicts}
   })
  },[state,available])
 
@@ -49,7 +53,8 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
   if(filter==='ACTIFS')return !x.outcome&&!['ATTRIBUE','NON_RETENU','ANNULE'].includes(x.d.status)
   return true
  })
- const selected=selectedId?rows.find(x=>x.d.id===selectedId):null
+ const selectedMatches=selectedId?rows.filter(x=>x.d.id===selectedId):[]
+ const selected=selectedMatches.length===1?selectedMatches[0]:null
  const lateCount=rows.filter(x=>x.late).length
  const readyCount=rows.filter(x=>x.ready&&!x.proof).length
  const depositedCount=rows.filter(x=>x.proof&&!x.outcome).length
@@ -88,6 +93,7 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
    }):<div className="dosv-empty">{available?'Aucun dossier dans cette vue.':'UNKNOWN · source dossiers indisponible ; aucun dossier réel ne peut être déduit du modèle de secours.'}</div>}
   </section>
 
+  {selectedId&&selectedMatches.length!==1&&<p className="dosv-empty">UNKNOWN · dossier {selectedMatches.length>1?'ambigu':'introuvable'} : aucune fiche arbitraire affichée.</p>}
   {selected&&<section className="dosv-focus">
    <div><small>DOSSIER SÉLECTIONNÉ</small><h3>{selected.d.reference} · {selected.d.title}</h3><p>{selected.blocking.length} exigence(s) obligatoire(s) bloquante(s) · validation finale {selected.validation?human(selected.validation.status):'non demandée'} · {selected.proof?'dépôt prouvé':'dépôt non prouvé'}.</p></div>
    <button onClick={()=>onOpen?.('dossiers',selected.d.id)}>Piloter ce dossier →</button>
@@ -96,12 +102,14 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
   {selected&&<section className="dosv-provenance">
    <h3>Sources et références du dossier</h3>
    <p>Pilote : {resolveCssaPerson(selected.d.ownerPersonId,selected.d.owner,organisation)}</p>
-   <p>Source : {selected.d.source||'UNKNOWN'} · dossier {selected.d.id}</p>{selected.d.ownerPersonId&&<button onClick={()=>onOpen?.('organisation','person:'+selected.d.ownerPersonId)}>Ouvrir la fiche du pilote</button>}
+   {selected.evidenceConflicts.map(message=><p key={message}>CONTRADICTION · {message} : aucune preuve choisie automatiquement.</p>)}
+   <p>Source : {selected.d.source||'UNKNOWN'} · dossier {selected.d.id}</p>{selected.d.ownerPersonId&&organisation?.people.filter(p=>p.id===selected.d.ownerPersonId).length===1&&<button onClick={()=>onOpen?.('organisation','person:'+selected.d.ownerPersonId)}>Ouvrir la fiche du pilote</button>}
    <p>Validation enregistrée : {selected.validation?`${selected.validation.id} · ${selected.validation.status}`:'UNKNOWN'}</p>
    <p>Preuve de dépôt enregistrée : {selected.proof?`${selected.proof.id} · ${selected.proof.submittedAt||'UNKNOWN'}`:'UNKNOWN'}</p>
    <p>Référence externe de dépôt : {selected.proof?.externalReference||'UNKNOWN'} · pièce : {selected.proof?.proofRef||'UNKNOWN'} · source : {selected.proof?.source||'UNKNOWN'}</p>
    <p>Résultat enregistré : {selected.outcome?`${selected.outcome.id} · ${selected.outcome.result}`:'UNKNOWN'} · référence externe : {selected.outcome?.externalReference||'UNKNOWN'} · source : {selected.outcome?.source||'UNKNOWN'}</p>
-   <p>Documents liés : {selected.docs.length?selected.docs.map(doc=>`${doc.id} · ${doc.title} · ${doc.status}`).join(' ; '):'Aucun lien document renseigné'}</p>
+   <p>Documents liés : {selected.docs.length||0}</p>
+   {selected.docs.map(doc=><button key={doc.id} type="button" disabled={state.documentRefs.filter(x=>x.id===doc.id).length!==1} onClick={()=>onOpen?.('documents',doc.id)}>{doc.title} · {doc.status} →</button>)}
   </section>}
   {selected&&<section className="dosv-requirements">
    <header><h3>Exigences et travail lié</h3><p>Les états affichés restent indépendants : une tâche terminée ne valide pas une exigence.</p></header>
