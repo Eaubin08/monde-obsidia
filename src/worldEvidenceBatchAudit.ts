@@ -36,13 +36,15 @@ export async function auditWorldEvidenceBatchV40(state:WorldSnapshotState,expect
   const timestamp=source?.observedAt?Date.parse(source.observedAt):NaN
   const projectedTimestamp=projected?.source.observedAt?Date.parse(projected.source.observedAt):NaN
   const fresh=Number.isFinite(timestamp)&&timestamp<=nowMs&&nowMs-timestamp<=maxAgeMs&&Number.isFinite(projectedTimestamp)&&projectedTimestamp<=nowMs&&nowMs-projectedTimestamp<=maxAgeMs
+  const tenantClaim=source?.record?.organizationId
+  const tenantConsistent=tenantClaim===undefined||tenantClaim===active.model.organizationId
   const identity=!!projected&&source?.status==='OBSERVED_RECORD'&&source.query.id===projected.identity.id&&projected.evidenceRefs.includes(expected.sourceRef)
   const fields=pair&&projected&&source?.record?pair.binding.fields.map(f=>{
    const known=Object.hasOwn(source.record!,f.sourceField)
    const right=f.projectedField==='label'?projected.label:f.projectedField==='identity.id'?projected.identity.id:projected.source.id
    return {sourceField:f.sourceField,projectedField:f.projectedField,status:!known||source.record![f.sourceField]===undefined?'MISSING' as const:canonicalJson(source.record![f.sourceField])===canonicalJson(right)?'EQUAL' as const:'DIVERGENT' as const}
   }):[]
-  const verdict=!pair?'BINDING_UNRESOLVED':!projected?'PROJECTION_UNRESOLVED':source?.status!=='OBSERVED_RECORD'?'SOURCE_UNRESOLVED':!identity?'IDENTITY_DIVERGENCE':!fresh?'FRESHNESS_UNVERIFIED':source.observedAt!==projected.source.observedAt?'OBSERVATION_TIME_DIVERGENCE':fields.length===0?'FIELDS_UNVERIFIED':fields.some(f=>f.status!=='EQUAL')?'FIELD_DIVERGENCE':'STRUCTURAL_FIELDS_MATCH'
+  const verdict=!pair?'BINDING_UNRESOLVED':!projected?'PROJECTION_UNRESOLVED':source?.status!=='OBSERVED_RECORD'?'SOURCE_UNRESOLVED':!tenantConsistent?'SOURCE_TENANT_CLAIM_MISMATCH':!identity?'IDENTITY_DIVERGENCE':!fresh?'FRESHNESS_UNVERIFIED':source.observedAt!==projected.source.observedAt?'OBSERVATION_TIME_DIVERGENCE':fields.length===0?'FIELDS_UNVERIFIED':fields.some(f=>f.status!=='EQUAL')?'FIELD_DIVERGENCE':'STRUCTURAL_FIELDS_MATCH'
   return {domain:expected.domain,capabilityId:expected.id,sourceRef:expected.sourceRef,verdict,fields,
    sourceDigest:source?.status==='OBSERVED_RECORD'&&source.record?await digest(source.record):null,
    integrity:'DIGEST_ONLY_NOT_AUTHENTICATED' as const,objectKey:verdict==='STRUCTURAL_FIELDS_MATCH'?worldObjectKey(projected!):null}
