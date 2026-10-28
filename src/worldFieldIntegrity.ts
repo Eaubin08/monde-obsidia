@@ -7,6 +7,7 @@ import {worldObjectKey} from './worldObjectContract.ts'
 // Compare only explicitly named shared fields. Hashes are local repeatability markers, not authentication.
 export type FieldBinding=CrossCheckBinding&{fields:readonly {sourceField:string;projectedField:'label'|'identity.id'|'source.id'}[]}
 function canonical(value:unknown):string{
+ if(value===undefined)return 'undefined'
  if(value===null||typeof value!=='object')return JSON.stringify(value)
  if(Array.isArray(value))return '['+value.map(canonical).join(',')+']'
  return '{'+Object.keys(value as Record<string,unknown>).sort().map(k=>JSON.stringify(k)+':'+canonical((value as Record<string,unknown>)[k])).join(',')+'}'
