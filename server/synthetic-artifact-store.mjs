@@ -2,14 +2,16 @@
 import {mkdir,writeFile,readFile,readdir,lstat} from 'node:fs/promises'
 import {join,resolve} from 'node:path'
 import {createHash} from 'node:crypto'
+import {createSyntheticStoragePolicy} from './synthetic-storage-policy.mjs'
 const hex=x=>typeof x==='string'&&/^SHA256:[0-9a-f]{64}$/.test(x)
 const id=x=>typeof x==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(x)
 const hash=s=>'SHA256:'+createHash('sha256').update(s,'utf8').digest('hex')
-export function createSyntheticArtifactStore(root){
+export function createSyntheticArtifactStore(root,limits={}){
  if(typeof root!=='string'||!root.trim())throw Error('Explicit lab root required')
  const base=resolve(root)
  const artifacts=join(base,'artifacts')
  const manifests=join(base,'manifests')
+ const policy=createSyntheticStoragePolicy(base,limits)
  async function init(){await mkdir(artifacts,{recursive:true});await mkdir(manifests,{recursive:true})}
  async function save(job){
   if(!id(job?.id)||job?.phase!=='TESTED_SYNTHETIC'||!job.artifact||!job.tests?.length||!job.tests.every(x=>x.pass))throw Error('Only tested synthetic jobs may be stored')
@@ -24,6 +26,9 @@ export function createSyntheticArtifactStore(root){
    status:'TESTED_SYNTHETIC',artifactDigest:digest,tests:job.tests,events:job.events,
    buildApproved:false,deploymentApproved:false,executionAllowed:false}
   const dest=join(manifests,job.id+'.json')
+  const decision=await policy.admit({artifactBytes:Buffer.byteLength(content),manifestBytes:Buffer.byteLength(JSON.stringify(manifest,null,2)+'\n')})
+  if(decision.status!=='ADMITTED')throw Error('LAB_STORAGE_'+decision.reason)
+  // Direct store callers require external exclusive coordination; service holds the lab lock.
   // Exclusive create: another job ID cannot overwrite its previous manifest.
   await writeFile(file,content,{flag:'wx'}).catch(async err=>{
    if(err.code!=='EEXIST')throw err
