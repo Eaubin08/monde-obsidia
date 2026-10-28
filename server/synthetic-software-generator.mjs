@@ -1,7 +1,7 @@
 // V54 deterministic source generator; never evaluates generated or externally supplied code.
 // Source is produced from finite, reviewed templates and contains no imports or side effects.
 import {createHash} from 'node:crypto'
-import {SourceTextModule} from 'node:vm'
+import {Script} from 'node:vm'
 const names=new Set(['PURE_TOOL','PURE_WORKFLOW','PURE_AGENT_DESCRIPTOR'])
 const ident=x=>typeof x==='string'&&/^[A-Za-z][A-Za-z0-9_]{0,47}$/.test(x)
 const digest=s=>'SHA256:'+createHash('sha256').update(s).digest('hex')
@@ -27,7 +27,8 @@ export async function validateSoftwareSource(artifact){
  if(!artifact||typeof artifact.source!=='string'||artifact.source.length>4096||artifact.deployable!==false||
  !names.has(artifact.kind)||!ident(artifact.organizationId)||!/^SHA256:[0-9a-f]{64}$/.test(artifact.digest))
  return {status:'REJECTED',tests:[]}
- const syntax=await import('node:vm').then(vm=>new vm.SourceTextModule(artifact.source,{identifier:'synthetic-source-check'})).then(()=>true).catch(()=>false)
+ let syntax=false
+ try{new Script(artifact.source.replace(/^export /gm,''),{filename:'synthetic-source-check.mjs'});syntax=true}catch{}
  const tests=[{name:'DIGEST',pass:digest(artifact.source)===artifact.digest},
   {name:'SYNTAX_NO_EXECUTION',pass:syntax},
   {name:'NO_MODULE_IMPORT',pass:!/(?:^|\n)\s*import\b/.test(artifact.source)},
