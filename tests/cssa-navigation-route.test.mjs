@@ -29,3 +29,9 @@ test('malformed CSSA identity segments stay invalid and never silently select da
  assert.equal(parseCssaHash('#cssa/mail/a%00b',modules),null)
  assert.equal(parseCssaHash('#cssa/mail/a?b',modules),null)
 })
+
+test('malformed CSSA browser history entry clears the previous selection',()=>{
+ assert.match(shell,/if\(!location\.hash\.startsWith\('#cssa'\)\)return/)
+ assert.match(shell,/setModuleId\(route\?\.moduleId\?\?'dashboard'\)/)
+ assert.match(shell,/setSelectedId\(route\?\.selectedId\?\?''\)/)
+})
