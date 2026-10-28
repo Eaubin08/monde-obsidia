@@ -1,3 +1,4 @@
+import {projectWorldActor} from './cssaWorldObjects'
 import {resolveCssaReference,cssaSourceAvailable,referenceLabels} from './cssaLinkedReference'
 import type {EconomyState} from './cssaEconomy'
 
@@ -26,8 +27,10 @@ export default function CSSAActorObjectView({selectedId,directory,ops,economy,bu
  const p=projectCssaActor(selectedId,directory,ops,economy,business)
  if(!p.organization)return <section className="crmx-panel" aria-label="Fiche acteur"><h3>Acteur</h3><p>{referenceLabels[p.actor.status]} · aucune organisation substituée.</p></section>
  const id=p.organization.id
+ const worldObject=projectWorldActor(p.organization,p.crmAvailable)
  return <section className="crmx-panel" aria-label="Fiche acteur" data-object-id={id}>
   <header><div><small>OBJET RELATIONNEL · CRM CANONIQUE</small><h3>{p.organization.name}</h3></div><span>{p.organization.kind} · {p.organization.status}</span></header>
+  <p>Projection Monde : {worldObject.identity.kind} · {worldObject.presentation.pattern} · {worldObject.governance.decisionAuthority}</p>
   <p>Identifiant : {id}. Seules les relations par référence canonique explicite sont regroupées ; un nom identique ne crée aucun lien.</p>
   <h4>Contacts ({p.contacts.length})</h4>
   {p.contacts.map(c=><p key={c.id}>{c.displayName} · {c.role} · {c.status} · {c.email||'adresse UNKNOWN'}</p>)}
