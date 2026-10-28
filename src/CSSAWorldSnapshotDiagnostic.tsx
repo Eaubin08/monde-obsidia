@@ -1,0 +1,23 @@
+import {useEffect,useState} from 'react'
+import {createCssaWorldSnapshotController,type WorldSnapshotState} from './cssaWorldSnapshotController'
+import {projectWorldConsumer} from './worldConsumerProjection'
+import {worldObjectKey} from './worldObjectContract'
+
+// Explicit opt-in diagnostic only: existing mission page remains backed by its canonical business reader.
+const controller=createCssaWorldSnapshotController()
+export default function CSSAWorldSnapshotDiagnostic({dossierId}:{dossierId:string|null}){
+ const [state,setState]=useState<WorldSnapshotState>(()=>controller.read())
+ useEffect(()=>controller.subscribe(setState),[])
+ const focus=state.snapshot?.model.objects.find(o=>o.identity.domain==='BUSINESS'&&o.identity.kind==='CASE'&&o.identity.id===dossierId)
+ const projection=projectWorldConsumer(state,focus?worldObjectKey(focus):'')
+ return <details className="dosv-world-diagnostic">
+  <summary>Diagnostic du modèle Monde V26 (lecture seule)</summary>
+  <button type="button" disabled={state.phase==='LOADING'} onClick={()=>{void controller.refresh()}}>Actualiser le modèle Monde</button>
+  <p>Lecture : {state.phase} · révision {state.revision} · cohérence {projection.consistency}.</p>
+  <p>Sources : {projection.sourceStatus?Object.entries(projection.sourceStatus).map(([key,value])=>key+': '+value).join(' · '):'Aucune projection actuelle'}.</p>
+  <p>Objets : {state.snapshot?.model.objects.length??0} · relations : {state.snapshot?.graph.edges.length??0} · domaines : {projection.territories.length}.</p>
+  {dossierId&&<p>Dossier : {projection.focus?.label??'UNKNOWN'} · liens : {projection.relations.length} · inconnues : {projection.unknowns.length}.</p>}
+  {state.error&&<p role="status">Erreur de lecture : {state.error}</p>}
+  <p>Cette projection ne modifie pas les registres et ne représente aucune décision KX108.</p>
+ </details>
+}
