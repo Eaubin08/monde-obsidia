@@ -4,6 +4,7 @@ import {join,resolve} from 'node:path'
 import {randomUUID} from 'node:crypto'
 import {planSoftwareComponent,generateSoftwareSource,validateSoftwareSource} from './synthetic-software-generator.mjs'
 import {createSyntheticLabLock} from './synthetic-lab-lock.mjs'
+import {testReviewedSoftwareSource} from './reviewed-software-functional-tests.mjs'
 const valid=x=>typeof x==='string'&&/^SOURCE_JOB_[0-9a-f]{32}$/.test(x)
 export function createSyntheticSourceBuildPipeline(root){
  if(typeof root!=='string'||!root.trim())throw Error('Explicit laboratory root required')
@@ -18,14 +19,16 @@ export function createSyntheticSourceBuildPipeline(root){
    const validation=await validateSoftwareSource(artifact)
    if(validation.status!=='SOURCE_VALIDATED_NOT_EXECUTED')return {status:'HOLD',reason:'VALIDATION_FAILED',executionAllowed:false}
    await mkdir(directory,{recursive:true})
+   const functional=await testReviewedSoftwareSource(artifact)
+   if(functional.status!=='FUNCTIONAL_TESTED_LAB')return {status:'HOLD',reason:'FUNCTIONAL_TEST_FAILED',executionAllowed:false}
    const jobId='SOURCE_JOB_'+randomUUID().replaceAll('-','')
    const manifest={schema:'OBSIDIA_SYNTHETIC_SOURCE_JOB_V0',jobId,organizationId:plan.organizationId,componentId:plan.componentId,kind:plan.kind,
-    digest:artifact.digest,status:'SOURCE_VALIDATED_NOT_EXECUTED',tests:validation.tests,
+    digest:artifact.digest,status:'SOURCE_VALIDATED_NOT_EXECUTED',tests:validation.tests,functional,
     buildApproved:false,deploymentApproved:false,executionAllowed:false}
    const dest=join(directory,jobId+'.json')
    // Persist source and manifest together; fail-closed inspect detects partial/corrupt writes.
    await writeFile(dest,JSON.stringify({manifest,artifact},null,2)+'\n',{flag:'wx'})
-   return {status:'STORED_SOURCE_NOT_EXECUTED',jobId,digest:artifact.digest,tests:validation.tests,executionAllowed:false}
+   return {status:'STORED_SOURCE_FUNCTIONALLY_TESTED_LAB',jobId,digest:artifact.digest,tests:validation.tests,functionalTests:functional.tests,executionAllowed:false}
   }catch{return {status:'HOLD',reason:'SOURCE_STORE_FAILURE',executionAllowed:false}}
   finally{await lease.release().catch(()=>false)}
  }
@@ -42,6 +45,10 @@ export function createSyntheticSourceBuildPipeline(root){
   if(validation.status!=='SOURCE_VALIDATED_NOT_EXECUTED'||!Array.isArray(manifest.tests)||manifest.tests.length!==validation.tests.length||
    !manifest.tests.every((t,i)=>t.name===validation.tests[i].name&&t.pass===true))
    return {status:'SOURCE_INTEGRITY_FAILED',executionAllowed:false}
+  if(manifest.functional!==undefined){
+   const functional=await testReviewedSoftwareSource(artifact)
+   if(functional.status!=='FUNCTIONAL_TESTED_LAB'||JSON.stringify(manifest.functional)!==JSON.stringify(functional))return {status:'FUNCTIONAL_EVIDENCE_FAILED',executionAllowed:false}
+  }
   return {status:'VERIFIED_SOURCE_PREVIEW',jobId,manifest,source:artifact.source,
    buildApproved:false,deploymentApproved:false,executionAllowed:false}
  }
