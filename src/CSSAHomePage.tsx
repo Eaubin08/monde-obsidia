@@ -1,5 +1,5 @@
 import {deriveCssaDossierAttention} from './cssaDossierAttention'
-import {cssaSourceAvailable} from './cssaLinkedReference'
+import {cssaSourceAvailable,resolveCssaReference,referenceLabels} from './cssaLinkedReference'
 import {cssaNavigationCount} from './cssaNavigationCounts'
 import type {Observations} from './cssaLiveProfile'
 import {useEffect,useMemo,useState} from 'react'
@@ -213,7 +213,7 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
   const horizon7=new Date(Date.now()+7*86400000).toISOString().slice(0,10)
   const people=organisation?.people??[]
   const availabilities=organisation?.availabilities??[]
-  const personName=(id:string)=>people.find(p=>p.id===id)?.displayName||'Personne inconnue'
+  const personName=(id:string)=>resolveCssaReference(id,people,cssaSourceAvailable(organisation)).item?.displayName||'UNKNOWN · personne non résolue'
   const fixtures=clubCalendarWindow(CSSA_REFERENCE_CALENDAR,today,horizon7)
   const agenda=([
     ...fixtures.map<AgendaItem>((f,index)=>({
@@ -340,8 +340,8 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
 
       <section>
         <header><h3>Résultats dossiers</h3><button onClick={()=>onOpen('dossiers')}>Historique →</button></header>
-        {recentOutcomes.length?recentOutcomes.map(o=>{const d=dossiers.find(x=>x.id===o.dossierId);return <button className="cssa-home-row" key={o.id} onClick={()=>onOpen('dossiers',o.dossierId)}>
-          <div><strong>{d?d.reference+' · '+d.title:o.dossierId}</strong><small>{o.decidedAt||'Date inconnue'} · {o.externalReference||'Référence inconnue'}</small></div>
+        {recentOutcomes.length?recentOutcomes.map(o=>{const dossierRef=resolveCssaReference(o.dossierId,dossiers,cssaSourceAvailable(business));const d=dossierRef.item;return <button className="cssa-home-row" key={o.id} onClick={()=>onOpen('dossiers',o.dossierId)}>
+          <div><strong>{d?d.reference+' · '+d.title:referenceLabels[dossierRef.status]+' · '+o.dossierId}</strong><small>{o.decidedAt||'Date inconnue'} · {o.externalReference||'Référence inconnue'}</small></div>
           <span>{o.result.replaceAll('_',' ')}{o.amount!=null?' · '+new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(o.amount):''}</span>
         </button>}):<p className="cssa-home-empty">Aucun résultat externe enregistré.</p>}
       </section>
