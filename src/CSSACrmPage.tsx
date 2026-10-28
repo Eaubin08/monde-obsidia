@@ -47,8 +47,9 @@ export default function CSSACrmPage({selectedId,onSelect}:Props){
   const cases=opsAvailable?ops?.cases||[]:[]
   const openCases=cases.filter(c=>!['FERME','CLOSED','TERMINE'].includes(String(c.status).toUpperCase()))
   const recent=[...interactions].sort((a,b)=>String(b.occurredAt).localeCompare(String(a.occurredAt))).slice(0,10)
-  const followups=interactions.filter(i=>i.followupTaskId).length
-  return {orgs,contacts,interactions,cases,openCases,recent,followups}
+  const followups=interactions.filter(i=>i.followupTaskId&&resolveCssaReference(i.followupTaskId,opsAvailable?ops?.tasks||[]:[],opsAvailable).status==='RESOLVED').length
+  const unresolvedFollowups=interactions.filter(i=>i.followupTaskId&&resolveCssaReference(i.followupTaskId,opsAvailable?ops?.tasks||[]:[],opsAvailable).status!=='RESOLVED').length
+  return {orgs,contacts,interactions,cases,openCases,recent,followups,unresolvedFollowups}
  },[directory,ops,directoryAvailable,opsAvailable])
 
  if(!loaded)return <section className="crmx"><div className="crmx-empty">Chargement…</div></section>
@@ -89,7 +90,7 @@ export default function CSSACrmPage({selectedId,onSelect}:Props){
    </article>
   </section>
 
-  <section className="crmx-next"><div><small>PROCHAINES ACTIONS</small><h3>{directoryAvailable?view.followups:'UNKNOWN'} relance(s) déjà reliée(s) à une interaction</h3><p>Les relances CRM restent de vraies tâches Tasks : le CRM montre la relation, Tasks porte l’exécution.</p></div><button onClick={()=>onSelect('tasks','')}>Ouvrir Tasks →</button></section>
+  <section className="crmx-next"><div><small>PROCHAINES ACTIONS</small><h3>{directoryAvailable&&opsAvailable?view.followups:'UNKNOWN'} relance(s) reliée(s) à une tâche vérifiée</h3>{directoryAvailable&&opsAvailable&&view.unresolvedFollowups>0&&<p>UNKNOWN · {view.unresolvedFollowups} référence(s) de relance non résolue(s) ou ambiguë(s).</p>}<p>Les relances CRM restent de vraies tâches Tasks : le CRM montre la relation, Tasks porte l’exécution.</p></div><button onClick={()=>onSelect('tasks','')}>Ouvrir Tasks →</button></section>
 
   <details className="crmx-tools" open={Boolean(selectedId)}><summary>Gestion détaillée du CRM</summary><CSSAOpsWorkspace activeModule="crm" selectedId={selectedId} onSelect={onSelect}/></details>
  </section>
