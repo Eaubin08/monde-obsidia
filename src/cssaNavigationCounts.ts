@@ -23,10 +23,14 @@ export function cssaNavigationCount(id:string,observations:Observations):Count|n
  const items=rows(state[list])
  if(!items)return unknown
  if(id==='organisation')return {value:items.filter(row=>row.status==='ACTIF').length,label,route}
- if(id==='tasks')return {value:items.filter(row=>row.status!=='TERMINE').length,label,route}
+ if(id==='tasks'){
+  if(items.some(row=>typeof row.status!=='string'||!row.status.trim()))return unknown
+  return {value:items.filter(row=>!['TERMINE','FERME','CLOSED'].includes(String(row.status))).length,label,route}
+ }
  if(id==='dossiers'){
+  if(items.some(row=>typeof row.id!=='string'||typeof row.status!=='string'))return unknown
   const outcomes=rows(state.dossierOutcomes)
-  if(!outcomes)return unknown
+  if(!outcomes||outcomes.some(row=>typeof row.dossierId!=='string'))return unknown
   return {value:items.filter(row=>!['ATTRIBUE','NON_RETENU','ANNULE'].includes(String(row.status))&&!outcomes.some(outcome=>outcome.dossierId===row.id)).length,label,route}
  }
  return {value:items.length,label,route}
