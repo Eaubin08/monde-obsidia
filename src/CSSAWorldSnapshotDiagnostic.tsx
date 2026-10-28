@@ -1,3 +1,4 @@
+import {composeWorldActivityPlan} from './worldActivityPlan'
 import WorldPlanPreview from './WorldPlanPreview'
 import {composeWorldRenderPlan} from './worldUiComposer'
 import {composeWorldUiContract} from './worldUiCompositionContract'
@@ -15,6 +16,7 @@ export default function CSSAWorldSnapshotDiagnostic({dossierId}:{dossierId:strin
  const projection=projectWorldConsumer(state,focus?worldObjectKey(focus):'')
  const composition=composeWorldUiContract(state)
  const renderPlan=composeWorldRenderPlan(state)
+ const activityPlan=composeWorldActivityPlan(state,{activityObjectKey:focus?worldObjectKey(focus):null})
  return <details className="dosv-world-diagnostic">
   <summary>Diagnostic du modèle Monde V26 (lecture seule)</summary>
   <button type="button" disabled={state.phase==='LOADING'} onClick={()=>{void controller.refresh()}}>Actualiser le modèle Monde</button>
@@ -24,6 +26,7 @@ export default function CSSAWorldSnapshotDiagnostic({dossierId}:{dossierId:strin
   <p>Contrat UI V28 · {composition.schema} · territoires composables : {composition.territories.length} · objets navigables : {composition.territories.reduce((sum,t)=>sum+t.items.length,0)}. Aucun choix graphique définitif.</p>
   <p>Plan de rendu V29 · blocs connus : {renderPlan.territories.reduce((n,t)=>n+t.blocks.filter(b=>!b.fallback).length,0)} · patterns inconnus : {renderPlan.territories.reduce((n,t)=>n+t.blocks.filter(b=>b.fallback).length,0)}. Lecture seule, aucun écran généré.</p>
   <details><summary>Aperçu expérimental du rendu Monde V30</summary><WorldPlanPreview plan={renderPlan}/></details>
+  <p>Contexte d’activité V33 · {activityPlan.context?.focus?.label??'Aucun objet résolu'} · rôle vérifié : NON · autorisation : NONE · inconnues : {activityPlan.unknowns.length}.</p>
   <p>Capacités observées dans les sources : {state.snapshot?.capabilityRegistry.records.filter(c=>c.state==='OBSERVED_SOURCE').length??0} · déclarées seulement : {state.snapshot?.capabilityRegistry.records.filter(c=>c.state==='DECLARED_ONLY').length??0}. Aucune ne confère une autorisation d’exécution.</p>
   {dossierId&&<p>Dossier : {projection.focus?.label??'UNKNOWN'} · liens : {projection.relations.length} · inconnues : {projection.unknowns.length}.</p>}
   {state.error&&<p role="status">Erreur de lecture : {state.error}</p>}
