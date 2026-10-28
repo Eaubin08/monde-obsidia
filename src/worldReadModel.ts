@@ -1,4 +1,4 @@
-import {worldObjectKey,type WorldObject,type WorldRelation} from './worldObjectContract'
+import {worldObjectKey,type WorldObject,type WorldRelation} from './worldObjectContract.ts'
 
 // Portable, framework-independent snapshot. Source status is explicit; objects never grant authority.
 export type WorldReadModel={
