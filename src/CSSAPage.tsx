@@ -610,9 +610,10 @@ export default function CSSAPage(){
  },[structureId,moduleId,entities,observedSources,nativeByModule,query,projectItems,profile.capabilities])
 
  useEffect(()=>{
-  if(!items.length){setSelectedId('');return}
-  if(!items.some(x=>x.id===selectedId))setSelectedId(items[0].id)
- },[items,selectedId])
+  // Deep links are authoritative for navigation identity; never replace a missing id with the first row.
+  if(selectedId)return
+  if(items.length===1&&moduleId==='sources')setSelectedId(items[0].id)
+ },[items,selectedId,moduleId])
 
  const selected=items.find(x=>x.id===selectedId)??null
  const selectedEvidence=structureId==='cssa'?evidenceFor(selected,moduleId):[]
