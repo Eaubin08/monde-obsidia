@@ -117,3 +117,9 @@ test('CRM selection is revalidated on source refresh, not frozen by prior resolv
  assert.doesNotMatch(opsWorkspace,/appliedCrmSelection\.current===selectedId\)return/)
  assert.match(opsWorkspace,/setDirectorySelectedId\(''\);appliedCrmSelection\.current=''/)
 })
+
+test('CSSA catalogue deep links require exactly one matching item',()=>{
+ assert.match(shell,/const selectedMatches=selectedId\?items\.filter\(x=>x\.id===selectedId\):\[\]/)
+ assert.match(shell,/const selected=selectedMatches\.length===1\?selectedMatches\[0\]:null/)
+ assert.doesNotMatch(shell,/const selected=items\.find\(x=>x\.id===selectedId\)/)
+})
