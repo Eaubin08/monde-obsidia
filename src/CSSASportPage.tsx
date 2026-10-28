@@ -1238,6 +1238,7 @@ export default function CSSASportWorkspace() {
                         </span>
                       </div>
                       <h3>{selected.home} — {selected.away}</h3>
+                      {!selected.simulated&&CSSA_REFERENCE_CALENDAR.filter(e=>e.id===selected.id&&e.kind==='MATCH').length===1&&<a href={'#cssa/matchday/'+encodeURIComponent('event:'+selected.id)}>Explorer la préparation et les relations dans Matchday →</a>}
                       <p>{fullFrDate(selected.date)} · {selected.time || 'Horaire à confirmer'}</p>
                       {selected.pitch && (
                         <p style={{fontSize: '8px', color: '#88a6c7', marginTop: '2px'}}>
