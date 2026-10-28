@@ -1,3 +1,6 @@
+import CSSAActorObjectView from './CSSAActorObjectView'
+import {useCssaEconomy} from './useCssaEconomy'
+import useCssaBusinessRead from './useCssaBusinessRead'
 import {readCssaCrm} from './cssaCrmWrite'
 import {readCssaTasks} from './cssaTasksRead'
 import {cssaSourceAvailable,resolveCssaReference,referenceLabels} from './cssaLinkedReference'
@@ -17,6 +20,8 @@ type Props={selectedId:string;onSelect:(moduleId:string,id:string)=>void}
 const human=(v:string)=>String(v||'').replaceAll('_',' ').toLowerCase().replace(/(^|\s)\S/g,m=>m.toUpperCase())
 
 export default function CSSACrmPage({selectedId,onSelect}:Props){
+ const {state:economy}=useCssaEconomy()
+ const {state:business}=useCssaBusinessRead<{dossiers:{id:string;title:string;organizationId:string|null}[]}>()
  const [directory,setDirectory]=useState<Directory|null>(null)
  const [ops,setOps]=useState<OpsState|null>(null)
  const [loaded,setLoaded]=useState(false)
@@ -91,6 +96,8 @@ export default function CSSACrmPage({selectedId,onSelect}:Props){
   </section>
 
   <section className="crmx-next"><div><small>PROCHAINES ACTIONS</small><h3>{directoryAvailable&&opsAvailable?view.followups:'UNKNOWN'} relance(s) reliée(s) à une tâche vérifiée</h3>{directoryAvailable&&opsAvailable&&view.unresolvedFollowups>0&&<p>UNKNOWN · {view.unresolvedFollowups} référence(s) de relance non résolue(s) ou ambiguë(s).</p>}<p>Les relances CRM restent de vraies tâches Tasks : le CRM montre la relation, Tasks porte l’exécution.</p></div><button onClick={()=>onSelect('tasks','')}>Ouvrir Tasks →</button></section>
+
+  {selectedId&&directoryAvailable&&directory?.organizations.filter(o=>o.id===selectedId).length===1&&<CSSAActorObjectView selectedId={selectedId} directory={directory} ops={ops} economy={economy} business={business} onSelect={onSelect}/>}
 
   <details className="crmx-tools" open={Boolean(selectedId)}><summary>Gestion détaillée du CRM</summary><CSSAOpsWorkspace activeModule="crm" selectedId={selectedId} onSelect={onSelect}/></details>
  </section>
