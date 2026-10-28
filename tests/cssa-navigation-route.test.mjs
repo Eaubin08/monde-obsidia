@@ -22,3 +22,10 @@ test('shell handles hashchange for back/forward and clears stale cross-module qu
  assert.match(shell,/setModuleId\(route\.moduleId\);setSelectedId\(route\.selectedId\);setQuery\(''\)/)
  assert.match(shell,/formatCssaHash\(\{moduleId:id,selectedId:picked\}\)/)
 })
+
+test('malformed CSSA identity segments stay invalid and never silently select dashboard',()=>{
+ assert.equal(parseCssaHash('#cssa//42',modules),null)
+ assert.equal(parseCssaHash('#cssa/mail/',modules),null)
+ assert.equal(parseCssaHash('#cssa/mail/a%00b',modules),null)
+ assert.equal(parseCssaHash('#cssa/mail/a?b',modules),null)
+})
