@@ -105,3 +105,9 @@ test('Tasks page KPI and navigation share the canonical source-based counter',()
 test('CRM collision also blocks displaying a case with an organization id',()=>{
  assert.match(opsWorkspace,/!\(directory\?\.organizations\.some\(o=>o\.id===selectedId\)\)/)
 })
+
+test('unresolved CRM deep link clears previous selected organization and never falls back',()=>{
+ assert.match(opsWorkspace,/setDirectorySelectedId\(''\);appliedCrmSelection\.current=''/)
+ assert.match(opsWorkspace,/selectedId \? null : directory\.organizations\[0\]/)
+ assert.match(opsWorkspace,/!state\?\.cases\.some\(c=>c\.id===directorySelectedId\)/)
+})
