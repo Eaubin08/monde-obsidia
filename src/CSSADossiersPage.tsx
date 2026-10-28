@@ -1,3 +1,4 @@
+import {composeWorldManifest} from './worldManifest'
 import {projectWorldCase} from './cssaWorldObjects'
 import useCssaBusinessRead from './useCssaBusinessRead'
 import useCssaLinkedTasks from './useCssaLinkedTasks'
@@ -47,6 +48,7 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
   })
  },[state,available])
 
+ const worldManifest=composeWorldManifest('CSSA','CS Sedan Ardennes',rows.map(x=>projectWorldCase(x.d,available)))
  const shown=rows.filter(x=>{
   if(filter==='PRETS')return x.ready&&!x.proof
   if(filter==='DEPOSES')return Boolean(x.proof&&!x.outcome)
@@ -71,6 +73,7 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
    <button onClick={()=>onOpen?.('dossiers','')}>+ Nouveau dossier</button>
   </header>
 
+  <p>Monde V0 · {worldManifest.territories.length} territoire(s) observé(s) · {worldManifest.objects.length} dossier(s) projeté(s) · {worldManifest.unknowns.length} identité(s) ambiguë(s). Projection de navigation, sans décision ni nouvelle source de vérité.</p>
   <section className="dosv-kpis">
    <button className={lateCount?'danger':''} onClick={()=>setFilter('ACTIFS')}><small>EN RETARD</small><strong>{available?lateCount:'UNKNOWN'}</strong><span>sans preuve de dépôt</span></button>
    <button onClick={()=>setFilter('PRETS')}><small>PRÊTS À DÉPOSER</small><strong>{available?readyCount:'UNKNOWN'}</strong><span>validation finale acquise</span></button>
