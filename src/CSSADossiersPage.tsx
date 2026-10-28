@@ -1,3 +1,5 @@
+import {buildWorldReadModel,buildWorldGraph,createWorldContext} from './worldReadModel'
+import {worldObjectKey} from './worldObjectContract'
 import {composeWorldManifest} from './worldManifest'
 import {projectWorldCase} from './cssaWorldObjects'
 import useCssaBusinessRead from './useCssaBusinessRead'
@@ -49,6 +51,8 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
  },[state,available])
 
  const worldManifest=composeWorldManifest('CSSA','CS Sedan Ardennes',rows.map(x=>projectWorldCase(x.d,available)))
+ const worldReadModel=buildWorldReadModel('CSSA',rows.map(x=>projectWorldCase(x.d,available)))
+ const worldGraph=buildWorldGraph(worldReadModel)
  const shown=rows.filter(x=>{
   if(filter==='PRETS')return x.ready&&!x.proof
   if(filter==='DEPOSES')return Boolean(x.proof&&!x.outcome)
@@ -98,6 +102,7 @@ export default function CSSADossiersPage({selectedId,onOpen}:Props){
   </section>
 
   {selectedId&&selectedMatches.length!==1&&<p className="dosv-empty">UNKNOWN · dossier {selectedMatches.length>1?'ambigu':'introuvable'} : aucune fiche arbitraire affichée.</p>}
+  {selected&&<p>Contexte backend V21 · {createWorldContext(worldReadModel,worldGraph,worldObjectKey(projectWorldCase(selected.d,available))).schema} · relations explicites : {createWorldContext(worldReadModel,worldGraph,worldObjectKey(projectWorldCase(selected.d,available))).relations.length} · autorité : NONE.</p>}
   {selected&&<section className="dosv-focus">
    <div><small>DOSSIER SÉLECTIONNÉ</small><h3>{selected.d.reference} · {selected.d.title}</h3><p>Projection Monde : {projectWorldCase(selected.d,available).identity.kind} · {projectWorldCase(selected.d,available).presentation.pattern} · {projectWorldCase(selected.d,available).governance.decisionAuthority}</p><p>{selected.blocking.length} exigence(s) obligatoire(s) bloquante(s) · validation finale {selected.validation?human(selected.validation.status):'non demandée'} · {selected.proof?'dépôt prouvé':'dépôt non prouvé'}.</p></div>
    <button onClick={()=>onOpen?.('dossiers',selected.d.id)}>Piloter ce dossier →</button>
