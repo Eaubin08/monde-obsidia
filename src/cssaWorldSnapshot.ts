@@ -1,6 +1,6 @@
 import {readCssaBusiness} from './cssaBusinessRead.ts'
 import {readCssaTasks} from './cssaTasksRead.ts'
-import {readCssaCrm} from './cssaCrmWrite.ts'
+import {readCssaCrmDirectory} from './cssaCrmReadOnly.ts'
 import {cssaSourceAvailable} from './cssaLinkedReference.ts'
 import {buildCssaWorldGraph,type CssaWorldSources} from './cssaWorldGraph.ts'
 import {projectCompanyModel} from './companyModel.ts'
@@ -23,7 +23,7 @@ export async function readCssaWorldSnapshot(fetcher:typeof fetch=fetch):Promise<
  const reads=await Promise.allSettled([
   readCssaBusiness<Business>(fetcher),
   readCssaTasks(fetcher),
-  readCssaCrm<Crm>(fetcher)
+  readCssaCrmDirectory<Crm>(fetcher)
  ])
  const business=reads[0].status==='fulfilled'&&cssaSourceAvailable(reads[0].value)?reads[0].value:null
  const tasks=reads[1].status==='fulfilled'&&cssaSourceAvailable(reads[1].value)?reads[1].value:null
