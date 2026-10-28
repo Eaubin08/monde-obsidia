@@ -1,3 +1,4 @@
+import {buildCapabilityRegistry} from './worldCapabilityRegistry.ts'
 import {readCssaBusiness} from './cssaBusinessRead.ts'
 import {readCssaTasks} from './cssaTasksRead.ts'
 import {readCssaCrmDirectory} from './cssaCrmReadOnly.ts'
@@ -17,6 +18,7 @@ export type CssaWorldSnapshot={
  graph:ReturnType<typeof buildCssaWorldGraph>['graph']
  company:ReturnType<typeof projectCompanyModel>
  manifest:ReturnType<typeof composeWorldManifest>
+ capabilityRegistry:ReturnType<typeof buildCapabilityRegistry>
 }
 export async function readCssaWorldSnapshot(fetcher:typeof fetch=fetch):Promise<CssaWorldSnapshot>{
  const reads=await Promise.allSettled([
@@ -30,7 +32,8 @@ export async function readCssaWorldSnapshot(fetcher:typeof fetch=fetch):Promise<
  const {model,graph}=buildCssaWorldGraph({business,tasks,crm})
  const company=projectCompanyModel('CSSA','CS Sedan Ardennes',model,graph)
  const manifest=composeWorldManifest('CSSA','CS Sedan Ardennes',model.objects)
+ const capabilityRegistry=buildCapabilityRegistry(model)
  return {schema:'OBSIDIA_CSSA_WORLD_SNAPSHOT_V0',
   sourceStatus:{business:business?'AVAILABLE':'UNKNOWN',tasks:tasks?'AVAILABLE':'UNKNOWN',crm:crm?'AVAILABLE':'UNKNOWN'},
-  model,graph,company,manifest}
+  model,graph,company,manifest,capabilityRegistry}
 }
