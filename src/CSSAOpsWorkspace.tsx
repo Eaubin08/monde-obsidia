@@ -442,7 +442,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
   // Sélection courante
   const selectedTask = useMemo(() => {
     if (!state || !state.tasks.length) return null
-    return state.tasks.find(t => t.id === selectedId) || state.tasks[0]
+    return selectedId ? (state.tasks.filter(t => t.id === selectedId).length === 1 ? state.tasks.find(t => t.id === selectedId)! : null) : state.tasks[0]
   }, [state, selectedId])
 
   useEffect(()=>{
@@ -456,11 +456,11 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
 
   const selectedCase = useMemo(() => {
     if (!state || !state.cases.length) return null
-    return state.cases.find(c => c.id === selectedId) || state.cases[0]
+    return selectedId ? (state.cases.filter(c => c.id === selectedId).length === 1 ? state.cases.find(c => c.id === selectedId)! : null) : state.cases[0]
   }, [state, selectedId])
   const selectedExternal=useMemo(()=>{
     if(!directory?.organizations.length)return null
-    return directory.organizations.find(x=>x.id===directorySelectedId)||directory.organizations[0]
+    return directorySelectedId ? (directory.organizations.filter(x=>x.id===directorySelectedId).length===1 ? directory.organizations.find(x=>x.id===directorySelectedId)! : null) : directory.organizations[0]
   },[directory,directorySelectedId])
 
   const selectedIntendance = useMemo(() => {
