@@ -447,10 +447,13 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
 
   useEffect(()=>{
     if(activeModule!=='crm'||!selectedId||appliedCrmSelection.current===selectedId)return
-    if(directory?.organizations.some(row=>row.id===selectedId)){
+    const orgMatches=directory?._source?.status==='AVAILABLE'?directory.organizations.filter(row=>row.id===selectedId).length:0
+    const caseMatches=state?._source?.status==='AVAILABLE'?state.cases.filter(row=>row.id===selectedId).length:0
+    // An identity present in both namespaces (or duplicated) is ambiguous, never auto-selected.
+    if(orgMatches===1&&caseMatches===0){
       setCrmMode('directory');setDirectorySelectedId(selectedId);appliedCrmSelection.current=selectedId
-    }else if(state?.cases.some(row=>row.id===selectedId)){
-      setCrmMode('cases');appliedCrmSelection.current=selectedId
+    }else if(caseMatches===1&&orgMatches===0){
+      setCrmMode('cases');setDirectorySelectedId('');appliedCrmSelection.current=selectedId
     }
   },[activeModule,selectedId,directory,state])
 
@@ -465,7 +468,7 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
 
   const selectedIntendance = useMemo(() => {
     if (!state || !state.intendanceItems.length) return null
-    return state.intendanceItems.find(i => i.id === selectedId) || state.intendanceItems[0]
+    return selectedId ? (state.intendanceItems.filter(i => i.id === selectedId).length === 1 ? state.intendanceItems.find(i => i.id === selectedId)! : null) : state.intendanceItems[0]
   }, [state, selectedId])
 
   if (loading) {
