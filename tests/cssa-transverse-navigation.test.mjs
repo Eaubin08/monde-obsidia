@@ -96,3 +96,12 @@ test('CRM namespace collisions and Intendance deep links never select another id
  assert.match(opsWorkspace,/cssaSourceAvailable\(directory\)/)
  assert.match(opsWorkspace,/cssaSourceAvailable\(state\)/)
 })
+
+test('Tasks page KPI and navigation share the canonical source-based counter',()=>{
+ assert.match(tasksPage,/cssaNavigationCount\('tasks',\{ops:/)
+ assert.match(tasksPage,/view\.openCount\?\?'UNKNOWN'/)
+ assert.match(tasksPage,/!\['TERMINE','FERME','CLOSED'\]\.includes\(t\.status\)/)
+})
+test('CRM collision also blocks displaying a case with an organization id',()=>{
+ assert.match(opsWorkspace,/!\(directory\?\.organizations\.some\(o=>o\.id===selectedId\)\)/)
+})
