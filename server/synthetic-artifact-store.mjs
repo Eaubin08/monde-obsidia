@@ -1,5 +1,5 @@
 // Content-addressed synthetic lab store. Explicit root only, no production state.
-import {mkdir,writeFile,readFile,rename,rm,readdir,lstat} from 'node:fs/promises'
+import {mkdir,writeFile,readFile,readdir,lstat} from 'node:fs/promises'
 import {join,resolve} from 'node:path'
 import {createHash} from 'node:crypto'
 const hex=x=>typeof x==='string'&&/^SHA256:[0-9a-f]{64}$/.test(x)
