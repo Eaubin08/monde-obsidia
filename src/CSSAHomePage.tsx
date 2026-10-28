@@ -93,7 +93,7 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
   const validations=business?.validations??[]
   const submissionProofs=business?.submissionProofs??[]
   const dossierOutcomes=business?.dossierOutcomes??[]
-  const activeDossiers=dossiers.filter(d=>!['ATTRIBUE','NON_RETENU','ANNULE'].includes(d.status))
+  const activeDossiers=dossiers.filter(d=>!['ATTRIBUE','NON_RETENU','ANNULE'].includes(d.status)&&!dossierOutcomes.some(o=>o.dossierId===d.id))
   const upcomingDossiers=[...activeDossiers].filter(d=>!['DEPOSE'].includes(d.status)).sort((a,b)=>(a.deadline||'9999').localeCompare(b.deadline||'9999')).slice(0,6)
   const today=new Date().toISOString().slice(0,10)
   const dossierLinkAttention=deriveCssaDossierAttention({
@@ -103,13 +103,18 @@ export default function CSSAHomePage({contradictions,onOpen}:Props){
   const attentionDossiers=dossiers.map(d=>{
     const reqs=requirements.filter(r=>r.dossierId===d.id&&r.criticality==='OBLIGATOIRE')
     const blocking=reqs.filter(r=>r.state!=='SATISFAIT').length
-    const finalValidation=validations.find(v=>v.dossierId===d.id&&v.type==='REVUE_FINALE')
-    const proof=submissionProofs.find(p=>p.dossierId===d.id)
-    const outcome=dossierOutcomes.find(o=>o.dossierId===d.id)
+    const finalValidations=validations.filter(v=>v.dossierId===d.id&&v.type==='REVUE_FINALE')
+    const proofs=submissionProofs.filter(p=>p.dossierId===d.id)
+    const outcomes=dossierOutcomes.filter(o=>o.dossierId===d.id)
+    const finalValidation=finalValidations.length===1?finalValidations[0]:null
+    const proof=proofs.length===1?proofs[0]:null
+    const outcome=outcomes.length===1?outcomes[0]:null
+    const ambiguous=finalValidations.length>1||proofs.length>1||outcomes.length>1
     const ready=reqs.length>0&&blocking===0&&finalValidation?.status==='VALIDE'&&!dossierLinkAttention.some(alert=>alert.targetId===d.id)
     let level:'CRITIQUE'|'ACTION'|'INFO'='INFO'
     let reason=''
-    if(d.deadline&&d.deadline.slice(0,10)<today&&!proof&&!['ATTRIBUE','NON_RETENU','ANNULE'].includes(d.status)){level='CRITIQUE';reason='Échéance dépassée sans preuve de dépôt'}
+    if(ambiguous){level='ACTION';reason='UNKNOWN · validations, dépôts ou résultats multiples à réconcilier'}
+    else if(d.deadline&&d.deadline.slice(0,10)<today&&!proof&&!['ATTRIBUE','NON_RETENU','ANNULE'].includes(d.status)){level='CRITIQUE';reason='Échéance dépassée sans preuve de dépôt'}
     else if(finalValidation&&['EN_ATTENTE','HOLD'].includes(finalValidation.status)){level='ACTION';reason=finalValidation.status==='HOLD'?'Validation finale en HOLD':'Validation finale en attente'}
     else if(ready&&!proof){level='ACTION';reason='Dossier prêt : preuve de dépôt manquante'}
     else if(proof&&!outcome){level='INFO';reason='Déposé : résultat externe attendu'}
