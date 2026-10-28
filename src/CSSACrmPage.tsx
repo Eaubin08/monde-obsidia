@@ -1,6 +1,6 @@
 import {readCssaCrm} from './cssaCrmWrite'
 import {readCssaTasks} from './cssaTasksRead'
-import {cssaSourceAvailable} from './cssaLinkedReference'
+import {cssaSourceAvailable,resolveCssaReference,referenceLabels} from './cssaLinkedReference'
 import CSSAStoreSourceNotice from './CSSAStoreSourceNotice'
 import {useEffect,useMemo,useState} from 'react'
 import CSSAOpsWorkspace from './CSSAOpsWorkspace'
@@ -77,8 +77,8 @@ export default function CSSACrmPage({selectedId,onSelect}:Props){
   <section className="crmx-grid">
    <article className="crmx-panel">
     <header><div><small>DERNIERS ÉCHANGES</small><h3>Journal relationnel</h3></div><span>{directoryAvailable?view.interactions.length:'UNKNOWN'}</span></header>
-    {view.recent.length?view.recent.map(i=>{const o=view.orgs.find(x=>x.id===i.organizationId);return <button key={i.id} onClick={()=>onSelect('crm',i.organizationId)}>
-      <span>{i.type}</span><div><strong>{o?.name||'Organisme inconnu'}</strong><small>{i.summary}</small></div><time>{String(i.occurredAt).slice(0,10)}</time>
+    {view.recent.length?view.recent.map(i=>{const ref=resolveCssaReference(i.organizationId,view.orgs,directoryAvailable);const o=ref.item;return <button key={i.id} disabled={!o} title={o?'Ouvrir organisme':referenceLabels[ref.status]} onClick={()=>{if(o)onSelect('crm',o.id)}}>
+      <span>{i.type}</span><div><strong>{o?.name||referenceLabels[ref.status]}</strong><small>{i.summary}</small></div><time>{String(i.occurredAt).slice(0,10)}</time>
     </button>}):<p>{directoryAvailable?'Aucun échange enregistré.':'UNKNOWN · source du journal indisponible.'}</p>}
    </article>
    <article className="crmx-panel">
