@@ -6,6 +6,7 @@ import {resolveCssaPerson} from './cssaPeopleProjection'
 import {useEffect,useMemo,useState} from 'react'
 import CSSAOpsWorkspace from './CSSAOpsWorkspace'
 import {CSSA_REFERENCE_CALENDAR} from './CSSASportPage'
+import CSSAMatchObjectView from './CSSAMatchObjectView'
 import {clubCalendarWindow,calendarLinkedRows} from './cssaSportCalendar'
 import './CSSAMatchdayPage.css'
 
@@ -19,6 +20,7 @@ export default function CSSAMatchdayPage({selectedId,onSelect}:Props){
  const organisation=useCssaPeople()
  const [state,setState]=useState<OpsState|null>(null)
  const [error,setError]=useState(false)
+ const [inspectedEventId,setInspectedEventId]=useState('')
  useEffect(()=>{
   let active=true;let generation=0
   const refresh=async()=>{
@@ -79,6 +81,14 @@ export default function CSSAMatchdayPage({selectedId,onSelect}:Props){
    </article>
   </section>
 
+  <section className="mday-panel" aria-label="Explorer les événements">
+   <header><div><small>MONDE NAVIGABLE</small><h3>Explorer un objet match / plateau</h3></div></header>
+   <p>Chaque événement est une porte vers ses préparations, tâches, responsables et sources. Seules les relations explicites sont affichées.</p>
+   <div className="mday-steps">
+    {CSSA_REFERENCE_CALENDAR.filter(e=>e.date>=new Date().toISOString().slice(0,10)).slice(0,8).map(e=><button type="button" key={e.id} onClick={()=>setInspectedEventId(e.id)}>{e.title} · {e.date}</button>)}
+   </div>
+  </section>
+  {(inspectedEventId||view.next?.id)&&<CSSAMatchObjectView events={CSSA_REFERENCE_CALENDAR} selectedEventId={inspectedEventId||view.next!.id} opsAvailable={available} tasks={available?state?.tasks||[]:[]} preparations={available?state?.intendanceItems||[]:[]} organisation={organisation} onSelect={onSelect}/>}
   <section className="mday-flow"><div><small>PARCOURS MATCH</small><h3>Avant → match → après</h3></div><div className="mday-steps"><span><b>1</b>Préparer</span><i>→</i><span><b>2</b>Confirmer</span><i>→</i><span><b>3</b>Exécuter</span><i>→</i><span><b>4</b>Preuves / média</span></div><button onClick={()=>onSelect('media','')}>Média →</button></section>
 
   <details className="mday-tools" open={Boolean(selectedId)}><summary>Gestion détaillée Matchday / intendance</summary><CSSAOpsWorkspace activeModule="matchday" selectedId={selectedId} onSelect={onSelect}/></details>
