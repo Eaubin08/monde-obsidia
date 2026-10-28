@@ -19,7 +19,10 @@ test('CSSA canonical adapter constructs connected dossier, requirement, document
  const dossier=model.objects.find(o=>o.identity.id==='D1')
  const context=createWorldContext(model,graph,worldObjectKey(dossier))
  assert.equal(context.focus?.label,'Subvention')
- assert.equal(context.relations.length,3)
+ // Context deliberately includes both outgoing and incoming relations: 3 + 2.
+ assert.equal(context.relations.length,5)
+ assert.equal(context.relations.filter(r=>r.edge.from===worldObjectKey(dossier)).length,3)
+ assert.equal(context.relations.filter(r=>r.edge.to===worldObjectKey(dossier)).length,2)
  assert.equal(context.governance.authority,'NONE')
 })
 test('source missing stays unknown and never materializes referenced task or actor',()=>{
