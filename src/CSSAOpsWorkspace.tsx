@@ -459,8 +459,8 @@ export default function CSSAOpsWorkspace({activeModule, selectedId, onSelect}: P
 
   const selectedCase = useMemo(() => {
     if (!state || !state.cases.length) return null
-    return selectedId ? (state.cases.filter(c => c.id === selectedId).length === 1 ? state.cases.find(c => c.id === selectedId)! : null) : state.cases[0]
-  }, [state, selectedId])
+    return selectedId ? (state.cases.filter(c => c.id === selectedId).length === 1 && !(directory?.organizations.some(o=>o.id===selectedId)) ? state.cases.find(c => c.id === selectedId)! : null) : state.cases[0]
+  }, [state, selectedId, directory])
   const selectedExternal=useMemo(()=>{
     if(!directory?.organizations.length)return null
     return directorySelectedId ? (directory.organizations.filter(x=>x.id===directorySelectedId).length===1 ? directory.organizations.find(x=>x.id===directorySelectedId)! : null) : directory.organizations[0]
