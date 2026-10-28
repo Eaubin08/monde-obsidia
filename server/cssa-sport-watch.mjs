@@ -1,3 +1,4 @@
+import {observeCssaSource} from './cssa-source-observation.mjs'
 import {createHash} from 'node:crypto'
 import {existsSync, readFileSync, writeFileSync, mkdirSync} from 'node:fs'
 import {resolve} from 'node:path'
@@ -176,4 +177,14 @@ export async function readCssaSportWatch({force = false} = {}) {
   cache = {at: now, value}
   saveWatchDisk()
   return value
+}
+
+// Read the existing disk observation without initiating or refreshing web requests.
+export function readCssaSportWatchCache(file=CACHE_FILE){
+ let saved=null
+ try{saved=JSON.parse(readFileSync(file,'utf8'))}catch{}
+ const observed=observeCssaSource({},file,[])
+ const value=saved?.cachedValue
+ const valid=value&&typeof value==='object'&&!Array.isArray(value)&&Array.isArray(value.sources)&&typeof value.observedAt==='string'
+ return {...(valid?value:{}),_source:{...observed._source,status:observed._source.status==='AVAILABLE'&&!valid?'INVALID':observed._source.status},cacheOnly:true}
 }

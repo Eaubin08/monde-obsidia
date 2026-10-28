@@ -8,13 +8,13 @@ import {terminalCommand,launchTerminal,focusTerminal,stopTerminal,terminalAlive}
 import {liveSnapshot,liveDirectory} from './live-events.mjs'
 import {buildObsidiaState} from './obsidia-state.mjs'
 import {readNativeEnterpriseView} from './native-enterprise-read.mjs'
-import {readCssaSportWatch} from './cssa-sport-watch.mjs'
+import {readCssaSportWatch,readCssaSportWatchCache} from './cssa-sport-watch.mjs'
 import {readCssaSportState,writeCssaSportState,defaultStateFile as defaultSportStateFile} from './cssa-sport-store.mjs'
 import {readCssaOpsState,writeCssaOpsState,defaultOpsFile} from './cssa-ops-store.mjs'
 import {readCssaBusinessState,writeCssaBusinessState,defaultBusinessFile} from './cssa-business-store.mjs'
 import {readCssaOrganisationState,writeCssaOrganisationState,defaultOrganisationFile} from './cssa-organisation-store.mjs'
 import {readCssaCrmDirectory,writeCssaCrmDirectory,defaultCrmDirectoryFile} from './cssa-crm-directory-store.mjs'
-import {readCssaMailState,writeCssaMailState,ingestCssaMail} from './cssa-mail-store.mjs'
+import {readCssaMailState,writeCssaMailState,ingestCssaMail,defaultMailFile} from './cssa-mail-store.mjs'
 import {randomUUID} from 'node:crypto'
 import {execFileSync,spawn} from 'node:child_process'
 import {existsSync,realpathSync,readFileSync,readdirSync,statSync,appendFileSync,mkdirSync} from 'node:fs'
@@ -573,7 +573,7 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
   }));return
  }
  if(req.method==='GET'&&url.pathname==='/native-enterprise'){res.end(JSON.stringify(readNativeEnterpriseView({repoRoot:repository()})));return}
- if(req.method==='GET'&&url.pathname==='/cssa-sport-watch'){res.end(JSON.stringify(await readCssaSportWatch({force:url.searchParams.get('force')==='1'})));return}
+ if(req.method==='GET'&&url.pathname==='/cssa-sport-watch'){res.end(JSON.stringify(url.searchParams.get('cacheOnly')==='1'?readCssaSportWatchCache():await readCssaSportWatch({force:url.searchParams.get('force')==='1'})));return}
  if(req.method==='GET'&&url.pathname==='/cssa-sport-state'){res.end(JSON.stringify(observeCssaSource(readCssaSportState(),defaultSportStateFile,[],{maps:['notes','checks','reviewed','tasks']})));return}
  if(req.method==='POST'&&url.pathname==='/cssa-sport-state'){const patch=await body(req);res.end(JSON.stringify(observeCssaSource(writeCssaSportState(patch),defaultSportStateFile,[],{maps:['notes','checks','reviewed','tasks']})));return}
  if(req.method==='GET'&&url.pathname==='/cssa-ops-state'){res.end(JSON.stringify(observeCssaSource(readCssaOpsState(),defaultOpsFile,opsLists,{fallback:'TEMPLATE'})));return}
@@ -584,9 +584,9 @@ export function localBridge(){return {name:'obsidia-local-bridge',configureServe
  if(req.method==='POST'&&url.pathname==='/cssa-organisation-state'){const patch=await body(req);res.end(JSON.stringify(observeCssaSource(writeCssaOrganisationState(patch),defaultOrganisationFile,organisationLists)));return}
  if(req.method==='GET'&&url.pathname==='/cssa-crm-directory'){res.end(JSON.stringify(observeCssaSource(readCssaCrmDirectory(),defaultCrmDirectoryFile,['organizations','contacts','interactions'])));return}
  if(req.method==='POST'&&url.pathname==='/cssa-crm-directory'){const patch=await body(req);res.end(JSON.stringify(observeCssaSource(writeCssaCrmDirectory(patch),defaultCrmDirectoryFile,['organizations','contacts','interactions'])));return}
- if(req.method==='GET'&&url.pathname==='/cssa-mail-state'){res.end(JSON.stringify(readCssaMailState()));return}
- if(req.method==='POST'&&url.pathname==='/cssa-mail-state'){const patch=await body(req);res.end(JSON.stringify(writeCssaMailState(patch)));return}
- if(req.method==='POST'&&url.pathname==='/cssa-mail-ingest'){const data=await body(req);res.end(JSON.stringify(ingestCssaMail(data)));return}
+ if(req.method==='GET'&&url.pathname==='/cssa-mail-state'){res.end(JSON.stringify(observeCssaSource(readCssaMailState(),defaultMailFile,['messages','drafts'])));return}
+ if(req.method==='POST'&&url.pathname==='/cssa-mail-state'){const patch=await body(req);res.end(JSON.stringify(observeCssaSource(writeCssaMailState(patch),defaultMailFile,['messages','drafts'])));return}
+ if(req.method==='POST'&&url.pathname==='/cssa-mail-ingest'){const data=await body(req);const out=ingestCssaMail(data);res.end(JSON.stringify({...out,state:observeCssaSource(out.state,defaultMailFile,['messages','drafts'])}));return}
  if(req.method==='GET'&&url.pathname==='/state'){
  const snap=snapshot(),live=liveSnapshot()
  live.sessions=(live.sessions||[]).map(s=>{
