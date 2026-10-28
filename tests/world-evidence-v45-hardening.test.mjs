@@ -46,3 +46,18 @@ test('V45 integrated gate rejects undefined fields despite internally valid rece
  assert.equal(report.reviewRequests[0].readiness,'HOLD')
  assert.equal(report.reviewRequests[0].executionAllowed,false)
 })
+
+test('V45 explicit foreign organization claim in source record rejects matching IDs',async()=>{
+ const data=payload()
+ data.dossiers[0].organizationId='OTHER'
+ const report=await auditWorldEvidenceBatchV40(state,expectations,[binding],policy.now,policy.maxAgeMs,async()=>({ok:true,json:async()=>data}))
+ assert.equal(report.records[0].verdict,'SOURCE_TENANT_CLAIM_MISMATCH')
+ assert.equal(report.reviewRequests[0].executionAllowed,false)
+})
+test('V45 integrated receipt preserves foreign source tenant rejection and HOLD',async()=>{
+ const data=payload()
+ data.dossiers[0].organizationId='OTHER'
+ const report=await auditWorldEvidenceIntegration(state,expectations,[binding],policy,async()=>({ok:true,json:async()=>data}))
+ assert.equal(report.receipts[0].verdict,'SOURCE_TENANT_CLAIM_MISMATCH')
+ assert.equal(report.reviewRequests[0].readiness,'HOLD')
+})
