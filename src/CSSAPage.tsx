@@ -580,7 +580,7 @@ export default function CSSAPage(){
   }finally{setRefreshing(false)}
  }
  useEffect(()=>{refresh();const t=window.setInterval(refresh,5000);return()=>window.clearInterval(t)},[])
- useEffect(()=>{const onHash=()=>{const route=parseCssaHash(location.hash,structure.modules.map(m=>m.id));if(!route)return;setModuleId(route.moduleId);setSelectedId(route.selectedId);setQuery('');setTab('overview')};window.addEventListener('hashchange',onHash);return()=>window.removeEventListener('hashchange',onHash)},[structure])
+ useEffect(()=>{const onHash=()=>{if(!location.hash.startsWith('#cssa'))return;const route=parseCssaHash(location.hash,structure.modules.map(m=>m.id));setModuleId(route?.moduleId??'dashboard');setSelectedId(route?.selectedId??'');setQuery('');setTab('overview')};window.addEventListener('hashchange',onHash);return()=>window.removeEventListener('hashchange',onHash)},[structure])
 
  const observedSources=useMemo(()=>entities.filter(e=>e.kind==='source'),[entities])
  const nativeByModule=useMemo(()=>{
