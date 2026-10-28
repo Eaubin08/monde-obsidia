@@ -81,7 +81,7 @@ export default function CSSAMailPage({selectedId:requestedId,onOpen}:Props){
    const receivedAt=form.receivedAt||(times.current[id]??(times.current[id]=new Date().toISOString()))
    const result=await ingestCssaLocalMail<MailState>({id,from:form.from.trim(),to:form.to?[form.to.trim()]:[],cc:form.cc?[form.cc.trim()]:[],subject:form.subject.trim(),receivedAt,bodyPreview:form.bodyPreview?.trim()||'',direction:form.direction||'ENTRANT',...(form.proof?.trim()?{proof:form.proof.trim()}:{}),source:'SAISIE_MAIL_MANUELLE_A_VERIFIER'})
    if(!active.current)return
-   setState(result.state);setSelectedId(id);setMode('inbox');setForm({direction:'ENTRANT'});delete pending.current.mail
+   setState(result.state);setSelectedId(id);onOpen?.('mail',id);setMode('inbox');setForm({direction:'ENTRANT'});delete pending.current.mail
   })
  }
 
@@ -185,7 +185,7 @@ export default function CSSAMailPage({selectedId:requestedId,onOpen}:Props){
   {mode==='inbox'&&<div className="mailx-layout">
    <aside className="mailx-list">
     <div className="mailx-search"><input placeholder="Rechercher…" value={query} onChange={e=>setQuery(e.target.value)}/><span>{available?messages.length:'UNKNOWN'}</span></div>
-    {messages.length?messages.map(m=><button key={m.id} className={selected?.id===m.id?'active':''} onClick={()=>setSelectedId(m.id)}>
+    {messages.length?messages.map(m=><button key={m.id} className={selected?.id===m.id?'active':''} onClick={()=>{setSelectedId(m.id);onOpen?.('mail',m.id)}}>
      <div><strong>{m.subject}</strong><span>{m.from}</span></div>
      <small>{m.receivedAt?.slice(0,16).replace('T',' ')}</small>
      <em className={m.status==='RACCORDE_CRM'?'linked':'pending'}>{m.status==='RACCORDE_CRM'?'Lien CRM déclaré':'À rapprocher'}</em>
@@ -204,7 +204,7 @@ export default function CSSAMailPage({selectedId:requestedId,onOpen}:Props){
      <div><small>Dossier</small><strong>{dossierName(selected.dossierId)}</strong></div>
      <div><small>Document canonique</small><strong>{!business?'UNKNOWN · Business indisponible':linkedDocuments.length>1?'UNKNOWN · plusieurs pièces liées':linkedDocument?linkedDocument.title:'Aucun'}</strong></div>
     </section>
-    {selected.organizationId&&<div className="mailx-actions"><button onClick={()=>onOpen?.('crm')}>Ouvrir CRM →</button>{selected.dossierId&&<button onClick={()=>onOpen?.('dossiers',selected.dossierId!)}>Ouvrir dossier →</button>}{linkedDocument&&<button onClick={()=>onOpen?.('documents',linkedDocument.id)}>Ouvrir document →</button>}</div>}
+    {selected&&<div className="mailx-actions">{selected.organizationId&&directory?.organizations.filter(o=>o.id===selected.organizationId).length===1&&<button onClick={()=>onOpen?.('crm',selected.organizationId!)}>Ouvrir organisme CRM →</button>}{selected.dossierId&&business?.dossiers.filter(d=>d.id===selected.dossierId).length===1&&<button onClick={()=>onOpen?.('dossiers',selected.dossierId!)}>Ouvrir dossier →</button>}{linkedDocument&&<button onClick={()=>onOpen?.('documents',linkedDocument.id)}>Ouvrir document →</button>}</div>}
     <section className="mailx-document-link">
      <header><div><small>DOCUMENTS</small><h4>Transformer une pièce reçue en document canonique</h4></div><span>{linkedDocument?'Déjà créé':'Revue humaine requise'}</span></header>
      {linkedDocument&&<p><strong>{linkedDocument.title}</strong> est déjà relié à ce mail. Son statut reste {linkedDocument.status} tant qu’il n’est pas vérifié.</p>}<form onSubmit={promoteMailToDocument}>
